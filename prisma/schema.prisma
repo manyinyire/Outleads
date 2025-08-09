@@ -1,0 +1,85 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User who can access the admin dashboard
+model User {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  password  String     // Hashed password
+  name      String
+  role      Role       @default(AGENT)
+  campaigns Campaign[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@map("users")
+}
+
+// Campaign for a specific company or use case
+model Campaign {
+  id          String   @id @default(cuid())
+  name        String
+  companyName String
+  uniqueLink  String   @unique
+  leads       Lead[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdById String
+
+  @@map("campaigns")
+}
+
+// A captured lead from a client
+model Lead {
+  id             String    @id @default(cuid())
+  fullName       String
+  phoneNumber    String
+  businessSector Sector    @relation(fields: [sectorId], references: [id])
+  sectorId       String
+  products       Product[] @relation("LeadProducts")
+  campaign       Campaign? @relation(fields: [campaignId], references: [id])
+  campaignId     String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("leads")
+}
+
+// A list of available products
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  leads       Lead[]   @relation("LeadProducts")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("products")
+}
+
+// Business sectors for the dropdown
+model Sector {
+  id        String   @id @default(cuid())
+  name      String
+  leads     Lead[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("sectors")
+}
+
+// User roles for authorization
+enum Role {
+  ADMIN
+  AGENT
+}

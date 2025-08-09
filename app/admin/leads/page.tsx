@@ -3,69 +3,78 @@
 import { useEffect, useState } from 'react'
 import { Table, Tag, Button, Space, Input, Select, Card, Typography } from 'antd'
 import { SearchOutlined, FilterOutlined } from '@ant-design/icons'
-import { useDispatch, useSelector } from 'react-redux'
-import { RootState, AppDispatch } from '@/lib/store'
-import { fetchLeads, updateLeadStatus } from '@/lib/store/slices/leadSlice'
+import { useLocalStorage } from '@/hooks/useLocalStorage'
 
 const { Title } = Typography
 const { Option } = Select
 
 export default function LeadsPage() {
-  const dispatch = useDispatch<AppDispatch>()
-  const { leads, loading } = useSelector((state: RootState) => state.lead)
-  
+  const [leads, setLeads] = useState([])
+  const [loading, setLoading] = useState(true)
   const [searchText, setSearchText] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
+  const [token] = useLocalStorage('token', null)
 
   useEffect(() => {
-    dispatch(fetchLeads())
-  }, [dispatch])
+    const fetchLeads = async () => {
+      try {
+        const response = await fetch('/api/admin/leads', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        const data = await response.json()
+        setLeads(data)
+      } catch (error) {
+        console.error('Failed to fetch leads:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
 
-  const handleStatusChange = (leadId: string, newStatus: string) => {
-    dispatch(updateLeadStatus({ id: leadId, status: newStatus as any }))
-  }
+    if (token) {
+      fetchLeads()
+    }
+  }, [token])
 
-  const filteredLeads = leads.filter(lead => {
-    const matchesSearch = lead.fullName.toLowerCase().includes(searchText.toLowerCase()) ||
-                         lead.phoneNumber.includes(searchText) ||
-                         lead.businessSector.toLowerCase().includes(searchText.toLowerCase())
-    const matchesStatus = !statusFilter || lead.status === statusFilter
-    return matchesSearch && matchesStatus
+  const filteredLeads = leads.filter((lead: any) => {
+    const matchesSearch = lead.name.toLowerCase().includes(searchText.toLowerCase()) ||
+                         lead.phone.includes(searchText) ||
+                         lead.company.toLowerCase().includes(searchText.toLowerCase())
+    return matchesSearch
   })
 
   const columns = [
     {
       title: 'Name',
-      dataIndex: 'fullName',
-      key: 'fullName',
-      sorter: (a: any, b: any) => a.fullName.localeCompare(b.fullName),
+      dataIndex: 'name',
+      key: 'name',
+      sorter: (a: any, b: any) => a.name.localeCompare(b.name),
+    },
+    {
+      title: 'Email',
+      dataIndex: 'email',
+      key: 'email',
     },
     {
       title: 'Phone',
-      dataIndex: 'phoneNumber',
-      key: 'phoneNumber',
+      dataIndex: 'phone',
+      key: 'phone',
     },
     {
-      title: 'Business Sector',
-      dataIndex: 'businessSector',
-      key: 'businessSector',
-      filters: [
-        { text: 'Technology', value: 'Technology' },
-        { text: 'Healthcare', value: 'Healthcare' },
-        { text: 'Manufacturing', value: 'Manufacturing' },
-        { text: 'Retail', value: 'Retail' },
-      ],
-      onFilter: (value: any, record: any) => record.businessSector === value,
+      title: 'Company',
+      dataIndex: 'company',
+      key: 'company',
     },
     {
       title: 'Interested Products',
-      dataIndex: 'interestedProducts',
-      key: 'interestedProducts',
-      render: (products: string[]) => (
+      dataIndex: 'products',
+      key: 'products',
+      render: (products: any[]) => (
         <div>
           {products.map((product, index) => (
             <Tag key={index} color="blue" style={{ marginBottom: '4px' }}>
-              {product}
+              {product.name}
             </Tag>
           ))}
         </div>
@@ -73,49 +82,17 @@ export default function LeadsPage() {
     },
     {
       title: 'Campaign Source',
+      dataIndex: ['campaign', 'name'],
       key: 'campaignSource',
-      render: (record: any) => (
+      render: (campaignName: string) => (
         <div>
-          {record.campaignName ? (
-            <Tag color="green">{record.campaignName}</Tag>
+          {campaignName ? (
+            <Tag color="green">{campaignName}</Tag>
           ) : (
             <Tag color="default">Organic</Tag>
           )}
         </div>
       ),
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status: string, record: any) => {
-        const colors = {
-          new: 'blue',
-          contacted: 'orange',
-          qualified: 'green',
-          converted: 'purple',
-        }
-        return (
-          <Select
-            value={status}
-            style={{ width: 120 }}
-            onChange={(value) => handleStatusChange(record.id, value)}
-          >
-            <Option value="new">
-              <Tag color="blue">NEW</Tag>
-            </Option>
-            <Option value="contacted">
-              <Tag color="orange">CONTACTED</Tag>
-            </Option>
-            <Option value="qualified">
-              <Tag color="green">QUALIFIED</Tag>
-            </Option>
-            <Option value="converted">
-              <Tag color="purple">CONVERTED</Tag>
-            </Option>
-          </Select>
-        )
-      },
     },
     {
       title: 'Created Date',

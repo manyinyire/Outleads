@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation'
 import { Layout, Row, Col, Tabs, Card, Typography, Descriptions, Drawer, Button } from 'antd'
 import { MenuOutlined } from '@ant-design/icons'
 import { RootState, AppDispatch } from '@/lib/store'
-import { fetchProducts, fetchBusinessSectors, setSelectedCategory } from '@/lib/store/slices/landingSlice'
+import { setSelectedCategory } from '@/lib/store/slices/landingSlice'
 import ProductList from '@/components/landing/ProductList'
 import LeadForm from '@/components/landing/LeadForm'
 
@@ -29,10 +29,7 @@ export default function HomePage() {
   
   const campaignId = searchParams.get('campaign')
 
-  useEffect(() => {
-    dispatch(fetchProducts())
-    dispatch(fetchBusinessSectors())
-  }, [dispatch])
+  // Products are fetched by the ProductList component
 
   const categories = [
     { key: 'finance', label: 'Finance', icon: '💰' },
@@ -41,7 +38,7 @@ export default function HomePage() {
     { key: 'banking', label: 'Banking', icon: '🏦' },
   ]
 
-  const selectedCategoryProducts = products.filter(p => p.category === selectedCategory)
+  const selectedCategoryProducts = (products || []).filter(p => p.category === selectedCategory)
   const selectedCategoryInfo = categories.find(c => c.key === selectedCategory)
 
   const handleCategoryChange = (key: string) => {
@@ -74,7 +71,7 @@ export default function HomePage() {
                     {category.label}
                   </span>
                 ),
-                children: <ProductList products={selectedCategoryProducts} loading={loading} />
+                children: <ProductList />
               }))}
             />
 

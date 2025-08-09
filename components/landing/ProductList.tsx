@@ -3,19 +3,32 @@
 import { List, Checkbox, Skeleton, Typography } from 'antd'
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState, AppDispatch } from '@/lib/store'
-import { toggleProductSelection } from '@/lib/store/slices/landingSlice'
+import { toggleProductSelection, setProducts } from '@/lib/store/slices/landingSlice'
 import { Product } from '@/lib/store/slices/landingSlice'
+import { useEffect, useState } from 'react'
 
 const { Text } = Typography
 
-interface ProductListProps {
-  products: Product[]
-  loading: boolean
-}
-
-export default function ProductList({ products, loading }: ProductListProps) {
+export default function ProductList() {
   const dispatch = useDispatch<AppDispatch>()
-  const { selectedProducts } = useSelector((state: RootState) => state.landing)
+  const { products, selectedProducts } = useSelector((state: RootState) => state.landing)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch('/api/products')
+        const data = await response.json()
+        dispatch(setProducts(data.products || []))
+      } catch (error) {
+        console.error('Failed to fetch products:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProducts()
+  }, [dispatch])
 
   const handleProductToggle = (productId: string) => {
     dispatch(toggleProductSelection(productId))

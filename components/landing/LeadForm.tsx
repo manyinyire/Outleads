@@ -2,9 +2,9 @@
 
 import { Form, Input, Select, Button, Card, Typography, message } from 'antd'
 import { UserOutlined, PhoneOutlined, BankOutlined } from '@ant-design/icons'
-import { useDispatch, useSelector } from 'react-redux'
-import { RootState, AppDispatch } from '@/lib/store'
-import { submitLead } from '@/lib/store/slices/leadSlice'
+import { useSelector } from 'react-redux'
+import { RootState } from '@/lib/store'
+import { useState } from 'react'
 
 const { Title } = Typography
 const { Option } = Select
@@ -15,10 +15,12 @@ interface LeadFormProps {
 
 export default function LeadForm({ campaignId }: LeadFormProps) {
   const [form] = Form.useForm()
-  const dispatch = useDispatch<AppDispatch>()
-  
   const { businessSectors, selectedProducts, products } = useSelector((state: RootState) => state.landing)
-  const { submitting } = useSelector((state: RootState) => state.lead)
+  const [submitting, setSubmitting] = useState(false)
+
+  const selectedProductIds = products
+    .filter(p => selectedProducts.includes(p.id))
+    .map(p => p.id)
 
   const selectedProductNames = products
     .filter(p => selectedProducts.includes(p.id))
@@ -30,19 +32,34 @@ export default function LeadForm({ campaignId }: LeadFormProps) {
       return
     }
 
+    setSubmitting(true)
+
     try {
-      await dispatch(submitLead({
-        fullName: values.fullName,
-        phoneNumber: values.phoneNumber,
-        businessSector: values.businessSector,
-        interestedProducts: selectedProductNames,
-        campaignId: campaignId || undefined,
-      })).unwrap()
+      const response = await fetch('/api/leads', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: values.fullName,
+          email: values.email,
+          phone: values.phoneNumber,
+          company: values.businessSector,
+          productIds: selectedProductIds,
+          campaignId: campaignId || undefined,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to submit lead')
+      }
 
       message.success('Thank you! Your information has been submitted successfully. Our team will contact you soon.')
       form.resetFields()
     } catch (error) {
       message.error('Failed to submit your information. Please try again.')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -74,6 +91,21 @@ export default function LeadForm({ campaignId }: LeadFormProps) {
           <Input
             prefix={<UserOutlined />}
             placeholder="Enter your full name"
+            size="large"
+          />
+        </Form.Item>
+
+        <Form.Item
+          name="email"
+          label="Email Address"
+          rules={[
+            { required: true, message: 'Please enter your email address' },
+            { type: 'email', message: 'Please enter a valid email address' }
+          ]}
+        >
+          <Input
+            prefix={<UserOutlined />}
+            placeholder="Enter your email address"
             size="large"
           />
         </Form.Item>

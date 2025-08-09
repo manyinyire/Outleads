@@ -32,20 +32,23 @@ export const submitLead = createAsyncThunk(
     fullName: string
     phoneNumber: string
     businessSector: string
-    interestedProducts: string[]
+    interestedProducts: { id: string }[]
     campaignId?: string
   }) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    const newLead: Lead = {
-      id: Date.now().toString(),
-      ...leadData,
-      createdAt: new Date().toISOString(),
-      status: 'new',
-    }
-    
-    return newLead
+    const response = await fetch(`/api/leads?campaignId=${leadData.campaignId || ''}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: leadData.fullName,
+          email: 'email@example.com', // TODO: Add email to form
+          phone: leadData.phoneNumber,
+          products: leadData.interestedProducts,
+        }),
+      }
+    );
+    const data = await response.json();
+    return data;
   }
 )
 
