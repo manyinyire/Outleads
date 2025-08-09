@@ -2,9 +2,10 @@
 
 import { Form, Input, Select, Button, Card, Typography, message } from 'antd'
 import { UserOutlined, PhoneOutlined, BankOutlined } from '@ant-design/icons'
-import { useSelector } from 'react-redux'
-import { RootState } from '@/lib/store'
-import { useState } from 'react'
+import { useSelector, useDispatch } from 'react-redux'
+import { RootState, AppDispatch } from '@/lib/store'
+import { useState, useEffect } from 'react'
+import { setSectors } from '@/lib/store/slices/landingSlice'
 
 const { Title } = Typography
 const { Option } = Select
@@ -15,8 +16,23 @@ interface LeadFormProps {
 
 export default function LeadForm({ campaignId }: LeadFormProps) {
   const [form] = Form.useForm()
+  const dispatch = useDispatch<AppDispatch>()
   const { businessSectors, selectedProducts, products } = useSelector((state: RootState) => state.landing)
   const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    const fetchSectors = async () => {
+      try {
+        const response = await fetch('/api/sectors')
+        const data = await response.json()
+        dispatch(setSectors(Array.isArray(data) ? data : []))
+      } catch (error) {
+        console.error('Failed to fetch sectors:', error)
+      }
+    }
+
+    fetchSectors()
+  }, [dispatch])
 
   const selectedProductIds = products
     .filter(p => selectedProducts.includes(p.id))

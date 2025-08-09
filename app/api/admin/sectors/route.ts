@@ -2,59 +2,58 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, requireRole, AuthenticatedRequest } from '@/lib/auth';
 
-async function getProducts(req: AuthenticatedRequest) {
+async function getSectors(req: AuthenticatedRequest) {
   try {
     // Check if user has ADMIN role
     const roleError = requireRole(['ADMIN'])(req.user!);
     if (roleError) return roleError;
 
-    const products = await prisma.product.findMany({
+    const sectors = await prisma.sector.findMany({
       orderBy: {
         name: 'asc'
       }
     });
     
-    return NextResponse.json(products);
+    return NextResponse.json(sectors);
   } catch (error) {
-    console.error('Error fetching products:', error);
+    console.error('Error fetching sectors:', error);
     return NextResponse.json({ 
       error: 'Internal Server Error',
-      message: 'Failed to fetch products' 
+      message: 'Failed to fetch sectors' 
     }, { status: 500 });
   }
 }
 
-async function createProduct(req: AuthenticatedRequest) {
+async function createSector(req: AuthenticatedRequest) {
   try {
     // Check if user has ADMIN role
     const roleError = requireRole(['ADMIN'])(req.user!);
     if (roleError) return roleError;
 
-    const { name, description } = await req.json();
+    const { name } = await req.json();
 
     if (!name) {
       return NextResponse.json({ 
         error: 'Validation Error',
-        message: 'Product name is required' 
+        message: 'Sector name is required' 
       }, { status: 400 });
     }
 
-    const product = await prisma.product.create({
+    const sector = await prisma.sector.create({
       data: {
         name,
-        description: description || null,
       },
     });
 
-    return NextResponse.json(product, { status: 201 });
+    return NextResponse.json(sector, { status: 201 });
   } catch (error) {
-    console.error('Error creating product:', error);
+    console.error('Error creating sector:', error);
     return NextResponse.json({ 
       error: 'Internal Server Error',
-      message: 'Failed to create product' 
+      message: 'Failed to create sector' 
     }, { status: 500 });
   }
 }
 
-export const GET = withAuth(getProducts);
-export const POST = withAuth(createProduct);
+export const GET = withAuth(getSectors);
+export const POST = withAuth(createSector);

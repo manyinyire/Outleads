@@ -1,49 +1,88 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth } from '@/lib/auth';
+import { withAuth, requireRole, AuthenticatedRequest } from '@/lib/auth';
 
-async function updateProduct(req: any, { params }: { params: { id: string } }) {
+async function updateProduct(req: AuthenticatedRequest, { params }: { params: { id: string } }) {
   try {
-    const { id } = params;
-    const { name, description, price, sectorId } = await req.json();
+    // Check if user has ADMIN role
+    const roleError = requireRole(['ADMIN'])(req.user!);
+    if (roleError) return roleError;
 
-    if (!name || !price || !sectorId) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    const { id } = params;
+    const { name, description } = await req.json();
+
+    if (!name) {
+      return NextResponse.json({ 
+        error: 'Validation Error',
+        message: 'Product name is required' 
+      }, { status: 400 });
+    }
+
+    // Check if product exists
+    const existingProduct = await prisma.product.findUnique({
+      where: { id }
+    });
+
+    if (!existingProduct) {
+      return NextResponse.json({ 
+        error: 'Not Found',
+        message: 'Product not found' 
+      }, { status: 404 });
     }
 
     const product = await prisma.product.update({
       where: { id },
       data: {
         name,
-        description,
-        price,
-        sector: {
-          connect: { id: sectorId },
-        },
+        description: description || null,
       },
     });
 
     return NextResponse.json(product);
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
+    console.error('Error updating product:', error);
+    return NextResponse.json({ 
+      error: 'Internal Server Error',
+      message: 'Failed to update product' 
+    }, { status: 500 });
   }
 }
 
-async function deleteProduct(req: any, { params }: { params: { id: string } }) {
+async function deleteProduct(req: AuthenticatedRequest, { params }: { params: { id: string } }) {
   try {
+    // Check if user has ADMIN role
+    const roleError = requireRole(['ADMIN'])(req.user!);
+    if (roleError) return roleError;
+
     const { id } = params;
+
+    // Check if product exists
+    const existingProduct = await prisma.product.findUnique({
+      where: { id }
+    });
+
+    if (!existingProduct) {
+      return NextResponse.json({ 
+        error: 'Not Found',
+        message: 'Product not found' 
+      }, { status: 404 });
+    }
 
     await prisma.product.delete({
       where: { id },
     });
 
-    return NextResponse.json({ message: 'Product deleted successfully' });
+    return NextResponse.json({ 
+      message: 'Product deleted successfully' 
+    });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
+    console.error('Error deleting product:', error);
+    return NextResponse.json({ 
+      error: 'Internal Server Error',
+      message: 'Failed to delete product' 
+    }, { status: 500 });
   }
 }
 
-export const PUT = withAuth(updateProduct as any);
-export const DELETE = withAuth(deleteProduct as any);
+export const PUT = withAuth(updateProduct);
+export const DELETE = withAuth(deleteProduct);

@@ -3,8 +3,11 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit'
 export interface User {
   id: string
   email: string
+  username: string
   name: string
-  role: 'admin' | 'user' | 'manager'
+  role: 'ADMIN' | 'BSS' | 'INFOSEC' | 'AGENT' | 'SUPERVISOR'
+  status: 'PENDING' | 'ACTIVE' | 'INACTIVE'
+  sbu?: string
 }
 
 export interface AuthState {

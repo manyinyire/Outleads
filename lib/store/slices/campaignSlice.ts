@@ -31,57 +31,67 @@ export const createCampaign = createAsyncThunk(
   async (campaignData: {
     name: string
     companyName: string
-    description: string
   }) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    const campaignId = `camp_${Date.now()}`
-    const newCampaign: Campaign = {
-      id: campaignId,
-      ...campaignData,
-      url: `${window.location.origin}/?campaign=${campaignId}`,
-      isActive: true,
-      createdAt: new Date().toISOString(),
-      leadCount: 0,
-      conversionRate: 0,
+    const response = await fetch('/api/admin/campaigns', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify(campaignData),
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Failed to create campaign')
     }
-    
-    return newCampaign
+
+    const data = await response.json()
+    const campaign = data.campaign
+
+    // Transform API response to match frontend interface
+    return {
+      id: campaign.id,
+      name: campaign.name,
+      companyName: campaign.companyName,
+      description: '', // API doesn't have description field
+      url: `${window.location.origin}/?campaign=${campaign.uniqueLink}`,
+      isActive: true, // New campaigns are active by default
+      createdAt: campaign.createdAt,
+      leadCount: campaign._count?.leads || 0,
+      conversionRate: 0, // Calculate this based on leads data if needed
+    }
   }
 )
 
 export const fetchCampaigns = createAsyncThunk(
   'campaign/fetchCampaigns',
   async () => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // Mock data
-    return [
-      {
-        id: 'camp_1',
-        name: 'TechCorp Campaign',
-        companyName: 'TechCorp Solutions',
-        description: 'Lead generation campaign for technology sector',
-        url: `${window.location.origin}/?campaign=camp_1`,
-        isActive: true,
-        createdAt: '2024-01-10T09:00:00Z',
-        leadCount: 15,
-        conversionRate: 12.5,
-      },
-      {
-        id: 'camp_2',
-        name: 'HealthPlus Campaign',
-        companyName: 'HealthPlus Medical',
-        description: 'Healthcare sector financial services campaign',
-        url: `${window.location.origin}/?campaign=camp_2`,
-        isActive: true,
-        createdAt: '2024-01-08T11:30:00Z',
-        leadCount: 8,
-        conversionRate: 25.0,
-      },
-    ]
+    const response = await fetch('/api/admin/campaigns', {
+      method: 'GET',
+      credentials: 'include',
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Failed to fetch campaigns')
+    }
+
+    const data = await response.json()
+    const campaigns = data.campaigns || []
+
+    // Transform API response to match frontend interface
+    return campaigns.map((campaign: any) => ({
+      id: campaign.id,
+      name: campaign.name,
+      companyName: campaign.companyName,
+      description: '', // API doesn't have description field
+      url: `${window.location.origin}/?campaign=${campaign.uniqueLink}`,
+      isActive: true, // All campaigns are considered active for now
+      createdAt: campaign.createdAt,
+      leadCount: campaign._count?.leads || 0,
+      conversionRate: 0, // Calculate this based on leads data if needed
+    }))
   }
 )
 

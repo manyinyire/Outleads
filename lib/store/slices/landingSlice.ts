@@ -76,6 +76,9 @@ const landingSlice = createSlice({
     setProducts: (state, action: PayloadAction<Product[]>) => {
       state.products = action.payload;
     },
+    setSectors: (state, action: PayloadAction<BusinessSector[]>) => {
+      state.businessSectors = action.payload;
+    },
     setSelectedCategory: (state, action: PayloadAction<string>) => {
       state.selectedCategory = action.payload
       saveToLocalStorage(state)
@@ -96,5 +99,5 @@ const landingSlice = createSlice({
   },
 })
 
-export const { setProducts, setSelectedCategory, setSelectedProducts, toggleProductSelection } = landingSlice.actions
+export const { setProducts, setSectors, setSelectedCategory, setSelectedProducts, toggleProductSelection } = landingSlice.actions
 export default landingSlice.reducer

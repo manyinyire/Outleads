@@ -7,29 +7,33 @@ import { isValidCampaignLink } from '@/lib/auth-utils';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    
+    // Extract data from request body (campaignId can come from body or query params)
+    const { name, email, phone, company, productIds, campaignId: bodyCampaignId } = body;
     const url = new URL(request.url);
-    const campaignId = url.searchParams.get('campaignId');
+    const queryCampaignId = url.searchParams.get('campaignId');
+    const campaignId = bodyCampaignId || queryCampaignId;
 
-    // Validate request data
-    const validation = validateData(createLeadSchema, body);
-    if (!validation.success) {
+    // Basic validation
+    if (!name || !phone || !company || !productIds || !Array.isArray(productIds)) {
       return NextResponse.json({
         error: 'Validation Error',
-        message: validation.error
+        message: 'Missing required fields: name, phone, company, and productIds'
       }, { status: 400 });
     }
 
-    const { fullName, phoneNumber, sectorId, productIds } = validation.data;
+    const fullName = name;
+    const phoneNumber = phone;
 
-    // Validate sector exists
-    const sector = await prisma.sector.findUnique({
-      where: { id: sectorId }
+    // Find sector by name (company field contains sector name)
+    const sector = await prisma.sector.findFirst({
+      where: { name: company }
     });
 
     if (!sector) {
       return NextResponse.json({
         error: 'Validation Error',
-        message: 'Invalid sector ID'
+        message: 'Invalid business sector'
       }, { status: 400 });
     }
 
@@ -78,7 +82,7 @@ export async function POST(request: Request) {
       data: {
         fullName,
         phoneNumber,
-        sectorId,
+        sectorId: sector.id,
         campaignId: validCampaignId || undefined,
         products: {
           connect: productIds.map((id: string) => ({ id }))

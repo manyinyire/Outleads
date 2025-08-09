@@ -15,6 +15,8 @@ import {
   BulbOutlined,
   FileTextOutlined,
   BankOutlined,
+  ShoppingOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons'
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState, AppDispatch } from '@/lib/store'
@@ -61,7 +63,17 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       icon: <BarChartOutlined />,
       label: 'Reports',
     },
-    ...(user?.role === 'admin' ? [
+    ...(user?.role === 'ADMIN' ? [
+      {
+        key: '/admin/products',
+        icon: <ShoppingOutlined />,
+        label: 'Products',
+      },
+      {
+        key: '/admin/sectors',
+        icon: <AppstoreOutlined />,
+        label: 'Sectors',
+      },
       {
         key: '/admin/users',
         icon: <TeamOutlined />,
