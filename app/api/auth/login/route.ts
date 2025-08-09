@@ -17,7 +17,7 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
-    const { email: username, password } = validation.data;
+    const { username, password } = validation.data;
 
     // Call external HRMS service for authentication
     try {

@@ -61,7 +61,7 @@ export default function AdminDashboard() {
           <Card loading={loading}>
             <Statistic
               title="Total Leads"
-              value={leads.length}
+              value={Array.isArray(leads) ? leads.length : 0}
               prefix={<UserOutlined />}
               valueStyle={{ color: '#3f8600' }}
             />
@@ -71,7 +71,7 @@ export default function AdminDashboard() {
           <Card loading={loading}>
             <Statistic
               title="Active Campaigns"
-              value={campaigns.length}
+              value={Array.isArray(campaigns) ? campaigns.length : 0}
               prefix={<BulbOutlined />}
               valueStyle={{ color: '#1890ff' }}
             />
@@ -108,7 +108,7 @@ export default function AdminDashboard() {
       >
         <Table
           columns={columns}
-          dataSource={leads}
+          dataSource={Array.isArray(leads) ? leads : []}
           pagination={false}
           size="small"
           rowKey="id"

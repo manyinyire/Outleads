@@ -90,9 +90,11 @@ async function main() {
       update: {},
       create: {
         email: 'admin@nexus.com',
+        username: 'admin_nexus',
         password: adminPassword,
         name: 'Admin User',
-        role: 'ADMIN' as const
+        role: 'ADMIN' as const,
+        status: 'ACTIVE' as const
       }
     });
 
@@ -105,9 +107,11 @@ async function main() {
       update: {},
       create: {
         email: 'agent@nexus.com',
+        username: 'agent_nexus',
         password: agentPassword,
         name: 'Agent User',
-        role: 'AGENT' as const
+        role: 'AGENT' as const,
+        status: 'ACTIVE' as const
       }
     });
 

@@ -31,7 +31,7 @@ export default function LoginPage() {
     }
   }, [error, dispatch])
 
-  const handleSubmit = async (values: { email: string; password: string }) => {
+  const handleSubmit = async (values: { username: string; password: string }) => {
     dispatch(login(values))
   }
 
@@ -61,16 +61,15 @@ export default function LoginPage() {
             requiredMark={false}
           >
             <Form.Item
-              name="email"
-              label="Email"
+              name="username"
+              label="Username"
               rules={[
-                { required: true, message: 'Please enter your email' },
-                { type: 'email', message: 'Please enter a valid email' }
+                { required: true, message: 'Please enter your username' }
               ]}
             >
               <Input
                 prefix={<UserOutlined />}
-                placeholder="Enter your email"
+                placeholder="Enter your username"
                 size="large"
               />
             </Form.Item>

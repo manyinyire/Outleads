@@ -45,28 +45,22 @@ const initialState: AuthState = loadInitialState()
 
 export const login = createAsyncThunk(
   'auth/login',
-  async (credentials: { email: string; password: string }) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
+  async (credentials: { username: string; password: string }) => {
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(credentials),
+    })
     
-    // Mock authentication - replace with real API
-    if (credentials.email === 'admin@nexus.com' && credentials.password === 'admin123') {
-      return {
-        id: '1',
-        email: 'admin@nexus.com',
-        name: 'Admin User',
-        role: 'admin' as const
-      }
-    } else if (credentials.email === 'user@nexus.com' && credentials.password === 'user123') {
-      return {
-        id: '2',
-        email: 'user@nexus.com',
-        name: 'Regular User',
-        role: 'user' as const
-      }
-    } else {
-      throw new Error('Invalid credentials')
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Login failed')
     }
+    
+    const data = await response.json()
+    return data.user
   }
 )
 
