@@ -1,88 +1,100 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-generator client {
-  provider = "prisma-client-js"
-}
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// User who can access the admin dashboard
+generator client {
+  provider = "prisma-client-js"
+}
+
+// SBU model for business units
+model Sbu {
+  id       String       @id @default(cuid())
+  name     String       @unique
+  users    User[]
+  products SbuProduct[]
+}
+
+// User model update
 model User {
-  id        String     @id @default(cuid())
-  email     String     @unique
-  username  String     @unique // To store the HRMS id_ field
-  password  String?    // Optional as we use external auth
+  id        String    @id @default(cuid())
+  email     String    @unique
+  username  String    @unique
   name      String
-  sbu       String?    // SBU selected during onboarding
-  role      Role       @default(AGENT)
-  status    Status     @default(PENDING)
-  campaigns Campaign[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  role      Role
+  status    Status    @default(PENDING)
+  sbuId     String?
+  sbu       Sbu?      @relation(fields: [sbuId], references: [id])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   lastLogin DateTime?
-
-  @@map("users")
+  campaigns Campaign[]
 }
 
-// Campaign for a specific company or use case
-model Campaign {
-  id          String   @id @default(cuid())
-  name        String
-  companyName String
-  uniqueLink  String   @unique
+// Product model with sub-products
+model Product {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  description String?
+  subProducts SubProduct[]
+  sbus        SbuProduct[]
   leads       Lead[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  createdBy   User     @relation(fields: [createdById], references: [id])
-  createdById String
-
-  @@map("campaigns")
 }
 
-// A captured lead from a client
+// Linking table for SBU and Product relationship
+model SbuProduct {
+  sbu       Sbu     @relation(fields: [sbuId], references: [id])
+  sbuId     String
+  product   Product @relation(fields: [productId], references: [id])
+  productId String
+
+  @@id([sbuId, productId])
+}
+
+// SubProduct model
+model SubProduct {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  productId   String
+  product     Product @relation(fields: [productId], references: [id])
+}
+
+model Sector {
+  id    String @id @default(cuid())
+  name  String @unique
+  leads Lead[]
+}
+
 model Lead {
   id             String    @id @default(cuid())
   fullName       String
+  email          String?
   phoneNumber    String
-  businessSector Sector    @relation(fields: [sectorId], references: [id])
   sectorId       String
-  products       Product[] @relation("LeadProducts")
-  campaign       Campaign? @relation(fields: [campaignId], references: [id])
+  businessSector Sector    @relation(fields: [sectorId], references: [id])
   campaignId     String?
+  campaign       Campaign? @relation(fields: [campaignId], references: [id])
+  products       Product[]
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
-  @@map("leads")
 }
 
-// A list of available products
-model Product {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  leads       Lead[]   @relation("LeadProducts")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@map("products")
+model Campaign {
+  id           String   @id @default(cuid())
+  name         String
+  companyName  String?
+  description  String?
+  uniqueLink   String   @unique
+  startDate    DateTime?
+  endDate      DateTime?
+  budget       Float?
+  leads        Lead[]
+  createdAt    DateTime @default(now())
+  createdBy    User     @relation(fields: [createdById], references: [id])
+  createdById  String
 }
 
-// Business sectors for the dropdown
-model Sector {
-  id        String   @id @default(cuid())
-  name      String
-  leads     Lead[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("sectors")
-}
-
-// User roles for authorization
+// Roles enum (unchanged)
 enum Role {
   ADMIN
   BSS
@@ -91,9 +103,10 @@ enum Role {
   SUPERVISOR
 }
 
-// User status for account management
+// Status enum (unchanged)
 enum Status {
   PENDING
   ACTIVE
   INACTIVE
 }
+

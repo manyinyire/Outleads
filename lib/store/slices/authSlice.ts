@@ -63,7 +63,7 @@ export const login = createAsyncThunk(
     }
     
     const data = await response.json()
-    return data.user
+    return data
   }
 )
 
@@ -93,18 +93,19 @@ const authSlice = createSlice({
       })
       .addCase(login.fulfilled, (state, action) => {
         state.loading = false
-        state.user = action.payload
+        state.user = action.payload.user
         state.isAuthenticated = true
         
         // Save to localStorage
         if (typeof window !== 'undefined') {
           localStorage.setItem('nexus-auth', JSON.stringify({
-            user: action.payload,
+            user: action.payload.user,
             isAuthenticated: true
           }))
         }
       })
       .addCase(login.rejected, (state, action) => {
+        console.error('Login rejected:', action.error);
         state.loading = false
         state.error = action.error.message || 'Login failed'
       })

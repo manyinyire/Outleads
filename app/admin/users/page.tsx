@@ -1,110 +1,121 @@
 'use client'
 
-import { Table, Card, Typography, Tag, Button, Space } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
+import { useState } from 'react'
+import { Input, Button, Table, Modal, Form, Select, message, Card, Typography } from 'antd'
+import { UserOutlined } from '@ant-design/icons'
 
 const { Title } = Typography
+const { Option } = Select
 
 export default function UsersPage() {
-  const users = [
-    {
-      key: '1',
-      name: 'Admin User',
-      email: 'admin@nexus.com',
-      role: 'admin',
-      status: 'active',
-      lastLogin: '2024-01-15',
-    },
-    {
-      key: '2',
-      name: 'John Manager',
-      email: 'john@nexus.com',
-      role: 'manager',
-      status: 'active',
-      lastLogin: '2024-01-14',
-    },
-    {
-      key: '3',
-      name: 'Sarah Agent',
-      email: 'sarah@nexus.com',
-      role: 'user',
-      status: 'active',
-      lastLogin: '2024-01-13',
-    },
-  ]
+  const [loading, setLoading] = useState(false)
+  const [users, setUsers] = useState([])
+  const [isModalVisible, setIsModalVisible] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<any>(null)
+  const [form] = Form.useForm()
+
+  const handleSearch = async (username: string) => {
+    if (!username) return
+    setLoading(true)
+    try {
+      const response = await fetch(`/api/admin/users/search?username=${username}`)
+      if (response.ok) {
+        const data = await response.json()
+        setUsers(data)
+      } else {
+        message.error('Failed to search for users')
+      }
+    } catch (error) {
+      message.error('An error occurred while searching for users')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleAddUser = (user: any) => {
+    setSelectedUser(user)
+    setIsModalVisible(true)
+  }
+
+  const handleModalOk = async (values: { role: string }) => {
+    if (!selectedUser) return
+
+    try {
+      const response = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ...selectedUser, role: values.role }),
+        credentials: 'include',
+      })
+
+      if (response.ok) {
+        message.success('User added successfully')
+        setIsModalVisible(false)
+        form.resetFields()
+      } else {
+        const error = await response.json()
+        message.error(error.message || 'Failed to add user')
+      }
+    } catch (error) {
+      message.error('An unexpected error occurred')
+    }
+  }
 
   const columns = [
+    { title: 'First Name', dataIndex: 'first_name', key: 'first_name' },
+    { title: 'Last Name', dataIndex: 'last_name', key: 'last_name' },
+    { title: 'Email', dataIndex: 'email', key: 'email' },
+    { title: 'Department', dataIndex: 'department', key: 'department' },
     {
-      title: 'Name',
-      dataIndex: 'name',
-      key: 'name',
-    },
-    {
-      title: 'Email',
-      dataIndex: 'email',
-      key: 'email',
-    },
-    {
-      title: 'Role',
-      dataIndex: 'role',
-      key: 'role',
-      render: (role: string) => {
-        const colors = {
-          admin: 'red',
-          manager: 'blue',
-          user: 'green',
-        }
-        return <Tag color={colors[role as keyof typeof colors]}>{role.toUpperCase()}</Tag>
-      },
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status: string) => (
-        <Tag color={status === 'active' ? 'green' : 'red'}>
-          {status.toUpperCase()}
-        </Tag>
-      ),
-    },
-    {
-      title: 'Last Login',
-      dataIndex: 'lastLogin',
-      key: 'lastLogin',
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: () => (
-        <Space>
-          <Button type="text" icon={<EditOutlined />} size="small" />
-          <Button type="text" icon={<DeleteOutlined />} size="small" danger />
-        </Space>
+      title: 'Action',
+      key: 'action',
+      render: (_: any, record: any) => (
+        <Button type="primary" onClick={() => handleAddUser(record)}>
+          Add User
+        </Button>
       ),
     },
   ]
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <Title level={2}>User Management</Title>
-        <Button type="primary" icon={<PlusOutlined />}>
-          Add User
-        </Button>
-      </div>
+    <Card>
+      <Title level={2}>User Management</Title>
+      <Input.Search
+        placeholder="Search for a user by username"
+        enterButton="Search"
+        size="large"
+        onSearch={handleSearch}
+        loading={loading}
+        prefix={<UserOutlined />}
+      />
+      <Table columns={columns} dataSource={users} rowKey="username" style={{ marginTop: '20px' }} />
 
-      <Card>
-        <Table
-          columns={columns}
-          dataSource={users}
-          rowKey="key"
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-          }}
-        />
-      </Card>
-    </div>
+      <Modal
+        title="Add User"
+        open={isModalVisible}
+        onCancel={() => setIsModalVisible(false)}
+        onOk={() => form.submit()}
+      >
+        {selectedUser && (
+          <div>
+            <p><strong>First Name:</strong> {selectedUser.first_name}</p>
+            <p><strong>Last Name:</strong> {selectedUser.last_name}</p>
+            <p><strong>Email:</strong> {selectedUser.email}</p>
+            <p><strong>Department:</strong> {selectedUser.department}</p>
+            <Form form={form} onFinish={handleModalOk} layout="vertical">
+              <Form.Item name="role" label="Role" rules={[{ required: true, message: 'Please select a role' }]}>
+                <Select placeholder="Select a role">
+                  <Option value="BSS">BSS</Option>
+                  <Option value="ADMIN">Admin</Option>
+                  <Option value="INFOSEC">InfoSec</Option>
+                </Select>
+              </Form.Item>
+            </Form>
+          </div>
+        )}
+      </Modal>
+    </Card>
   )
 }

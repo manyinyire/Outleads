@@ -3,12 +3,18 @@ import { prisma } from '@/lib/prisma';
 import { withAuth, AuthenticatedRequest } from '@/lib/auth';
 import { z } from 'zod';
 
-const onboardingSchema = z.object({
-  sbu: z.string().min(1, 'SBU is required'),
-  role: z.enum(['ADMIN', 'BSS', 'INFOSEC', 'AGENT', 'SUPERVISOR'], {
-    errorMap: () => ({ message: 'Please select a valid role' })
+const onboardingSchema = z
+  .object({
+    sbuId: z.string().optional(),
+    sbuName: z.string().optional(),
+    role: z.enum(['ADMIN', 'BSS', 'INFOSEC', 'AGENT', 'SUPERVISOR'], {
+      errorMap: () => ({ message: 'Please select a valid role' })
+    })
   })
-});
+  .refine((data) => !!data.sbuId || !!data.sbuName, {
+    message: 'SBU is required',
+    path: ['sbuId']
+  });
 
 // POST /api/auth/onboarding - Complete user onboarding
 export const POST = withAuth(async (req: AuthenticatedRequest) => {
@@ -24,14 +30,32 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
       }, { status: 400 });
     }
 
-    const { sbu, role } = validation.data;
+    const { sbuId, sbuName, role } = validation.data as any;
     const userId = req.user!.id;
 
+    // Resolve SBU by id or name
+    let resolvedSbuId = sbuId as string | undefined;
+    if (!resolvedSbuId && sbuName) {
+      const prismaAny = prisma as any; // Workaround for Prisma typing mismatch on Windows
+      const sbuRecord = (await prismaAny.sbu.findUnique({
+        where: { name: sbuName },
+        select: { id: true, name: true }
+      })) as any;
+      if (!sbuRecord) {
+        return NextResponse.json({
+          error: 'Validation Error',
+          message: 'Selected SBU not found'
+        }, { status: 400 });
+      }
+      resolvedSbuId = sbuRecord.id;
+    }
+
     // Update user with onboarding information
-    const updatedUser = await prisma.user.update({
+    const updatedUser = await (prisma as any).user.update({
       where: { id: userId },
       data: {
-        sbu,
+        // Use direct foreign key update to avoid Prisma nested typing issues
+        sbuId: resolvedSbuId,
         role: role as any, // Type assertion for enum
         status: 'PENDING' // User needs activation by BSS
       },

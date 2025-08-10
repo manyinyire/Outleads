@@ -41,16 +41,18 @@ export async function authenticateToken(req: AuthenticatedRequest): Promise<Next
 
     const decoded = jwt.verify(token, jwtSecret) as any;
     
-    // Fetch user from database to ensure they still exist and get current status
-    const user = await prisma.user.findUnique({
+    // Fetch user to ensure they still exist and get current status and SBU
+    const user = (await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: {
         id: true,
         email: true,
         name: true,
-        role: true
+        role: true,
+        status: true,
+        sbu: true
       }
-    }) as any;
+    })) as any;
 
     if (!user) {
       return NextResponse.json({
@@ -59,12 +61,16 @@ export async function authenticateToken(req: AuthenticatedRequest): Promise<Next
       }, { status: 401 });
     }
 
-    // Check if user account is active
+    // Check if user account is active, but allow onboarding/verify paths for PENDING users
+    const pathname = (req as any).nextUrl?.pathname || '';
+    const allowedPendingPaths = ['/api/auth/onboarding', '/api/auth/verify'];
     if (user?.status && user.status !== 'ACTIVE') {
-      return NextResponse.json({
-        error: 'Account Status Error',
-        message: 'Your account is not active. Please contact an administrator.'
-      }, { status: 403 });
+      if (!allowedPendingPaths.includes(pathname)) {
+        return NextResponse.json({
+          error: 'Account Status Error',
+          message: 'Your account is not active. Please contact an administrator.'
+        }, { status: 403 });
+      }
     }
 
     req.user = user;

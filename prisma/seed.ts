@@ -1,129 +1,134 @@
 import { PrismaClient } from '@prisma/client';
-import { hashPassword } from '../lib/auth-utils';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting database seed...');
+  console.log('Start seeding ...');
 
-  try {
-    // Create default sectors
-    const sectors = [
-      { name: 'Technology' },
-      { name: 'Healthcare' },
-      { name: 'Finance' },
-      { name: 'Education' },
-      { name: 'Retail' },
-      { name: 'Manufacturing' },
-      { name: 'Real Estate' },
-      { name: 'Hospitality' },
-      { name: 'Transportation' },
-      { name: 'Other' }
-    ];
+  // Create SBUs
+  const insuranceSbu = await prisma.sbu.upsert({
+    where: { name: 'Insurance' },
+    update: {},
+    create: { name: 'Insurance' },
+  });
 
-    console.log('Creating sectors...');
-    for (const sector of sectors) {
-      await prisma.sector.upsert({
-        where: { id: `sector-${sector.name.toLowerCase().replace(/\s+/g, '-')}` },
-        update: {},
-        create: {
-          id: `sector-${sector.name.toLowerCase().replace(/\s+/g, '-')}`,
-          ...sector
-        }
-      });
-    }
+  const microfinanceSbu = await prisma.sbu.upsert({
+    where: { name: 'Microfinance' },
+    update: {},
+    create: { name: 'Microfinance' },
+  });
 
-    // Create default products
-    const products = [
-      {
-        name: 'Business Loan',
-        description: 'Flexible business loans for growth and expansion'
+  const bankSbu = await prisma.sbu.upsert({
+    where: { name: 'Bank' },
+    update: {},
+    create: { name: 'Bank' },
+  });
+
+  const crownBankSbu = await prisma.sbu.upsert({
+    where: { name: 'Crown Bank' },
+    update: {},
+    create: { name: 'Crown Bank' },
+  });
+
+  console.log('SBUs created.');
+
+  // Create Products and SubProducts
+  const motorInsurance = await prisma.product.upsert({
+    where: { name: 'Motor Insurance' },
+    update: {},
+    create: {
+      name: 'Motor Insurance',
+      description: 'Insurance for motor vehicles.',
+      subProducts: {
+        create: [
+          { name: 'Comprehensive' },
+          { name: 'Third Party' },
+          { name: 'Passenger Insurance' },
+        ],
       },
-      {
-        name: 'Equipment Financing',
-        description: 'Financing solutions for business equipment and machinery'
-      },
-      {
-        name: 'Working Capital',
-        description: 'Short-term financing for operational expenses'
-      },
-      {
-        name: 'Commercial Real Estate',
-        description: 'Loans for commercial property purchases and refinancing'
-      },
-      {
-        name: 'Invoice Factoring',
-        description: 'Convert outstanding invoices into immediate cash flow'
-      },
-      {
-        name: 'Merchant Cash Advance',
-        description: 'Quick funding based on future credit card sales'
-      },
-      {
-        name: 'SBA Loans',
-        description: 'Government-backed loans with favorable terms'
-      },
-      {
-        name: 'Line of Credit',
-        description: 'Flexible credit line for ongoing business needs'
-      }
-    ];
+    },
+  });
 
-    console.log('Creating products...');
-    for (const product of products) {
-      await prisma.product.upsert({
-        where: { id: `product-${product.name.toLowerCase().replace(/\s+/g, '-')}` },
-        update: {},
-        create: {
-          id: `product-${product.name.toLowerCase().replace(/\s+/g, '-')}`,
-          ...product
-        }
-      });
-    }
+  const microInsurance = await prisma.product.upsert({
+    where: { name: 'Micro Insurance' },
+    update: {},
+    create: {
+      name: 'Micro Insurance',
+      description: 'Insurance for low-income individuals.',
+      subProducts: {
+        create: [
+          { name: 'Funeral Cover' },
+          { name: 'Health Cash Plan' },
+        ],
+      },
+    },
+  });
 
-    // Create default admin user
-    const adminPassword = await hashPassword('admin123!');
-    
-    console.log('Creating default admin user...');
-    await prisma.user.upsert({
-      where: { email: 'admin@nexus.com' },
-      update: {},
-      create: {
-        email: 'admin@nexus.com',
-        username: 'admin_nexus',
-        password: adminPassword,
-        name: 'Admin User',
-        role: 'ADMIN' as const,
-        status: 'ACTIVE' as const
-      }
-    });
+  const businessAndAgric = await prisma.product.upsert({
+    where: { name: 'Business & Agriculture' },
+    update: {},
+    create: {
+      name: 'Business & Agriculture',
+      description: 'Insurance for businesses and agricultural activities.',
+      subProducts: {
+        create: [
+          { name: 'Assets All Risks' },
+          { name: 'Crop & Livestock' },
+        ],
+      },
+    },
+  });
 
-    // Create default agent user
-    const agentPassword = await hashPassword('agent123!');
-    
-    console.log('Creating default agent user...');
-    await prisma.user.upsert({
-      where: { email: 'agent@nexus.com' },
-      update: {},
-      create: {
-        email: 'agent@nexus.com',
-        username: 'agent_nexus',
-        password: agentPassword,
-        name: 'Agent User',
-        role: 'AGENT' as const,
-        status: 'ACTIVE' as const
-      }
-    });
+  const bankAccounts = await prisma.product.upsert({
+    where: { name: 'Bank Accounts' },
+    update: {},
+    create: {
+      name: 'Bank Accounts',
+      description: 'Various types of bank accounts.',
+      subProducts: {
+        create: [
+          { name: 'Current Account' },
+          { name: 'Savings Account' },
+        ],
+      },
+    },
+  });
 
-    console.log('✅ Database seeded successfully!');
-    console.log('\n📋 Default Users Created:');
-    console.log('Admin: admin@nexus.com / admin123!');
-    console.log('Agent: agent@nexus.com / agent123!');
+  const creditCards = await prisma.product.upsert({
+    where: { name: 'Credit Cards' },
+    update: {},
+    create: {
+      name: 'Credit Cards',
+      description: 'Credit card services.',
+      subProducts: {
+        create: [
+          { name: 'Platinum Card' },
+          { name: 'Gold Card' },
+        ],
+      },
+    },
+  });
 
-  } catch (error) {
-    console.error('❌ Error seeding database:', error);
-    throw error;
-  }
+  console.log('Products and SubProducts created.');
+
+  // Link SBUs to Products
+  await prisma.sbuProduct.createMany({
+    data: [
+      // Insurance SBU
+      { sbuId: insuranceSbu.id, productId: motorInsurance.id },
+      { sbuId: insuranceSbu.id, productId: microInsurance.id },
+      { sbuId: insuranceSbu.id, productId: businessAndAgric.id },
+
+      // Bank SBU
+      { sbuId: bankSbu.id, productId: bankAccounts.id },
+      { sbuId: bankSbu.id, productId: creditCards.id },
+    ],
+    skipDuplicates: true,
+  });
+
+  console.log('SBU-Product links created.');
+
+  console.log('Seeding finished.');
 }
 
 main()
