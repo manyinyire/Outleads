@@ -100,13 +100,7 @@ export default function LoginPage() {
             </Form.Item>
           </Form>
 
-          <div style={{ textAlign: 'center', marginTop: '24px' }}>
-            <Text type="secondary" style={{ fontSize: '12px' }}>
-              Demo credentials:<br />
-              Admin: admin@nexus.com / admin123<br />
-              User: user@nexus.com / user123
-            </Text>
-          </div>
+
         </Card>
       </Content>
     </Layout>
