@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Table, Button, Modal, Form, Input, message, Popconfirm, Space, Typography } from 'antd'
+import { Table, Button, Modal, Form, Input, message, Popconfirm, Space, Typography, Select } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/lib/store'
 
 const { Title } = Typography
 const { TextArea } = Input
+const { Option } = Select
 
 interface Product {
   id: string
@@ -15,6 +16,9 @@ interface Product {
   description?: string
   createdAt: string
   updatedAt: string
+  parentId?: string | null
+  parent?: Product | null
+  subProducts?: Product[]
 }
 
 export default function ProductsPage() {
@@ -25,16 +29,6 @@ export default function ProductsPage() {
   const [form] = Form.useForm()
   
   const { user } = useSelector((state: RootState) => state.auth)
-
-  // Check if user has ADMIN role
-  if (user?.role !== 'ADMIN') {
-    return (
-      <div style={{ padding: 24, textAlign: 'center' }}>
-        <Title level={3}>Access Denied</Title>
-        <p>You don't have permission to access this page.</p>
-      </div>
-    )
-  }
 
   const fetchProducts = async () => {
     setLoading(true)
@@ -60,8 +54,19 @@ export default function ProductsPage() {
   }
 
   useEffect(() => {
-    fetchProducts()
-  }, [])
+    if (user?.role === 'ADMIN') {
+      fetchProducts()
+    }
+  }, [user])
+
+  if (user?.role !== 'ADMIN') {
+    return (
+      <div style={{ padding: 24, textAlign: 'center' }}>
+        <Title level={3}>Access Denied</Title>
+        <p>You don't have permission to access this page.</p>
+      </div>
+    )
+  }
 
   const handleCreate = () => {
     setEditingProduct(null)
@@ -73,7 +78,8 @@ export default function ProductsPage() {
     setEditingProduct(product)
     form.setFieldsValue({
       name: product.name,
-      description: product.description
+      description: product.description,
+      parentId: product.parentId,
     })
     setModalVisible(true)
   }
@@ -98,7 +104,7 @@ export default function ProductsPage() {
     }
   }
 
-  const handleSubmit = async (values: { name: string; description?: string }) => {
+  const handleSubmit = async (values: { name: string; description?: string; parentId?: string }) => {
     try {
       const url = editingProduct 
         ? `/api/admin/products/${editingProduct.id}`
@@ -112,7 +118,7 @@ export default function ProductsPage() {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify(values)
+        body: JSON.stringify({ ...values, parentId: values.parentId || null }),
       })
 
       if (response.ok) {
@@ -135,7 +141,6 @@ export default function ProductsPage() {
       title: 'Name',
       dataIndex: 'name',
       key: 'name',
-      sorter: (a: Product, b: Product) => a.name.localeCompare(b.name),
     },
     {
       title: 'Description',
@@ -144,11 +149,16 @@ export default function ProductsPage() {
       render: (text: string) => text || '-',
     },
     {
+      title: 'Parent Product',
+      dataIndex: ['parent', 'name'],
+      key: 'parent',
+      render: (parentName: string) => parentName || '-',
+    },
+    {
       title: 'Created At',
       dataIndex: 'createdAt',
       key: 'createdAt',
       render: (date: string) => new Date(date).toLocaleDateString(),
-      sorter: (a: Product, b: Product) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     },
     {
       title: 'Actions',
@@ -167,11 +177,13 @@ export default function ProductsPage() {
             onConfirm={() => handleDelete(record.id)}
             okText="Yes"
             cancelText="No"
+            disabled={record.subProducts && record.subProducts.length > 0}
           >
             <Button
               type="link"
               danger
               icon={<DeleteOutlined />}
+              disabled={record.subProducts && record.subProducts.length > 0}
             >
               Delete
             </Button>
@@ -180,6 +192,15 @@ export default function ProductsPage() {
       ),
     },
   ]
+
+  const parentProducts = products.filter(p => !p.parentId);
+
+  const processedData = products
+    .filter(p => !p.parentId)
+    .map(p => ({
+      ...p,
+      children: p.subProducts,
+    }));
 
   return (
     <div style={{ padding: 24 }}>
@@ -196,15 +217,10 @@ export default function ProductsPage() {
 
       <Table
         columns={columns}
-        dataSource={products}
+        dataSource={processedData}
         rowKey="id"
         loading={loading}
-        pagination={{
-          pageSize: 10,
-          showSizeChanger: true,
-          showQuickJumper: true,
-          showTotal: (total) => `Total ${total} products`,
-        }}
+        pagination={false} // Pagination can be tricky with tree data, disabling for now
       />
 
       <Modal
@@ -240,6 +256,22 @@ export default function ProductsPage() {
               rows={4}
               placeholder="Enter product description (optional)"
             />
+          </Form.Item>
+          
+          <Form.Item
+            name="parentId"
+            label="Parent Product (optional)"
+          >
+            <Select
+              placeholder="Select a parent product"
+              allowClear
+            >
+              {parentProducts
+                .filter(p => p.id !== editingProduct?.id) // Prevent self-parenting
+                .map(p => (
+                  <Option key={p.id} value={p.id}>{p.name}</Option>
+                ))}
+            </Select>
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>

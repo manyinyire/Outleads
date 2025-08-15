@@ -9,9 +9,13 @@ async function getProducts(req: AuthenticatedRequest) {
     if (roleError) return roleError;
 
     const products = await prisma.product.findMany({
+      include: {
+        parent: true,
+        subProducts: true,
+      },
       orderBy: {
-        name: 'asc'
-      }
+        name: 'asc',
+      },
     });
     
     return NextResponse.json(products);
@@ -30,7 +34,7 @@ async function createProduct(req: AuthenticatedRequest) {
     const roleError = requireRole(['ADMIN'])(req.user!);
     if (roleError) return roleError;
 
-    const { name, description } = await req.json();
+    const { name, description, parentId } = await req.json();
 
     if (!name) {
       return NextResponse.json({ 
@@ -43,6 +47,7 @@ async function createProduct(req: AuthenticatedRequest) {
       data: {
         name,
         description: description || null,
+        parentId: parentId || null,
       },
     });
 
