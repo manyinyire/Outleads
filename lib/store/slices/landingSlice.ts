@@ -21,36 +21,11 @@ export interface LandingState {
   error: string | null
 }
 
-// Load initial state from localStorage if available
-const loadInitialState = (): Partial<LandingState> => {
-  if (typeof window !== 'undefined') {
-    try {
-      const savedLanding = localStorage.getItem('nexus-landing')
-      if (savedLanding) {
-        const parsed = JSON.parse(savedLanding)
-        return {
-          selectedCategory: parsed.selectedCategory || 'finance',
-          selectedProducts: parsed.selectedProducts || [],
-        }
-      }
-    } catch (error) {
-      console.error('Error loading landing state from localStorage:', error)
-    }
-  }
-  
-  return {
-    selectedCategory: 'finance',
-    selectedProducts: [],
-  }
-}
-
-const savedState = loadInitialState()
-
 const initialState: LandingState = {
   products: [],
   businessSectors: [],
-  selectedCategory: savedState.selectedCategory || 'finance',
-  selectedProducts: savedState.selectedProducts || [],
+  selectedCategory: 'finance',
+  selectedProducts: [],
   loading: false,
   error: null,
 }
@@ -73,6 +48,25 @@ const landingSlice = createSlice({
   name: 'landing',
   initialState,
   reducers: {
+    hydrateFromLocalStorage: (state) => {
+      if (typeof window !== 'undefined') {
+        try {
+          const savedLanding = localStorage.getItem('nexus-landing')
+          if (savedLanding) {
+            const parsed = JSON.parse(savedLanding)
+            // Validate the structure before using it
+            if (parsed && typeof parsed === 'object') {
+              state.selectedCategory = parsed.selectedCategory || 'finance'
+              state.selectedProducts = Array.isArray(parsed.selectedProducts) ? parsed.selectedProducts : []
+            }
+          }
+        } catch (error) {
+          console.error('Error loading landing state from localStorage, clearing corrupted data:', error)
+          // Clear corrupted data
+          localStorage.removeItem('nexus-landing')
+        }
+      }
+    },
     setProducts: (state, action: PayloadAction<Product[]>) => {
       state.products = action.payload;
     },
@@ -99,5 +93,5 @@ const landingSlice = createSlice({
   },
 })
 
-export const { setProducts, setSectors, setSelectedCategory, setSelectedProducts, toggleProductSelection } = landingSlice.actions
+export const { hydrateFromLocalStorage, setProducts, setSectors, setSelectedCategory, setSelectedProducts, toggleProductSelection } = landingSlice.actions
 export default landingSlice.reducer

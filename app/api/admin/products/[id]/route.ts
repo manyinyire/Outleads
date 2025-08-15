@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, requireRole, AuthenticatedRequest } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 async function updateProduct(req: AuthenticatedRequest, { params }: { params: { id: string } }) {
   try {
     // Check if user has ADMIN role

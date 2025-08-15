@@ -11,7 +11,7 @@ const { Text } = Typography
 
 export default function ProductList() {
   const dispatch = useDispatch<AppDispatch>()
-  const { products, selectedProducts } = useSelector((state: RootState) => state.landing)
+  const { products, selectedProducts, selectedCategory } = useSelector((state: RootState) => state.landing)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -34,6 +34,9 @@ export default function ProductList() {
     dispatch(toggleProductSelection(productId))
   }
 
+  // Filter products by selected category
+  const filteredProducts = products.filter(product => product.category === selectedCategory)
+
   if (loading) {
     return (
       <List
@@ -50,7 +53,7 @@ export default function ProductList() {
 
   return (
     <List
-      dataSource={products}
+      dataSource={filteredProducts}
       rowKey="id"
       renderItem={(product) => (
         <List.Item

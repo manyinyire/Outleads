@@ -20,7 +20,7 @@ export async function authenticateToken(req: AuthenticatedRequest): Promise<Next
     // Try to get token from Authorization header first, then from cookie
     const authHeader = req.headers.get('authorization');
     let token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-    
+
     if (!token) {
       // Try to get token from cookie
       const cookieStore = cookies();
@@ -34,13 +34,30 @@ export async function authenticateToken(req: AuthenticatedRequest): Promise<Next
       }, { status: 401 });
     }
 
+    // Validate token format before attempting to verify
+    if (typeof token !== 'string' || token.trim() === '') {
+      return NextResponse.json({
+        error: 'Authentication Error',
+        message: 'Token format is invalid. Please log in again.'
+      }, { status: 403 });
+    }
+
+    // Basic JWT format check (should have 3 parts separated by dots)
+    const tokenParts = token.split('.');
+    if (tokenParts.length !== 3) {
+      return NextResponse.json({
+        error: 'Authentication Error',
+        message: 'Token format is invalid. Please log in again.'
+      }, { status: 403 });
+    }
+
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
       throw new Error('JWT_SECRET is not configured');
     }
 
     const decoded = jwt.verify(token, jwtSecret) as any;
-    
+
     // Fetch user to ensure they still exist and get current status and SBU
     const user = (await prisma.user.findUnique({
       where: { id: decoded.userId },
@@ -77,9 +94,35 @@ export async function authenticateToken(req: AuthenticatedRequest): Promise<Next
     return null; // No error, authentication successful
   } catch (error) {
     console.error('Authentication error:', error);
+
+    // Log the token for debugging (first 10 chars only for security)
+    const authHeader = req.headers.get('authorization');
+    const headerToken = authHeader && authHeader.split(' ')[1];
+    const cookieStore = cookies();
+    const cookieToken = cookieStore.get('auth-token')?.value;
+
+    console.error('Token debug info:', {
+      hasAuthHeader: !!authHeader,
+      headerTokenPreview: headerToken ? headerToken.substring(0, 10) + '...' : 'none',
+      hasCookieToken: !!cookieToken,
+      cookieTokenPreview: cookieToken ? cookieToken.substring(0, 10) + '...' : 'none'
+    });
+
+    // Provide more specific error messages
+    let message = 'Invalid or expired token';
+    if (error instanceof Error) {
+      if (error.message.includes('jwt malformed')) {
+        message = 'Token format is invalid. Please log in again.';
+      } else if (error.message.includes('jwt expired')) {
+        message = 'Token has expired. Please log in again.';
+      } else if (error.message.includes('invalid signature')) {
+        message = 'Token signature is invalid. Please log in again.';
+      }
+    }
+
     return NextResponse.json({
       error: 'Authentication Error',
-      message: 'Invalid or expired token'
+      message
     }, { status: 403 });
   }
 }
@@ -100,7 +143,7 @@ export function withAuth(handler: (req: AuthenticatedRequest, context?: any) => 
   return async (req: AuthenticatedRequest, context?: any) => {
     const authError = await authenticateToken(req);
     if (authError) return authError;
-    
+
     return handler(req, context);
   };
 }
@@ -110,10 +153,10 @@ export function withAuthAndRole(roles: string[], handler: (req: AuthenticatedReq
     const authReq = req as AuthenticatedRequest;
     const authError = await authenticateToken(authReq);
     if (authError) return authError;
-    
+
     const roleError = requireRole(roles)(authReq.user!);
     if (roleError) return roleError;
-    
+
     return handler(authReq);
   };
 }
@@ -124,7 +167,7 @@ export const ROLE_PERMISSIONS = {
     description: 'Full access to all system functionalities',
     permissions: [
       'manage_all_campaigns',
-      'manage_all_leads', 
+      'manage_all_leads',
       'manage_all_users',
       'manage_system_settings',
       'approve_users',

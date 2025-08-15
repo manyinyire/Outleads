@@ -36,6 +36,7 @@ model Product {
   id          String       @id @default(cuid())
   name        String       @unique
   description String?
+  category    String       @default("finance")
   subProducts SubProduct[]
   sbus        SbuProduct[]
   leads       Lead[]
@@ -77,6 +78,14 @@ model Lead {
   campaign       Campaign? @relation(fields: [campaignId], references: [id])
   products       Product[]
   createdAt      DateTime  @default(now())
+  status         LeadStatus @default(NEW)
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CONVERTED
 }
 
 model Campaign {

@@ -1,48 +1,64 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Table, Tag, Button, Space, Input, Select, Card, Typography } from 'antd'
+import { Table, Tag, Button, Space, Input, Select, Card, Typography, Alert } from 'antd'
 import { SearchOutlined, FilterOutlined } from '@ant-design/icons'
-import { useLocalStorage } from '@/hooks/useLocalStorage'
+import { useSelector } from 'react-redux'
+import { RootState } from '@/lib/store'
 
 const { Title } = Typography
 const { Option } = Select
 
 export default function LeadsPage() {
-  const [leads, setLeads] = useState([])
+  const [leads, setLeads] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchText, setSearchText] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
-  const [token] = useLocalStorage('token', null)
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth)
 
   useEffect(() => {
-    const fetchLeads = async () => {
+    const fetchLeads = async (status = '') => {
       try {
-        const response = await fetch('/api/admin/leads', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        setError(null)
+        // Don't send Authorization header - let the auth middleware handle the HTTP-only cookie
+        const url = status ? `/api/admin/leads?status=${status}` : '/api/admin/leads';
+        const response = await fetch(url, {
+          credentials: 'include', // Include cookies in the request
         })
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(errorData.message || `HTTP error! status: ${response.status}`)
+        }
+        
         const data = await response.json()
-        setLeads(data)
+        console.log('Fetched leads:', data) // Debug log
+        setLeads(Array.isArray(data) ? data : [])
       } catch (error) {
         console.error('Failed to fetch leads:', error)
+        setError(error instanceof Error ? error.message : 'Failed to fetch leads')
+        setLeads([])
       } finally {
         setLoading(false)
       }
     }
 
-    if (token) {
-      fetchLeads()
+    if (isAuthenticated) {
+      fetchLeads(statusFilter);
+    } else {
+      setLoading(false);
     }
-  }, [token])
+  }, [isAuthenticated, statusFilter]);
 
   const filteredLeads = leads.filter((lead: any) => {
-    const matchesSearch = lead.name.toLowerCase().includes(searchText.toLowerCase()) ||
-                         lead.phone.includes(searchText) ||
-                         lead.company.toLowerCase().includes(searchText.toLowerCase())
-    return matchesSearch
-  })
+    const searchTextLower = searchText.toLowerCase();
+    return (
+      lead.name.toLowerCase().includes(searchTextLower) ||
+      lead.phone.includes(searchText) ||
+      lead.company.toLowerCase().includes(searchTextLower)
+    );
+  });
 
   const columns = [
     {
@@ -50,6 +66,19 @@ export default function LeadsPage() {
       dataIndex: 'name',
       key: 'name',
       sorter: (a: any, b: any) => a.name.localeCompare(b.name),
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string) => {
+        let color = 'default';
+        if (status === 'NEW') color = 'blue';
+        if (status === 'CONTACTED') color = 'orange';
+        if (status === 'QUALIFIED') color = 'purple';
+        if (status === 'CONVERTED') color = 'green';
+        return <Tag color={color}>{status}</Tag>;
+      },
     },
     {
       title: 'Email',
@@ -109,6 +138,16 @@ export default function LeadsPage() {
         Lead Management
       </Title>
 
+      {error && (
+        <Alert
+          message="Error Loading Leads"
+          description={error}
+          type="error"
+          showIcon
+          style={{ marginBottom: '24px' }}
+        />
+      )}
+
       <Card style={{ marginBottom: '24px' }}>
         <Space style={{ marginBottom: '16px' }}>
           <Input
@@ -125,11 +164,44 @@ export default function LeadsPage() {
             onChange={setStatusFilter}
             allowClear
           >
-            <Option value="new">New</Option>
-            <Option value="contacted">Contacted</Option>
-            <Option value="qualified">Qualified</Option>
-            <Option value="converted">Converted</Option>
+            <Option value="NEW">New</Option>
+            <Option value="CONTACTED">Contacted</Option>
+            <Option value="QUALIFIED">Qualified</Option>
+            <Option value="CONVERTED">Converted</Option>
           </Select>
+          <Button 
+            onClick={() => window.location.reload()} 
+            loading={loading}
+          >
+            Refresh
+          </Button>
+          <Button 
+            onClick={async () => {
+              setLoading(true);
+              try {
+                const url = statusFilter ? `/api/admin/leads?status=${statusFilter}` : '/api/admin/leads';
+                const response = await fetch(url, {
+                  credentials: 'include',
+                });
+                const data = await response.json();
+                console.log('Manual fetch result:', { status: response.status, data });
+                if (response.ok) {
+                  setLeads(Array.isArray(data) ? data : []);
+                  setError(null);
+                } else {
+                  setError(data.message || 'Failed to fetch leads');
+                }
+              } catch (err) {
+                console.error('Manual fetch error:', err);
+                setError(err instanceof Error ? err.message : 'Network error');
+              } finally {
+                setLoading(false);
+              }
+            }}
+            loading={loading}
+          >
+            Manual Fetch
+          </Button>
         </Space>
 
         <Table

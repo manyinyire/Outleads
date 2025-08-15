@@ -1,9 +1,4 @@
-'use client'
-
-import { ConfigProvider } from 'antd'
-import { Provider } from 'react-redux'
-import { store } from '@/lib/store'
-import { theme } from '@/lib/theme'
+import { Providers } from '@/components/providers'
 import './globals.css'
 
 export default function RootLayout({
@@ -14,11 +9,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Provider store={store}>
-          <ConfigProvider theme={theme}>
-            {children}
-          </ConfigProvider>
-        </Provider>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   )

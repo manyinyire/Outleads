@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+
 // GET /api/admin/users/export - Export users to CSV (Admin, BSS, InfoSec only)
 export const GET = withAuthAndRole(['ADMIN', 'BSS', 'INFOSEC'], async (req: AuthenticatedRequest) => {
   try {

@@ -1,12 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useSearchParams } from 'next/navigation'
 import { Layout, Row, Col, Tabs, Card, Typography, Descriptions, Drawer, Button } from 'antd'
 import { MenuOutlined } from '@ant-design/icons'
 import { RootState, AppDispatch } from '@/lib/store'
 import { setSelectedCategory } from '@/lib/store/slices/landingSlice'
+import { useIsMobile } from '@/hooks/use-mobile'
 import ProductList from '@/components/landing/ProductList'
 import LeadForm from '@/components/landing/LeadForm'
 
@@ -20,10 +21,11 @@ const categoryGradients = {
   banking: 'gradient-bg-banking',
 }
 
-export default function HomePage() {
+function HomePageContent() {
   const dispatch = useDispatch<AppDispatch>()
   const searchParams = useSearchParams()
   const [drawerVisible, setDrawerVisible] = useState(false)
+  const isMobile = useIsMobile()
   
   const { products, selectedCategory, loading } = useSelector((state: RootState) => state.landing)
   
@@ -76,7 +78,7 @@ export default function HomePage() {
             />
 
             {/* Mobile Product Details Button */}
-            <div style={{ display: 'block' }} className="md:hidden">
+            {isMobile && (
               <div style={{ marginTop: '24px' }}>
                 <Button
                   type="primary"
@@ -88,7 +90,7 @@ export default function HomePage() {
                   View {selectedCategoryInfo?.label} Details
                 </Button>
               </div>
-            </div>
+            )}
 
             {/* Lead Form */}
             <div style={{ marginTop: '32px' }}>
@@ -97,7 +99,8 @@ export default function HomePage() {
           </Col>
 
           {/* Right Panel - Product Details (Desktop) */}
-          <Col xs={0} md={12}>
+          {!isMobile && (
+            <Col xs={0} md={12}>
             <div 
               className={categoryGradients[selectedCategory as keyof typeof categoryGradients]}
               style={{ 
@@ -146,7 +149,8 @@ export default function HomePage() {
                 </Descriptions>
               </Card>
             </div>
-          </Col>
+            </Col>
+          )}
         </Row>
 
         {/* Mobile Drawer for Product Details */}
@@ -186,5 +190,13 @@ export default function HomePage() {
         </Drawer>
       </Content>
     </Layout>
+  )
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <HomePageContent />
+    </Suspense>
   )
 }

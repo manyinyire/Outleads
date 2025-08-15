@@ -33,15 +33,51 @@ async function main() {
   console.log('SBUs created.');
 
   // Create Products and SubProducts
+  // Finance Products
+  const businessLoans = await prisma.product.upsert({
+    where: { name: 'Business Loans' },
+    update: {},
+    create: {
+      name: 'Business Loans',
+      description: 'Flexible financing solutions for business growth.',
+      category: 'finance',
+      subProducts: {
+        create: [
+          { name: 'Working Capital Loans' },
+          { name: 'Equipment Finance' },
+          { name: 'Trade Finance' },
+        ],
+      },
+    },
+  });
+
+  const personalLoans = await prisma.product.upsert({
+    where: { name: 'Personal Loans' },
+    update: {},
+    create: {
+      name: 'Personal Loans',
+      description: 'Personal financing for your needs.',
+      category: 'finance',
+      subProducts: {
+        create: [
+          { name: 'Salary Advance' },
+          { name: 'Emergency Loans' },
+        ],
+      },
+    },
+  });
+
+  // Insurance Products
   const motorInsurance = await prisma.product.upsert({
     where: { name: 'Motor Insurance' },
     update: {},
     create: {
       name: 'Motor Insurance',
-      description: 'Insurance for motor vehicles.',
+      description: 'Comprehensive vehicle protection.',
+      category: 'insurance',
       subProducts: {
         create: [
-          { name: 'Comprehensive' },
+          { name: 'Comprehensive Cover' },
           { name: 'Third Party' },
           { name: 'Passenger Insurance' },
         ],
@@ -49,46 +85,70 @@ async function main() {
     },
   });
 
-  const microInsurance = await prisma.product.upsert({
-    where: { name: 'Micro Insurance' },
+  const businessInsurance = await prisma.product.upsert({
+    where: { name: 'Business Insurance' },
     update: {},
     create: {
-      name: 'Micro Insurance',
-      description: 'Insurance for low-income individuals.',
+      name: 'Business Insurance',
+      description: 'Protect your business assets and operations.',
+      category: 'insurance',
       subProducts: {
         create: [
-          { name: 'Funeral Cover' },
-          { name: 'Health Cash Plan' },
+          { name: 'Professional Indemnity' },
+          { name: 'Public Liability' },
+          { name: 'Property Insurance' },
         ],
       },
     },
   });
 
-  const businessAndAgric = await prisma.product.upsert({
-    where: { name: 'Business & Agriculture' },
+  // Investment Products
+  const mutualFunds = await prisma.product.upsert({
+    where: { name: 'Mutual Funds' },
     update: {},
     create: {
-      name: 'Business & Agriculture',
-      description: 'Insurance for businesses and agricultural activities.',
+      name: 'Mutual Funds',
+      description: 'Diversified investment portfolios.',
+      category: 'investment',
       subProducts: {
         create: [
-          { name: 'Assets All Risks' },
-          { name: 'Crop & Livestock' },
+          { name: 'Equity Funds' },
+          { name: 'Bond Funds' },
+          { name: 'Money Market Funds' },
         ],
       },
     },
   });
 
+  const retirementPlans = await prisma.product.upsert({
+    where: { name: 'Retirement Plans' },
+    update: {},
+    create: {
+      name: 'Retirement Plans',
+      description: 'Secure your financial future.',
+      category: 'investment',
+      subProducts: {
+        create: [
+          { name: 'Pension Plans' },
+          { name: 'Annuities' },
+        ],
+      },
+    },
+  });
+
+  // Banking Products
   const bankAccounts = await prisma.product.upsert({
-    where: { name: 'Bank Accounts' },
+    where: { name: 'Business Accounts' },
     update: {},
     create: {
-      name: 'Bank Accounts',
-      description: 'Various types of bank accounts.',
+      name: 'Business Accounts',
+      description: 'Banking solutions for businesses.',
+      category: 'banking',
       subProducts: {
         create: [
           { name: 'Current Account' },
           { name: 'Savings Account' },
+          { name: 'Foreign Currency Account' },
         ],
       },
     },
@@ -99,11 +159,12 @@ async function main() {
     update: {},
     create: {
       name: 'Credit Cards',
-      description: 'Credit card services.',
+      description: 'Flexible payment solutions.',
+      category: 'banking',
       subProducts: {
         create: [
-          { name: 'Platinum Card' },
-          { name: 'Gold Card' },
+          { name: 'Business Credit Card' },
+          { name: 'Corporate Card' },
         ],
       },
     },
@@ -111,17 +172,48 @@ async function main() {
 
   console.log('Products and SubProducts created.');
 
+  // Create Business Sectors
+  const sectors = [
+    'Technology',
+    'Healthcare',
+    'Manufacturing',
+    'Retail',
+    'Construction',
+    'Agriculture',
+    'Education',
+    'Transportation',
+    'Real Estate',
+    'Professional Services'
+  ];
+
+  for (const sectorName of sectors) {
+    await prisma.sector.upsert({
+      where: { name: sectorName },
+      update: {},
+      create: { name: sectorName },
+    });
+  }
+
+  console.log('Business sectors created.');
+
   // Link SBUs to Products
   await prisma.sbuProduct.createMany({
     data: [
       // Insurance SBU
       { sbuId: insuranceSbu.id, productId: motorInsurance.id },
-      { sbuId: insuranceSbu.id, productId: microInsurance.id },
-      { sbuId: insuranceSbu.id, productId: businessAndAgric.id },
+      { sbuId: insuranceSbu.id, productId: businessInsurance.id },
+
+      // Microfinance SBU
+      { sbuId: microfinanceSbu.id, productId: businessLoans.id },
+      { sbuId: microfinanceSbu.id, productId: personalLoans.id },
 
       // Bank SBU
       { sbuId: bankSbu.id, productId: bankAccounts.id },
       { sbuId: bankSbu.id, productId: creditCards.id },
+
+      // Crown Bank SBU
+      { sbuId: crownBankSbu.id, productId: mutualFunds.id },
+      { sbuId: crownBankSbu.id, productId: retirementPlans.id },
     ],
     skipDuplicates: true,
   });
