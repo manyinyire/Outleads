@@ -84,16 +84,19 @@ export default function ProductsPage() {
     },
   ]
 
-  const fetchProducts = async () => {
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
+
+  const fetchProducts = async (page = 1, pageSize = 10) => {
     setLoading(true)
     try {
-      const response = await fetch('/api/admin/products', {
+      const response = await fetch(`/api/admin/products?page=${page}&limit=${pageSize}`, {
         credentials: 'include'
       })
       
       if (response.ok) {
         const data = await response.json()
-        setProducts(Array.isArray(data) ? data : [])
+        setProducts(Array.isArray(data.products) ? data.products : [])
+        setPagination(prev => ({ ...prev, total: data.totalPages * pageSize, current: page, pageSize: pageSize }))
       } else {
         message.error("Failed to fetch products")
         setProducts([])
@@ -109,9 +112,9 @@ export default function ProductsPage() {
 
   useEffect(() => {
     if (user?.role === 'ADMIN') {
-      fetchProducts()
+      fetchProducts(pagination.current, pagination.pageSize)
     }
-  }, [user])
+  }, [user, pagination])
 
   if (user?.role !== 'ADMIN') {
     return (
@@ -129,7 +132,7 @@ export default function ProductsPage() {
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product)
-    form.setFieldsValue(product)
+    form.setFieldsValue({ ...product, parentId: product.parentId || undefined })
     setModalVisible(true)
   }
 
@@ -208,6 +211,8 @@ export default function ProductsPage() {
         dataSource={tableDataSource}
         loading={loading}
         rowKey="id"
+        pagination={pagination}
+        onChange={(pagination) => fetchProducts(pagination.current, pagination.pageSize)}
         expandable={{
           rowExpandable: record => record.children && record.children.length > 0,
         }}
@@ -240,6 +245,18 @@ export default function ProductsPage() {
                     {p.name}
                   </Select.Option>
                 ))}
+            </Select>
+          </Form.Item>
+          <Form.Item
+            name="category"
+            label="Category"
+            rules={[{ required: true, message: 'Please select a category' }]}
+          >
+            <Select>
+              <Select.Option value="finance">Finance</Select.Option>
+              <Select.Option value="insurance">Insurance</Select.Option>
+              <Select.Option value="investment">Investment</Select.Option>
+              <Select.Option value="banking">Banking</Select.Option>
             </Select>
           </Form.Item>
         </Form>

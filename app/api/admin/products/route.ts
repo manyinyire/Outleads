@@ -12,8 +12,9 @@ async function getProducts(req: AuthenticatedRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
     const filter = searchParams.get("filter") || "";
+    const category = searchParams.get("category") || "";
 
-    const where = filter
+    const where: any = filter
       ? {
           OR: [
             { name: { contains: filter, mode: "insensitive" } },
@@ -21,6 +22,10 @@ async function getProducts(req: AuthenticatedRequest) {
           ],
         }
       : {};
+
+    if (category) {
+      where.category = category;
+    }
 
     const products = await prisma.product.findMany({
       where,
@@ -56,12 +61,12 @@ async function createProduct(req: AuthenticatedRequest) {
     const roleError = requireRole(['ADMIN'])(req.user!);
     if (roleError) return roleError;
 
-    const { name, description, parentId } = await req.json();
+    const { name, description, parentId, category } = await req.json();
 
-    if (!name) {
+    if (!name || !category) {
       return NextResponse.json({ 
         error: 'Validation Error',
-        message: 'Product name is required' 
+        message: 'Product name and category are required' 
       }, { status: 400 });
     }
 
@@ -70,6 +75,7 @@ async function createProduct(req: AuthenticatedRequest) {
         name,
         description: description || null,
         parentId: parentId || null,
+        category,
       },
       include: {
         parent: true,

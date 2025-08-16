@@ -11,7 +11,7 @@ async function updateProduct(req: AuthenticatedRequest, { params }: { params: { 
     if (roleError) return roleError;
 
     const { id } = params;
-    const { name, description, parentId } = await req.json();
+    const { name, description, parentId, category } = await req.json();
 
     if (id === parentId) {
       return NextResponse.json({
@@ -20,17 +20,17 @@ async function updateProduct(req: AuthenticatedRequest, { params }: { params: { 
       }, { status: 400 });
     }
 
-    if (!name) {
+    if (!name || !category) {
       return NextResponse.json({ 
         error: 'Validation Error',
-        message: 'Product name is required' 
+        message: 'Product name and category are required' 
       }, { status: 400 });
     }
 
     // Check if product exists
     const existingProduct = await prisma.product.findUnique({
       where: { id },
-      select: { parentId: true },
+      select: { parentId: true, category: true },
     });
 
     if (!existingProduct) {
@@ -46,6 +46,7 @@ async function updateProduct(req: AuthenticatedRequest, { params }: { params: { 
         name,
         description: description || null,
         parentId: parentId !== undefined ? parentId : existingProduct.parentId,
+        category: category !== undefined ? category : existingProduct.category,
       },
       include: {
         parent: true,

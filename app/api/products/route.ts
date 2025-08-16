@@ -2,13 +2,22 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 // GET /api/products - Retrieve all products and sectors (public endpoint)
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const category = searchParams.get("category") || "";
+
+    const where: any = {
+      parentId: null, // Fetch only top-level products
+    };
+
+    if (category) {
+      where.category = category;
+    }
+
     const [products, sectors] = await Promise.all([
       prisma.product.findMany({
-        where: {
-          parentId: null, // Fetch only top-level products
-        },
+        where,
         include: {
           subProducts: {
             orderBy: {

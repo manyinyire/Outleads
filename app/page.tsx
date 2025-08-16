@@ -7,38 +7,55 @@ import { Layout, Row, Col, Tabs, Card, Typography, Descriptions, Drawer, Button 
 import { MenuOutlined } from '@ant-design/icons'
 import { RootState, AppDispatch } from '@/lib/store'
 import { setSelectedCategory } from '@/lib/store/slices/landingSlice'
-import { useIsMobile } from '@/hooks/use-mobile'
 import ProductList from '@/components/landing/ProductList'
 import LeadForm from '@/components/landing/LeadForm'
 
 const { Content } = Layout
 const { Title, Paragraph } = Typography
 
-const categoryGradients = {
-  finance: 'gradient-bg-finance',
-  insurance: 'gradient-bg-insurance',
-  investment: 'gradient-bg-investment',
-  banking: 'gradient-bg-banking',
-}
-
 function HomePageContent() {
   const dispatch = useDispatch<AppDispatch>()
   const searchParams = useSearchParams()
   const [drawerVisible, setDrawerVisible] = useState(false)
-  const isMobile = useIsMobile()
+  const [isMobile, setIsMobile] = useState(false)
+  const [categories, setCategories] = useState<any[]>([])
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    handleResize()
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('/api/products')
+        const data = await response.json()
+        const uniqueCategories = Array.from(new Set(data.products.map((p: any) => p.category)))
+          .map(category => ({
+            key: category,
+            label: category.charAt(0).toUpperCase() + category.slice(1),
+            icon: '' // You might want to add icons based on category
+          }))
+        setCategories(uniqueCategories)
+        if (uniqueCategories.length > 0) {
+          dispatch(setSelectedCategory(uniqueCategories[0].key))
+        }
+      } catch (error) {
+        console.error('Failed to fetch categories:', error)
+      }
+    }
+    fetchCategories()
+  }, [dispatch])
   
   const { products, selectedCategory, loading } = useSelector((state: RootState) => state.landing)
   
   const campaignId = searchParams.get('campaign')
 
   // Products are fetched by the ProductList component
-
-  const categories = [
-    { key: 'finance', label: 'Finance', icon: '💰' },
-    { key: 'insurance', label: 'Insurance', icon: '🛡️' },
-    { key: 'investment', label: 'Investment', icon: '📈' },
-    { key: 'banking', label: 'Banking', icon: '🏦' },
-  ]
 
   const selectedCategoryProducts = (products || []).filter(p => p.category === selectedCategory)
   const selectedCategoryInfo = categories.find(c => c.key === selectedCategory)
@@ -102,13 +119,13 @@ function HomePageContent() {
           {!isMobile && (
             <Col xs={0} md={12}>
             <div 
-              className={categoryGradients[selectedCategory as keyof typeof categoryGradients]}
               style={{ 
                 height: '100vh', 
                 padding: '24px',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                backgroundColor: '#f0f2f5' // Default background color
               }}
             >
               <Card

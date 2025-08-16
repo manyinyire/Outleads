@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Checkbox } from "@/components/ui/checkbox"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Checkbox, Skeleton } from 'antd'
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState, AppDispatch } from '@/lib/store'
 import { toggleProductSelection, setProducts } from '@/lib/store/slices/landingSlice'
@@ -16,7 +15,7 @@ export default function ProductList() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch('/api/products')
+        const response = await fetch(`/api/products?category=${selectedCategory}`)
         const data = await response.json()
         dispatch(setProducts(data.products || []))
       } catch (error) {
@@ -27,7 +26,7 @@ export default function ProductList() {
     }
 
     fetchProducts()
-  }, [dispatch])
+  }, [dispatch, selectedCategory])
 
   const handleProductToggle = (productId: string) => {
     dispatch(toggleProductSelection(productId))
@@ -40,11 +39,11 @@ export default function ProductList() {
     return (
       <div>
         {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className="flex items-center space-x-4 mb-4">
-            <Skeleton className="h-12 w-12 rounded-full" />
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-[250px]" />
-              <Skeleton className="h-4 w-[200px]" />
+          <div key={index} style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
+            <Skeleton.Avatar active size="large" style={{ marginRight: '16px' }} />
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <Skeleton.Input active style={{ width: '250px', marginBottom: '8px' }} />
+              <Skeleton.Input active style={{ width: '200px' }} />
             </div>
           </div>
         ))}
@@ -54,22 +53,31 @@ export default function ProductList() {
 
   const renderProduct = (product: Product) => {
     return (
-      <div key={product.id} className="ml-6">
+      <div key={product.id} style={{ marginLeft: '24px' }}>
         <div
-          className={`flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all duration-200 ${selectedProducts.includes(product.id) ? 'bg-blue-100' : 'hover:bg-gray-100'}`}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: '12px',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            backgroundColor: selectedProducts.includes(product.id) ? '#e6f7ff' : 'transparent',
+          }}
           onClick={() => handleProductToggle(product.id)}
         >
           <Checkbox
             checked={selectedProducts.includes(product.id)}
-            onCheckedChange={() => handleProductToggle(product.id)}
+            onChange={() => handleProductToggle(product.id)}
+            style={{ marginRight: '12px' }}
           />
           <div>
-            <p className="font-semibold">{product.name}</p>
-            {product.description && <p className="text-sm text-gray-500">{product.description}</p>}
+            <p style={{ fontWeight: 'semibold' }}>{product.name}</p>
+            {product.description && <p style={{ fontSize: '14px', color: '#6b7280' }}>{product.description}</p>}
           </div>
         </div>
         {product.subProducts && product.subProducts.length > 0 && (
-          <div className="ml-6 border-l-2 border-gray-200">
+          <div style={{ marginLeft: '24px', borderLeft: '2px solid #e0e0e0' }}>
             {product.subProducts.map(renderProduct)}
           </div>
         )}
