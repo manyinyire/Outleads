@@ -6,15 +6,26 @@ export async function GET() {
   try {
     const [products, sectors] = await Promise.all([
       prisma.product.findMany({
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          category: true
+        where: {
+          parentId: null, // Fetch only top-level products
+        },
+        include: {
+          subProducts: {
+            orderBy: {
+              name: 'asc',
+            },
+            include: {
+              subProducts: {
+                orderBy: {
+                  name: 'asc',
+                },
+              }, // Include grandchildren to support a 3-level hierarchy
+            },
+          },
         },
         orderBy: {
-          name: 'asc'
-        }
+          name: 'asc',
+        },
       }),
       prisma.sector.findMany({
         select: {

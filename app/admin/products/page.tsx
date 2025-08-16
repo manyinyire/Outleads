@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Key } from 'react'
 import { Table, Button, Modal, Form, Input, message, Popconfirm, Space, Typography, Select } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useSelector } from 'react-redux'
@@ -18,7 +18,8 @@ interface Product {
   updatedAt: string
   parentId?: string | null
   parent?: Product | null
-  subProducts?: Product[]
+  subProducts?: Product[],
+  key?: Key
 }
 
 export default function ProductsPage() {
@@ -141,6 +142,7 @@ export default function ProductsPage() {
       title: 'Name',
       dataIndex: 'name',
       key: 'name',
+      sorter: (a: Product, b: Product) => a.name.localeCompare(b.name),
     },
     {
       title: 'Description',
@@ -159,6 +161,7 @@ export default function ProductsPage() {
       dataIndex: 'createdAt',
       key: 'createdAt',
       render: (date: string) => new Date(date).toLocaleDateString(),
+      sorter: (a: Product, b: Product) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     },
     {
       title: 'Actions',
@@ -195,12 +198,13 @@ export default function ProductsPage() {
 
   const parentProducts = products.filter(p => !p.parentId);
 
-  const processedData = products
+  const tableDataSource = products
     .filter(p => !p.parentId)
     .map(p => ({
       ...p,
-      children: p.subProducts,
+      children: p.subProducts && p.subProducts.length > 0 ? p.subProducts : undefined,
     }));
+
 
   return (
     <div style={{ padding: 24 }}>
@@ -217,10 +221,15 @@ export default function ProductsPage() {
 
       <Table
         columns={columns}
-        dataSource={processedData}
+        dataSource={tableDataSource}
         rowKey="id"
         loading={loading}
-        pagination={false} // Pagination can be tricky with tree data, disabling for now
+        pagination={{
+          pageSize: 10,
+          showSizeChanger: true,
+          showQuickJumper: true,
+          showTotal: (total) => `Total ${total} products`,
+        }}
       />
 
       <Modal
