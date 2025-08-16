@@ -1,14 +1,20 @@
 'use client'
 
 import { useState, useEffect, Key } from 'react'
-import { Table, Button, Modal, Form, Input, message, Popconfirm, Space, Typography, Select } from 'antd'
+import {
+  Table,
+  Button,
+  Modal,
+  Form,
+  Input,
+  Select,
+  message,
+  Typography,
+  Space,
+} from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/lib/store'
-
-const { Title } = Typography
-const { TextArea } = Input
-const { Option } = Select
 
 interface Product {
   id: string
@@ -27,9 +33,56 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
-  const [form] = Form.useForm()
+  
   
   const { user } = useSelector((state: RootState) => state.auth)
+
+  const [form] = Form.useForm()
+
+  const columns = [
+    {
+      title: 'Name',
+      dataIndex: 'name',
+      key: 'name',
+    },
+    {
+      title: 'Description',
+      dataIndex: 'description',
+      key: 'description',
+      render: (text: string) => text || '-',
+    },
+    {
+      title: 'Parent Product',
+      dataIndex: ['parent', 'name'],
+      key: 'parent',
+      render: (text: string) => text || '-',
+    },
+    {
+      title: 'Created At',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: (date: string) => new Date(date).toLocaleDateString(),
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_: any, record: Product) => (
+        <Space size="middle">
+          <Button icon={<EditOutlined />} onClick={() => handleEdit(record)}>
+            Edit
+          </Button>
+          <Button
+            icon={<DeleteOutlined />}
+            onClick={() => handleDelete(record.id)}
+            disabled={record.subProducts && record.subProducts.length > 0}
+            danger
+          >
+            Delete
+          </Button>
+        </Space>
+      ),
+    },
+  ]
 
   const fetchProducts = async () => {
     setLoading(true)
@@ -42,12 +95,12 @@ export default function ProductsPage() {
         const data = await response.json()
         setProducts(Array.isArray(data) ? data : [])
       } else {
-        message.error('Failed to fetch products')
+        message.error("Failed to fetch products")
         setProducts([])
       }
     } catch (error) {
       console.error('Error fetching products:', error)
-      message.error('Failed to fetch products')
+      message.error("Failed to fetch products")
       setProducts([])
     } finally {
       setLoading(false)
@@ -62,26 +115,21 @@ export default function ProductsPage() {
 
   if (user?.role !== 'ADMIN') {
     return (
-      <div style={{ padding: 24, textAlign: 'center' }}>
-        <Title level={3}>Access Denied</Title>
-        <p>You don't have permission to access this page.</p>
+      <div className="p-6 text-center">
+        <h1 className="text-2xl font-bold">Access Denied</h1>
+        <p>You don&apos;t have permission to access this page.</p>
       </div>
     )
   }
 
   const handleCreate = () => {
     setEditingProduct(null)
-    form.resetFields()
     setModalVisible(true)
   }
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product)
-    form.setFieldsValue({
-      name: product.name,
-      description: product.description,
-      parentId: product.parentId,
-    })
+    form.setFieldsValue(product)
     setModalVisible(true)
   }
 
@@ -93,19 +141,20 @@ export default function ProductsPage() {
       })
 
       if (response.ok) {
-        message.success('Product deleted successfully')
+        message.success("Product deleted successfully")
         fetchProducts()
       } else {
         const error = await response.json()
-        message.error(error.message || 'Failed to delete product')
+        message.error(error.message || "Failed to delete product")
       }
     } catch (error) {
       console.error('Error deleting product:', error)
-      message.error('Failed to delete product')
+      message.error("Failed to delete product")
     }
   }
 
-  const handleSubmit = async (values: { name: string; description?: string; parentId?: string }) => {
+  const handleSubmit = async (values: any) => {
+
     try {
       const url = editingProduct 
         ? `/api/admin/products/${editingProduct.id}`
@@ -125,7 +174,6 @@ export default function ProductsPage() {
       if (response.ok) {
         message.success(`Product ${editingProduct ? 'updated' : 'created'} successfully`)
         setModalVisible(false)
-        form.resetFields()
         fetchProducts()
       } else {
         const error = await response.json()
@@ -137,65 +185,6 @@ export default function ProductsPage() {
     }
   }
 
-  const columns = [
-    {
-      title: 'Name',
-      dataIndex: 'name',
-      key: 'name',
-      sorter: (a: Product, b: Product) => a.name.localeCompare(b.name),
-    },
-    {
-      title: 'Description',
-      dataIndex: 'description',
-      key: 'description',
-      render: (text: string) => text || '-',
-    },
-    {
-      title: 'Parent Product',
-      dataIndex: ['parent', 'name'],
-      key: 'parent',
-      render: (parentName: string) => parentName || '-',
-    },
-    {
-      title: 'Created At',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      render: (date: string) => new Date(date).toLocaleDateString(),
-      sorter: (a: Product, b: Product) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (_: any, record: Product) => (
-        <Space>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          >
-            Edit
-          </Button>
-          <Popconfirm
-            title="Are you sure you want to delete this product?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
-            disabled={record.subProducts && record.subProducts.length > 0}
-          >
-            <Button
-              type="link"
-              danger
-              icon={<DeleteOutlined />}
-              disabled={record.subProducts && record.subProducts.length > 0}
-            >
-              Delete
-            </Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ]
-
   const parentProducts = products.filter(p => !p.parentId);
 
   const tableDataSource = products
@@ -205,16 +194,11 @@ export default function ProductsPage() {
       children: p.subProducts && p.subProducts.length > 0 ? p.subProducts : undefined,
     }));
 
-
   return (
-    <div style={{ padding: 24 }}>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Title level={2}>Products Management</Title>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleCreate}
-        >
+    <div style={{ padding: '24px' }}>
+      <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography.Title level={2}>Products Management</Typography.Title>
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
           Add Product
         </Button>
       </div>
@@ -222,76 +206,41 @@ export default function ProductsPage() {
       <Table
         columns={columns}
         dataSource={tableDataSource}
-        rowKey="id"
         loading={loading}
-        pagination={{
-          pageSize: 10,
-          showSizeChanger: true,
-          showQuickJumper: true,
-          showTotal: (total) => `Total ${total} products`,
+        rowKey="id"
+        expandable={{
+          rowExpandable: record => record.children && record.children.length > 0,
         }}
       />
 
       <Modal
         title={editingProduct ? 'Edit Product' : 'Add Product'}
         open={modalVisible}
-        onCancel={() => {
-          setModalVisible(false)
-          form.resetFields()
-        }}
-        footer={null}
+        onCancel={() => setModalVisible(false)}
+        onOk={() => form.submit()}
+        confirmLoading={loading}
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-        >
+        <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Form.Item
             name="name"
-            label="Product Name"
-            rules={[
-              { required: true, message: 'Please enter product name' },
-              { min: 2, message: 'Product name must be at least 2 characters' }
-            ]}
+            label="Name"
+            rules={[{ required: true, message: 'Please enter a name' }]}
           >
-            <Input placeholder="Enter product name" />
+            <Input />
           </Form.Item>
-
-          <Form.Item
-            name="description"
-            label="Description"
-          >
-            <TextArea
-              rows={4}
-              placeholder="Enter product description (optional)"
-            />
+          <Form.Item name="description" label="Description">
+            <Input.TextArea />
           </Form.Item>
-          
-          <Form.Item
-            name="parentId"
-            label="Parent Product (optional)"
-          >
-            <Select
-              placeholder="Select a parent product"
-              allowClear
-            >
+          <Form.Item name="parentId" label="Parent Product">
+            <Select allowClear>
               {parentProducts
-                .filter(p => p.id !== editingProduct?.id) // Prevent self-parenting
+                .filter(p => p.id !== editingProduct?.id)
                 .map(p => (
-                  <Option key={p.id} value={p.id}>{p.name}</Option>
+                  <Select.Option key={p.id} value={p.id}>
+                    {p.name}
+                  </Select.Option>
                 ))}
             </Select>
-          </Form.Item>
-
-          <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
-            <Space>
-              <Button onClick={() => setModalVisible(false)}>
-                Cancel
-              </Button>
-              <Button type="primary" htmlType="submit">
-                {editingProduct ? 'Update' : 'Create'}
-              </Button>
-            </Space>
           </Form.Item>
         </Form>
       </Modal>

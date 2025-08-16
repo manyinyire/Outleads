@@ -47,6 +47,10 @@ async function updateProduct(req: AuthenticatedRequest, { params }: { params: { 
         description: description || null,
         parentId: parentId !== undefined ? parentId : existingProduct.parentId,
       },
+      include: {
+        parent: true,
+        subProducts: true,
+      },
     });
 
     return NextResponse.json(product);

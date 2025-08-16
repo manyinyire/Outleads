@@ -117,13 +117,13 @@ export default function DebugAuthPage() {
 
         <Card title="Instructions">
           <Paragraph>
-            1. If you see corrupted data above, click "Clear All Auth Data"
+            1. If you see corrupted data above, click &quot;Clear All Auth Data&quot;
           </Paragraph>
           <Paragraph>
-            2. After clearing, you'll need to log in again
+            2. After clearing, you&apos;ll need to log in again
           </Paragraph>
           <Paragraph>
-            3. The "Test API Call" button will test if authentication is working
+            3. The &quot;Test API Call&quot; button will test if authentication is working
           </Paragraph>
         </Card>
       </Space>

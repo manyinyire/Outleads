@@ -79,8 +79,8 @@ export default function TestAuthPage() {
         <Card title="Instructions">
           <Space direction="vertical">
             <Text>1. If not authenticated, go to /login and log in</Text>
-            <Text>2. Come back here and click "Check Auth Status"</Text>
-            <Text>3. If authenticated, try "Test Leads API"</Text>
+            <Text>2. Come back here and click &quot;Check Auth Status&quot;</Text>
+            <Text>3. If authenticated, try &quot;Test Leads API&quot;</Text>
             <Text>4. Check the browser console for detailed logs</Text>
           </Space>
         </Card>

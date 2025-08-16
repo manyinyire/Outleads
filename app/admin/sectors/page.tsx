@@ -24,12 +24,18 @@ export default function SectorsPage() {
   
   const { user } = useSelector((state: RootState) => state.auth)
 
+  useEffect(() => {
+    if (user?.role === 'ADMIN') {
+      fetchSectors()
+    }
+  }, [user])
+
   // Check if user has ADMIN role
   if (user?.role !== 'ADMIN') {
     return (
       <div style={{ padding: 24, textAlign: 'center' }}>
         <Title level={3}>Access Denied</Title>
-        <p>You don't have permission to access this page.</p>
+        <p>You don&apos;t have permission to access this page.</p>
       </div>
     )
   }
@@ -56,10 +62,6 @@ export default function SectorsPage() {
       setLoading(false)
     }
   }
-
-  useEffect(() => {
-    fetchSectors()
-  }, [])
 
   const handleCreate = () => {
     setEditingSector(null)

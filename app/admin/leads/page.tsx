@@ -74,6 +74,7 @@ export default function LeadsPage() {
       render: (status: string) => {
         let color = 'default';
         if (status === 'NEW') color = 'blue';
+        if (status === 'INTERESTED') color = 'cyan';
         if (status === 'CONTACTED') color = 'orange';
         if (status === 'QUALIFIED') color = 'purple';
         if (status === 'CONVERTED') color = 'green';
@@ -165,6 +166,7 @@ export default function LeadsPage() {
             allowClear
           >
             <Option value="NEW">New</Option>
+            <Option value="INTERESTED">Interested</Option>
             <Option value="CONTACTED">Contacted</Option>
             <Option value="QUALIFIED">Qualified</Option>
             <Option value="CONVERTED">Converted</Option>

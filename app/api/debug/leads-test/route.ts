@@ -20,6 +20,7 @@ export async function GET() {
       company: lead.businessSector?.name || 'N/A', // Use sector as company
       products: lead.products || [],
       campaign: lead.campaign,
+      status: lead.status, // Include status field
       createdAt: lead.createdAt,
     }));
 

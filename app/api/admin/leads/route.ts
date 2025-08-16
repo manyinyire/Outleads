@@ -28,7 +28,7 @@ async function handler(req: AuthenticatedRequest) {
       };
     }
 
-    const leads = await (prisma as any).lead.findMany({
+    const leads = await prisma.lead.findMany({
       where,
       include: {
         campaign: true,
@@ -46,14 +46,17 @@ async function handler(req: AuthenticatedRequest) {
       company: lead.businessSector?.name || 'N/A', // Use sector as company
       products: lead.products || [],
       campaign: lead.campaign,
-      status: lead.status,
+      status: lead.status, // Include status field
       createdAt: lead.createdAt,
     }));
 
     return NextResponse.json(transformedLeads);
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
+    console.error('Admin leads API error:', error);
+    return NextResponse.json({ 
+      error: 'Something went wrong',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }
 

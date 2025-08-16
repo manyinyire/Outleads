@@ -80,6 +80,7 @@ model Lead {
 
 enum LeadStatus {
   NEW
+  INTERESTED
   CONTACTED
   QUALIFIED
   CONVERTED

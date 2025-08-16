@@ -1,13 +1,12 @@
 'use client'
 
-import { List, Checkbox, Skeleton, Typography } from 'antd'
+import { useState, useEffect } from 'react'
+import { Checkbox } from "@/components/ui/checkbox"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState, AppDispatch } from '@/lib/store'
 import { toggleProductSelection, setProducts } from '@/lib/store/slices/landingSlice'
 import { Product } from '@/lib/store/slices/landingSlice'
-import { useEffect, useState } from 'react'
-
-const { Text } = Typography
 
 export default function ProductList() {
   const dispatch = useDispatch<AppDispatch>()
@@ -39,55 +38,48 @@ export default function ProductList() {
 
   if (loading) {
     return (
-      <List
-        dataSource={Array.from({ length: 4 }, (_, index) => ({ key: index }))}
-        rowKey="key"
-        renderItem={() => (
-          <List.Item>
-            <Skeleton active paragraph={{ rows: 2 }} />
-          </List.Item>
+      <div>
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div key={index} className="flex items-center space-x-4 mb-4">
+            <Skeleton className="h-12 w-12 rounded-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-[250px]" />
+              <Skeleton className="h-4 w-[200px]" />
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  const renderProduct = (product: Product) => {
+    return (
+      <div key={product.id} className="ml-6">
+        <div
+          className={`flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all duration-200 ${selectedProducts.includes(product.id) ? 'bg-blue-100' : 'hover:bg-gray-100'}`}
+          onClick={() => handleProductToggle(product.id)}
+        >
+          <Checkbox
+            checked={selectedProducts.includes(product.id)}
+            onCheckedChange={() => handleProductToggle(product.id)}
+          />
+          <div>
+            <p className="font-semibold">{product.name}</p>
+            {product.description && <p className="text-sm text-gray-500">{product.description}</p>}
+          </div>
+        </div>
+        {product.subProducts && product.subProducts.length > 0 && (
+          <div className="ml-6 border-l-2 border-gray-200">
+            {product.subProducts.map(renderProduct)}
+          </div>
         )}
-      />
+      </div>
     )
   }
 
   return (
-    <List
-      dataSource={filteredProducts}
-      rowKey="id"
-      renderItem={(product) => (
-        <List.Item
-          style={{
-            padding: '16px',
-            border: '1px solid #e5e7eb',
-            borderRadius: '8px',
-            marginBottom: '12px',
-            backgroundColor: selectedProducts.includes(product.id) ? '#f0f9ff' : '#fff',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-          }}
-          onClick={() => handleProductToggle(product.id)}
-        >
-          <List.Item.Meta
-            avatar={
-              <Checkbox
-                checked={selectedProducts.includes(product.id)}
-                onChange={() => handleProductToggle(product.id)}
-              />
-            }
-            title={
-              <Text strong style={{ color: '#1f2937' }}>
-                {product.name}
-              </Text>
-            }
-            description={
-              <Text style={{ color: '#6b7280' }}>
-                {product.description}
-              </Text>
-            }
-          />
-        </List.Item>
-      )}
-    />
+    <div>
+      {filteredProducts.map(renderProduct)}
+    </div>
   )
 }

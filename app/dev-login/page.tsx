@@ -111,7 +111,7 @@ export default function DevLoginPage() {
 
         <div style={{ marginTop: '16px', textAlign: 'center' }}>
           <Text type="secondary" style={{ fontSize: '12px' }}>
-            Development mode is enabled. Use the credentials above or any username with password 'test123'
+            Development mode is enabled. Use the credentials above or any username with password &apos;test123&apos;
           </Text>
         </div>
       </Card>

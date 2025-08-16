@@ -8,7 +8,22 @@ async function getProducts(req: AuthenticatedRequest) {
     const roleError = requireRole(['ADMIN'])(req.user!);
     if (roleError) return roleError;
 
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const filter = searchParams.get("filter") || "";
+
+    const where = filter
+      ? {
+          OR: [
+            { name: { contains: filter, mode: "insensitive" } },
+            { description: { contains: filter, mode: "insensitive" } },
+          ],
+        }
+      : {};
+
     const products = await prisma.product.findMany({
+      where,
       include: {
         parent: true,
         subProducts: true,
@@ -16,9 +31,16 @@ async function getProducts(req: AuthenticatedRequest) {
       orderBy: {
         name: 'asc',
       },
+      skip: (page - 1) * limit,
+      take: limit,
     });
+
+    const totalProducts = await prisma.product.count({ where });
     
-    return NextResponse.json(products);
+    return NextResponse.json({
+      products,
+      totalPages: Math.ceil(totalProducts / limit),
+    });
   } catch (error) {
     console.error('Error fetching products:', error);
     return NextResponse.json({ 
@@ -48,6 +70,10 @@ async function createProduct(req: AuthenticatedRequest) {
         name,
         description: description || null,
         parentId: parentId || null,
+      },
+      include: {
+        parent: true,
+        subProducts: true,
       },
     });
 
