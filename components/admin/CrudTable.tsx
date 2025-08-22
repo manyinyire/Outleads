@@ -40,6 +40,7 @@ export interface CrudTableProps<T extends { id: string }> {
   // Customization
   searchPlaceholder?: string
   customActions?: React.ReactNode
+  customHeader?: React.ReactNode
   deleteConfirmMessage?: (record: T) => string
 }
 
@@ -107,6 +108,7 @@ export default function CrudTable<T extends { id: string }>({
   editingRecord,
   searchPlaceholder = 'Search...',
   customActions,
+  customHeader,
   deleteConfirmMessage,
 }: CrudTableProps<T>) {
 
@@ -150,6 +152,8 @@ export default function CrudTable<T extends { id: string }>({
           {customActions}
         </Space>
       </div>
+
+      {customHeader}
 
       <Table
         columns={finalColumns}

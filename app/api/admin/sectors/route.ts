@@ -1,19 +1,12 @@
 import { withAuthAndRole } from '@/lib/auth';
-import { createCrudHandlers } from '@/lib/crud-factory';
-import { z } from 'zod';
+import { createGetHandler } from '@/lib/crud-factory';
 
-const sectorSchema = z.object({
-  name: z.string().min(1, 'Sector name is required'),
-});
+const handlers = {
+  GET: createGetHandler({
+    modelName: 'sector',
+    entityName: 'Sector',
+    orderBy: { name: 'asc' },
+  }),
+};
 
-const handlers = createCrudHandlers({
-  modelName: 'sector',
-  entityName: 'Sector',
-  createSchema: sectorSchema,
-  updateSchema: sectorSchema.partial(),
-  orderBy: { name: 'asc' },
-  searchFields: ['name'],
-});
-
-export const GET = withAuthAndRole(['ADMIN'], handlers.GET);
-export const POST = withAuthAndRole(['ADMIN'], handlers.POST);
+export const GET = withAuthAndRole(['ADMIN', 'AGENT', 'TEAMLEADER'], handlers.GET);
