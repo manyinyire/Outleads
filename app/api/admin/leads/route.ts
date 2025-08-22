@@ -1,35 +1,27 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { withAuth } from '@/lib/auth';
+import { withAuthAndRole } from '@/lib/auth';
+import { createCrudHandlers } from '@/lib/crud-factory';
+import { z } from 'zod';
 
-async function handler(req: any) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const campaignId = searchParams.get('campaignId');
-    const user = req.user;
+// Note: The create/update schemas are simplified for now
+// as the primary goal is to get the data fetching to work.
+const leadSchema = z.object({
+  fullName: z.string(),
+  phoneNumber: z.string(),
+});
 
-    let where: any = campaignId ? { campaignId } : {};
+const handlers = createCrudHandlers({
+  modelName: 'lead',
+  entityName: 'Lead',
+  createSchema: leadSchema,
+  updateSchema: leadSchema.partial(),
+  includeRelations: {
+    sector: true,
+    products: true,
+    campaign: true,
+  },
+  orderBy: { createdAt: 'desc' },
+  searchFields: ['fullName', 'phoneNumber'],
+});
 
-    if (user.role === 'TEAMLEADER') {
-      where = {
-        ...where,
-        teamId: user.teamId,
-      };
-    }
-
-    const leads = await prisma.lead.findMany({
-      where,
-      include: {
-        campaign: true,
-        products: true,
-      },
-    });
-
-    return NextResponse.json(leads);
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
-  }
-}
-
-export const GET = withAuth(handler as any);
+// Allow ADMIN, AGENT, and TEAMLEADER to view leads
+export const GET = withAuthAndRole(['ADMIN', 'AGENT', 'TEAMLEADER'], handlers.GET);
