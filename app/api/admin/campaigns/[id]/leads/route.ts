@@ -13,6 +13,10 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       where: {
         campaignId: params.id,
       },
+      include: {
+        businessSector: true, // Include the full sector object
+        products: true,       // Include all related product objects
+      },
       orderBy: {
         createdAt: 'desc',
       },

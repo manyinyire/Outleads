@@ -143,7 +143,22 @@ export default function CampaignsPage() {
       if (!response.ok) throw new Error('Failed to fetch leads');
 
       const leads = await response.json();
-      const csv = Papa.unparse(leads);
+
+      // Format the data for CSV export
+      const formattedLeads = leads.map((lead: any) => ({
+        "Full Name": lead.fullName,
+        "Phone Number": lead.phoneNumber,
+        "Business Sector": lead.businessSector?.name || 'N/A',
+        "Products": lead.products?.map((p: any) => p.name).join(', ') || 'N/A',
+        "Date Submitted": new Date(lead.createdAt).toLocaleString(),
+      }));
+
+      if (formattedLeads.length === 0) {
+        message.info('This campaign has no leads to export.');
+        return;
+      }
+
+      const csv = Papa.unparse(formattedLeads);
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
