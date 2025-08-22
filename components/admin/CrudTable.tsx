@@ -27,7 +27,7 @@ export interface CrudTableProps<T extends { id: string }> {
   loading: boolean
   
   // Event Handlers
-  onSearch: (value: string) => void
+  onSearch?: (value: string) => void
   onEdit: (record: T) => void
   onDelete: (id: string) => void
   onSubmit: (values: any, record: T | null) => void
@@ -42,6 +42,7 @@ export interface CrudTableProps<T extends { id: string }> {
   customActions?: React.ReactNode
   customHeader?: React.ReactNode
   deleteConfirmMessage?: (record: T) => string
+  hideDefaultActions?: boolean // New prop
 }
 
 // --- EDIT MODAL SUBCOMPONENT ---
@@ -71,7 +72,7 @@ function EditModal<T>({ title, visible, fields, editingRecord, onClose, onSubmit
       open={visible}
       onCancel={onClose}
       footer={null}
-      destroyOnHidden // Ensures form is re-created each time modal opens
+      destroyOnClose // Ensures form is re-created each time modal opens
     >
       <Form form={form} layout="vertical" onFinish={(values) => onSubmit(values, editingRecord)}>
         {fields.map(field => 
@@ -110,11 +111,13 @@ export default function CrudTable<T extends { id: string }>({
   customActions,
   customHeader,
   deleteConfirmMessage,
+  hideDefaultActions, // Destructure the new prop
 }: CrudTableProps<T>) {
 
-  const finalColumns: ColumnsType<T> = [
-    ...columns,
-    {
+  const finalColumns: ColumnsType<T> = [...columns];
+
+  if (!hideDefaultActions) {
+    finalColumns.push({
       title: 'Actions',
       key: 'actions',
       render: (_, record) => (
@@ -124,7 +127,7 @@ export default function CrudTable<T extends { id: string }>({
           </Button>
           <Popconfirm
             title="Are you sure?"
-            description={deleteConfirmMessage?.(record)}
+            description={deleteConfirmMessage ? deleteConfirmMessage(record) : 'This action cannot be undone.'}
             onConfirm={() => onDelete(record.id)}
             okText="Yes"
             cancelText="No"
@@ -135,20 +138,22 @@ export default function CrudTable<T extends { id: string }>({
           </Popconfirm>
         </Space>
       ),
-    },
-  ]
+    });
+  }
 
   return (
     <div style={{ padding: 24 }}>
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Title level={2}>{title}</Title>
         <Space>
-          <Input
-            placeholder={searchPlaceholder}
-            prefix={<SearchOutlined />}
-            onChange={(e) => onSearch(e.target.value)}
-            style={{ width: 200 }}
-          />
+          {onSearch && (
+            <Input
+              placeholder={searchPlaceholder}
+              prefix={<SearchOutlined />}
+              onChange={(e) => onSearch(e.target.value)}
+              style={{ width: 200 }}
+            />
+          )}
           {customActions}
         </Space>
       </div>

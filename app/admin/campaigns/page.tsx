@@ -254,6 +254,7 @@ export default function CampaignsPage() {
         setEditingRecord(null)
       }}
       editingRecord={editingRecord}
+      hideDefaultActions={true} // Hide the default actions column
       customActions={
         <Button icon={<PlusOutlined />} onClick={() => {
           setEditingRecord(null);
