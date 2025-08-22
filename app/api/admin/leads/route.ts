@@ -66,7 +66,7 @@ const customGetHandler = withErrorHandler(async (req: AuthenticatedRequest) => {
       include: {
         businessSector: true,
         products: true,
-        campaign: true,
+        campaign: true, // This was the missing piece
       },
     }),
     prisma.lead.count({ where: queryConditions })
@@ -80,16 +80,12 @@ const customGetHandler = withErrorHandler(async (req: AuthenticatedRequest) => {
   });
 });
 
+// The handlers factory is not used for GET, but may be used for other methods.
 const handlers = createCrudHandlers({
   modelName: 'lead',
   entityName: 'Lead',
   createSchema: leadSchema,
   updateSchema: leadSchema.partial(),
-  includeRelations: {
-    businessSector: true,
-    products: true,
-    campaign: true,
-  },
   orderBy: { createdAt: 'desc' },
   searchFields: ['fullName', 'phoneNumber'],
 });

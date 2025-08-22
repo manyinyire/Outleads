@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { errorResponse, successResponse } from '@/lib/api-utils';
 import { z } from 'zod';
 import { createCrudHandlers } from '@/lib/crud-factory';
+import { Prisma } from '@prisma/client';
 
 const createLeadSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -23,93 +24,92 @@ const updateLeadSchema = z.object({
 const handlers = createCrudHandlers({
   modelName: 'lead',
   entityName: 'Lead',
-  createSchema: createLeadSchema,
-  updateSchema: updateLeadSchema,
-  includeRelations: {
-    businessSector: {
-      select: {
-        id: true,
-        name: true,
-      },
-    },
-    products: {
-      select: {
-        id: true,
-        name: true,
-        description: true,
-      },
-    },
-    campaign: {
-      select: {
-        id: true,
-        campaign_name: true,
-        organization_name: true,
-        uniqueLink: true,
-      },
-    },
-  },
-  orderBy: { createdAt: 'desc' },
-  searchFields: ['fullName', 'email', 'phoneNumber'],
-
-  // Custom hook to transform and validate data before creation
-  beforeCreate: async (data, context) => {
-    const { name, phone, company, productIds, campaignId } = data;
-
-    // Find sector by ID (form now sends sector ID)
-    const sector = await prisma.sector.findUnique({
-      where: { id: company },
-    });
-
-    if (!sector) {
-      console.log(`Sector not found for ID: ${company}`);
-      throw new Error(`Business sector not found. Please select a valid sector.`);
-    }
-
-    // Validate products exist
-    const products = await prisma.product.findMany({
-      where: {
-        id: { in: productIds },
-      },
-    });
-
-    if (products.length !== productIds.length) {
-      throw new Error('One or more product IDs are invalid');
-    }
-
-    // Validate campaign if provided and increment lead_count
-    if (campaignId && typeof campaignId === 'string') {
-      const campaign = await prisma.campaign.findUnique({
-        where: { id: campaignId },
-      });
-
-      if (!campaign) {
-        throw new Error('Campaign not found');
-      }
-
-      // Use a transaction to ensure both operations succeed
-      await prisma.$transaction([
-        prisma.campaign.update({
-          where: { id: campaignId },
-          data: { lead_count: { increment: 1 } },
-        }),
-      ]);
-    }
-
-    // Transform data for database
-    return {
-      fullName: name,
-      phoneNumber: phone,
-      sectorId: sector.id,
-      campaignId: campaignId || undefined,
-      products: {
-        connect: productIds.map((id: string) => ({ id })),
-      },
-    };
-  },
+  // ... other handlers
 });
 
-// Public endpoint - no authentication required
-export const POST = handlers.POST;
+// Custom POST handler to manage transaction manually
+export async function POST(req: Request) {
+  console.log('--- [POST /api/leads] Received new lead submission ---');
+  try {
+    const body = await req.json();
+    console.log('[1/7] Request body:', body);
+
+    const validation = createLeadSchema.safeParse(body);
+    if (!validation.success) {
+      console.error('[FAIL] Validation failed:', validation.error.format());
+      return errorResponse(validation.error.format(), 400);
+    }
+    console.log('[2/7] Validation successful.');
+
+    const { name, phone, company, productIds, campaignId } = validation.data;
+
+    const sector = await prisma.sector.findUnique({ where: { id: company } });
+    if (!sector) {
+      console.error('[FAIL] Sector not found for ID:', company);
+      return errorResponse('Business sector not found.', 400);
+    }
+    console.log('[3/7] Sector validated:', sector.name);
+
+    const products = await prisma.product.findMany({ where: { id: { in: productIds } } });
+    if (products.length !== productIds.length) {
+      console.error('[FAIL] Product validation failed. Mismatch in product IDs.');
+      return errorResponse('One or more product IDs are invalid.', 400);
+    }
+    console.log('[4/7] Products validated.');
+
+    const leadData: Prisma.LeadCreateInput = {
+      fullName: name,
+      phoneNumber: phone,
+      businessSector: { connect: { id: sector.id } },
+      products: { connect: productIds.map((id) => ({ id })) },
+    };
+    console.log('[5/7] Base lead data constructed:', leadData);
+
+    if (campaignId) {
+      console.log(`[6/7] Campaign ID detected: ${campaignId}. Starting transaction.`);
+      try {
+        const campaign = await prisma.campaign.findUnique({ where: { id: campaignId } });
+        if (!campaign) {
+          console.error(`[FAIL] Campaign with ID ${campaignId} not found.`);
+          return errorResponse('Campaign not found.', 400);
+        }
+        console.log('--- Campaign found:', campaign.campaign_name);
+
+        leadData.campaign = { connect: { id: campaignId } };
+        console.log('--- Lead data with campaign relation:', leadData);
+
+        const newLead = await prisma.$transaction(async (tx) => {
+          console.log('--- Inside transaction: Creating lead...');
+          const createdLead = await tx.lead.create({ data: leadData });
+          console.log('--- Inside transaction: Lead created with ID:', createdLead.id);
+
+          console.log('--- Inside transaction: Updating campaign lead_count...');
+          await tx.campaign.update({
+            where: { id: campaignId },
+            data: { lead_count: { increment: 1 } },
+          });
+          console.log('--- Inside transaction: Campaign updated.');
+
+          return createdLead;
+        });
+
+        console.log('[7/7] Transaction successful. New lead:', newLead);
+        return successResponse({ message: 'Lead created successfully', data: newLead }, 201);
+      } catch (transactionError) {
+        console.error('--- [FAIL] Transaction failed! ---', transactionError);
+        return errorResponse('Failed to process lead with campaign.', 500);
+      }
+    } else {
+      console.log('[6/7] No campaign ID. Creating direct lead.');
+      const newLead = await prisma.lead.create({ data: leadData });
+      console.log('[7/7] Direct lead created successfully:', newLead);
+      return successResponse({ message: 'Lead created successfully', data: newLead }, 201);
+    }
+  } catch (error: any) {
+    console.error('--- [FATAL] An unexpected error occurred in POST /api/leads ---', error);
+    return errorResponse(`Internal Server Error: ${error.message}`, 500);
+  }
+}
 
 // GET endpoint - requires authentication (handled in crud factory)
 export const GET = handlers.GET;

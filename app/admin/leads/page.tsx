@@ -14,13 +14,13 @@ interface Lead {
   phoneNumber: string
   businessSector: { name: string }
   products: Array<{ id: string, name: string }>
-  campaign?: { id: string, name: string }
+  campaign?: { id: string, campaign_name: string } // Corrected field name
   createdAt: string
 }
 
 interface FilterData {
   products: Array<{ id: string, name: string }>
-  campaigns: Array<{ id: string, name: string }>
+  campaigns: Array<{ id: string, campaign_name: string }>
   sectors: Array<{ id: string, name: string }>
 }
 
@@ -61,7 +61,7 @@ export default function LeadsPage() {
 
       setFilterData({
         products: products.product || [],
-        campaigns: campaigns.campaign || [],
+        campaigns: campaigns || [], // Campaigns API returns an array directly
         sectors: sectors.sector || [],
       });
     } catch (error) {
@@ -85,7 +85,7 @@ export default function LeadsPage() {
       if (filters.productId) url.searchParams.set('productId', filters.productId)
       if (filters.campaignId) url.searchParams.set('campaignId', filters.campaignId)
       if (filters.sectorId) url.searchParams.set('sectorId', filters.sectorId)
-      if (filters.dateRange) {
+      if (filters.dateRange && filters.dateRange[0] && filters.dateRange[1]) {
         url.searchParams.set('startDate', moment(filters.dateRange[0]).toISOString())
         url.searchParams.set('endDate', moment(filters.dateRange[1]).toISOString())
       }
@@ -168,7 +168,7 @@ export default function LeadsPage() {
       title: 'Campaign', 
       dataIndex: 'campaign', 
       key: 'campaign',
-      render: (campaign) => campaign ? campaign.name : <Tag>Direct Lead</Tag>
+      render: (campaign) => campaign ? <Tag color="blue">{campaign.campaign_name}</Tag> : <Tag>Direct Lead</Tag>
     },
     { title: 'Date', dataIndex: 'createdAt', key: 'createdAt', render: (date) => new Date(date).toLocaleDateString() },
   ], [])
@@ -194,7 +194,7 @@ export default function LeadsPage() {
           value={filters.campaignId}
           allowClear
         >
-          {filterData.campaigns.map(c => <Select.Option key={c.id} value={c.id}>{c.name}</Select.Option>)}
+          {filterData.campaigns.map(c => <Select.Option key={c.id} value={c.id}>{c.campaign_name}</Select.Option>)}
         </Select>
       </Col>
       <Col>
@@ -211,7 +211,7 @@ export default function LeadsPage() {
       <Col>
         <RangePicker 
           onChange={(dates) => handleFilterChange('dateRange', dates)}
-          value={filters.dateRange}
+          value={filters.dateRange as any}
         />
       </Col>
       <Col>

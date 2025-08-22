@@ -2,10 +2,10 @@ import { NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { nanoid } from 'nanoid';
+import { headers } from 'next/headers';
 
 import { prisma } from '@/lib/prisma';
-import { getUserByEmail } from '@/lib/db-utils';
-import { checkUserRole } from '@/lib/auth-utils';
+import { getUserIdFromToken, checkUserRole } from '@/lib/auth-utils';
 
 const campaignCreateSchema = z.object({
   campaign_name: z.string().min(1, 'Campaign name is required'),
@@ -20,6 +20,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    // Get user ID from token
+    const authorization = headers().get('authorization');
+    const token = authorization?.split(' ')[1];
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const userId = getUserIdFromToken(token);
+    if (!userId) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
     const body = await req.json();
     const validation = campaignCreateSchema.safeParse(body);
 
@@ -30,19 +41,12 @@ export async function POST(req: Request) {
     const { campaign_name, organization_name } = validation.data;
     const unique_link = nanoid(10); // Generate a unique link
 
-    // Get current user - assuming you have a way to get the logged-in user's email
-    // This part needs to be adapted to your actual authentication logic
-    const currentUser = await getUserByEmail('admin@fbc.co.zw'); // Placeholder
-    if (!currentUser) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
     const newCampaign = await prisma.campaign.create({
       data: {
         campaign_name,
         organization_name,
         uniqueLink: unique_link,
-        createdById: currentUser.id,
+        createdById: userId,
       },
     });
 

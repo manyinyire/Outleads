@@ -41,18 +41,20 @@ export default function LeadForm({ campaignId, onNext, initialData }: LeadFormPr
     fetchSectors()
   }, [])
 
-  // Set initial form data if it exists (when user goes back a step)
+  // Set initial form data, including the campaignId
   useEffect(() => {
-    if (initialData) {
-      form.setFieldsValue(initialData)
+    const initialValues = initialData ? { ...initialData } : {};
+    if (campaignId) {
+      initialValues.campaignId = campaignId;
     }
-  }, [initialData, form])
+    form.setFieldsValue(initialValues);
+  }, [initialData, campaignId, form]);
 
   const handleSubmit = (values: any) => {
     if (onNext) {
-      onNext(values)
+      onNext(values);
     }
-  }
+  };
 
   return (
     <Card
@@ -71,6 +73,11 @@ export default function LeadForm({ campaignId, onNext, initialData }: LeadFormPr
         onFinish={handleSubmit}
         requiredMark={false}
       >
+        {/* Hidden field to store campaignId */}
+        <Form.Item name="campaignId" hidden>
+          <Input />
+        </Form.Item>
+
         <Form.Item
           name="fullName"
           label="Full Name"

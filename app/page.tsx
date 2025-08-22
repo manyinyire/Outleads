@@ -120,7 +120,7 @@ export default function HomePage() {
           phone: contactFormData.phoneNumber,
           company: contactFormData.sectorId,
           productIds: selectedProducts.map(p => p.id),
-          campaignId: campaignId || undefined,
+          campaignId: campaignId || undefined, // Use campaignId from the HomePage state
         }),
       })
 
@@ -133,6 +133,13 @@ export default function HomePage() {
       setCurrentStep(0)
       setContactFormData(null)
       setSelectedProducts([])
+      
+      // Clear the campaignId from storage after successful submission
+      if (campaignId) {
+        localStorage.removeItem('campaignId');
+        setCampaignId(null);
+      }
+
     } catch (error: any) {
       message.error(error.message || 'An error occurred. Please try again.')
     } finally {
