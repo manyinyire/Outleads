@@ -2,99 +2,80 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth';
 import { z } from 'zod';
+import { createCrudHandlers } from '@/lib/crud-factory';
 import nodemailer from 'nodemailer';
 
+const createUserSchema = z.object({
+  username: z.string().min(1, 'Username is required'),
+  email: z.string().email('Invalid email address'),
+  name: z.string().min(1, 'Name is required'),
+  sbu: z.string().optional(),
+  role: z.enum(['ADMIN', 'BSS', 'INFOSEC', 'AGENT', 'SUPERVISOR']).default('AGENT'),
+  status: z.enum(['PENDING', 'ACTIVE', 'INACTIVE']).default('ACTIVE')
+});
+
 const updateUserSchema = z.object({
+  username: z.string().min(1).optional(),
+  email: z.string().email().optional(),
+  name: z.string().min(1).optional(),
   sbu: z.string().optional(),
   role: z.enum(['ADMIN', 'BSS', 'INFOSEC', 'AGENT', 'SUPERVISOR']).optional(),
   status: z.enum(['PENDING', 'ACTIVE', 'INACTIVE']).optional()
 });
 
-// GET /api/admin/users - List all users (Admin, BSS, InfoSec only)
-export const GET = withAuthAndRole(['ADMIN', 'BSS', 'INFOSEC'], async (req: AuthenticatedRequest) => {
-  try {
-    const users = await prisma.user.findMany({
+const handlers = createCrudHandlers({
+  modelName: 'user',
+  entityName: 'User',
+  createSchema: createUserSchema,
+  updateSchema: updateUserSchema,
+  includeRelations: {
+    _count: {
       select: {
-        id: true,
-        username: true,
-        name: true,
-        email: true,
-        sbu: true,
-        role: true,
-        status: true,
-        createdAt: true,
-        lastLogin: true,
-        _count: {
-          select: {
-            campaigns: true
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
+        campaigns: true
       }
-    });
-
-    return NextResponse.json({
-      users
-    });
-
-  } catch (error) {
-    console.error('Error fetching users:', error);
-    return NextResponse.json({
-      error: 'Internal Server Error',
-      message: 'Failed to fetch users'
-    }, { status: 500 });
-  }
-});
-
-// POST /api/admin/users - Create new user (Admin only)
-export const POST = withAuthAndRole(['ADMIN'], async (req: AuthenticatedRequest) => {
-  try {
-    const body = await req.json();
-    const { username, email, name, sbu, role } = body;
-
-    if (!username || !email || !name) {
-      return NextResponse.json({
-        error: 'Validation Error',
-        message: 'Username, email, and name are required'
-      }, { status: 400 });
     }
+  },
+  orderBy: { createdAt: 'desc' },
+  searchFields: ['username', 'name', 'email'],
+  
+  
+  // Hook to handle default values
+  beforeCreate: async (data) => {
+    return {
+      ...data,
+      role: data.role || 'AGENT',
+      status: data.status || 'ACTIVE'
+    };
+  },
+  
+  // Hook to send activation email after creation
+  afterCreate: async (record: any) => {
+    if (record.status === 'ACTIVE') {
+      await sendActivationEmail(record.email, record.name);
+    }
+  },
 
-    const user = await prisma.user.create({
-      data: {
-        username,
-        email,
-        name,
-        sbu,
-        role: role || 'AGENT',
-        status: 'ACTIVE' // Admin-created users are active by default
-      },
-      select: {
-        id: true,
-        username: true,
-        name: true,
-        email: true,
-        sbu: true,
-        role: true,
-        status: true,
-        createdAt: true
-      }
-    });
-
-    return NextResponse.json({
-      message: 'User created successfully',
-      user
-    }, { status: 201 });
-
-  } catch (error) {
-    console.error('Error creating user:', error);
-    return NextResponse.json({
-      error: 'Internal Server Error',
-      message: 'Failed to create user'
-    }, { status: 500 });
+  // Hook to send activation email after status change
+  afterUpdate: async (record: any) => {
+    if (record.status === 'ACTIVE') {
+      await sendActivationEmail(record.email, record.name);
+    }
+  },
+  
+  // Prevent deletion of admin users
+  canDelete: async (record: any) => {
+    if (record.role === 'ADMIN') {
+      return {
+        allowed: false,
+        reason: 'Cannot delete admin users'
+      };
+    }
+    return { allowed: true };
   }
 });
+
+export const GET = withAuthAndRole(['ADMIN', 'BSS', 'INFOSEC'], handlers.GET);
+export const POST = withAuthAndRole(['ADMIN', 'BSS'], handlers.POST);
 
 // Helper function to send activation email
 async function sendActivationEmail(userEmail: string, userName: string) {

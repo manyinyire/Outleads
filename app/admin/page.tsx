@@ -1,21 +1,65 @@
 'use client'
 
-import { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState, AppDispatch } from '@/lib/store';
-import { fetchDashboardData } from '@/lib/store/slices/adminSlice';
-import { Row, Col, Card, Statistic, Typography, Table, Tag } from 'antd';
+import { useEffect, useState } from 'react';
+import { Row, Col, Card, Statistic, Typography, Table, Tag, message } from 'antd';
 import { UserOutlined, BulbOutlined, TrophyOutlined, DollarOutlined } from '@ant-design/icons';
 
 const { Title } = Typography;
 
+interface Lead {
+  id: string;
+  name: string;
+  campaign: { name: string };
+  status: string;
+  createdAt: string;
+}
+
+interface Campaign {
+  id: string;
+}
+
 export default function AdminDashboard() {
-  const dispatch = useDispatch<AppDispatch>();
-  const { leads, campaigns, loading } = useSelector((state: RootState) => state.admin);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    dispatch(fetchDashboardData());
-  }, [dispatch]);
+    const fetchData = async () => {
+      setLoading(true);
+      const token = localStorage.getItem('auth-token');
+      if (!token) {
+        message.error("Authentication required.");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Fetch leads and campaigns in parallel
+        const [leadsRes, campaignsRes] = await Promise.all([
+          fetch('/api/admin/leads', { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch('/api/admin/campaigns', { headers: { 'Authorization': `Bearer ${token}` } })
+        ]);
+
+        if (!leadsRes.ok || !campaignsRes.ok) {
+          throw new Error('Failed to fetch dashboard data');
+        }
+
+        const leadsData = await leadsRes.json();
+        const campaignsData = await campaignsRes.json();
+
+        setLeads(leadsData.lead || []);
+        setCampaigns(campaignsData.campaign || []);
+
+      } catch (error) {
+        console.error("Dashboard fetch error:", error);
+        message.error('Could not load dashboard data.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const columns = [
     {
@@ -33,20 +77,21 @@ export default function AdminDashboard() {
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => {
-        const colors = {
+        if (!status) return <Tag color="default">-</Tag>;
+        const colors: { [key: string]: string } = {
           new: 'blue',
           contacted: 'orange',
           qualified: 'green',
           converted: 'purple',
         };
-        return <Tag color={colors[status as keyof typeof colors]}>{status.toUpperCase()}</Tag>;
+        return <Tag color={colors[status] || 'default'}>{status.toUpperCase()}</Tag>;
       },
     },
     {
       title: 'Date',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      render: (date: string) => new Date(date).toLocaleDateString(),
+      render: (date: string) => date ? new Date(date).toLocaleDateString() : '-',
     },
   ];
 
@@ -61,7 +106,7 @@ export default function AdminDashboard() {
           <Card loading={loading}>
             <Statistic
               title="Total Leads"
-              value={Array.isArray(leads) ? leads.length : 0}
+              value={leads.length}
               prefix={<UserOutlined />}
               valueStyle={{ color: '#3f8600' }}
             />
@@ -71,7 +116,7 @@ export default function AdminDashboard() {
           <Card loading={loading}>
             <Statistic
               title="Active Campaigns"
-              value={Array.isArray(campaigns) ? campaigns.length : 0}
+              value={campaigns.length}
               prefix={<BulbOutlined />}
               valueStyle={{ color: '#1890ff' }}
             />
@@ -81,7 +126,7 @@ export default function AdminDashboard() {
           <Card loading={loading}>
             <Statistic
               title="Conversion Rate"
-              value={18.5} // TODO: Calculate conversion rate
+              value={0} // Placeholder
               suffix="%"
               prefix={<TrophyOutlined />}
               valueStyle={{ color: '#cf1322' }}
@@ -92,7 +137,7 @@ export default function AdminDashboard() {
           <Card loading={loading}>
             <Statistic
               title="Revenue Pipeline"
-              value={2.4} // TODO: Calculate revenue pipeline
+              value={0} // Placeholder
               prefix={<DollarOutlined />}
               suffix="M"
               valueStyle={{ color: '#722ed1' }}
@@ -108,7 +153,7 @@ export default function AdminDashboard() {
       >
         <Table
           columns={columns}
-          dataSource={Array.isArray(leads) ? leads : []}
+          dataSource={leads}
           pagination={false}
           size="small"
           rowKey="id"

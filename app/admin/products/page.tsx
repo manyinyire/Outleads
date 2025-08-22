@@ -1,259 +1,187 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Table, Button, Modal, Form, Input, message, Popconfirm, Space, Typography } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
-import { useSelector } from 'react-redux'
-import { RootState } from '@/lib/store'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { App, Tag } from 'antd'
+import { ColumnsType } from 'antd/es/table'
+import CrudTable, { CrudField } from '@/components/admin/CrudTable'
 
-const { Title } = Typography
-const { TextArea } = Input
+interface ProductCategory {
+  id: string
+  name: string
+}
 
 interface Product {
   id: string
   name: string
   description?: string
-  createdAt: string
-  updatedAt: string
+  category: ProductCategory
 }
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(false)
-  const [modalVisible, setModalVisible] = useState(false)
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
-  const [form] = Form.useForm()
+  const [data, setData] = useState<Product[]>([])
+  const [categories, setCategories] = useState<ProductCategory[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchText, setSearchText] = useState('')
+  const [isModalVisible, setModalVisible] = useState(false)
+  const [editingRecord, setEditingRecord] = useState<Product | null>(null)
   
-  const { user } = useSelector((state: RootState) => state.auth)
+  const { message } = App.useApp()
 
-  // Check if user has ADMIN role
-  if (user?.role !== 'ADMIN') {
-    return (
-      <div style={{ padding: 24, textAlign: 'center' }}>
-        <Title level={3}>Access Denied</Title>
-        <p>You don't have permission to access this page.</p>
-      </div>
-    )
-  }
-
-  const fetchProducts = async () => {
-    setLoading(true)
+  const fetchCategories = useCallback(async (token: string) => {
     try {
-      const response = await fetch('/api/admin/products', {
-        credentials: 'include'
+      // Token is already checked in fetchData, so we can assume it's valid here
+      const response = await fetch('/api/admin/product-categories', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (!response.ok) throw new Error('Failed to fetch categories')
+      const result = await response.json()
+      setCategories(result.productCategory || [])
+    } catch (error) {
+      console.error("Category fetch error:", error)
+      message.error('Failed to load product categories for the form.')
+    }
+  }, [message])
+
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    const token = localStorage.getItem('auth-token')
+    if (!token) {
+      message.error("Authentication token not found. Please log in again.")
+      setLoading(false)
+      return
+    }
+
+    // Fetch categories for the dropdown first
+    await fetchCategories(token)
+
+    try {
+      const url = new URL('/api/admin/products', window.location.origin)
+      if (searchText) {
+        url.searchParams.set('search', searchText)
+      }
+      
+      const response = await fetch(url.toString(), {
+        headers: { 'Authorization': `Bearer ${token}` }
       })
       
-      if (response.ok) {
-        const data = await response.json()
-        setProducts(Array.isArray(data) ? data : [])
-      } else {
-        message.error('Failed to fetch products')
-        setProducts([])
-      }
+      if (!response.ok) throw new Error(`Failed to fetch: ${response.statusText}`)
+      
+      const result = await response.json()
+      setData(result.product || [])
+      
     } catch (error) {
-      console.error('Error fetching products:', error)
-      message.error('Failed to fetch products')
-      setProducts([])
+      console.error("Fetch error:", error)
+      message.error('Failed to load products.')
     } finally {
       setLoading(false)
     }
-  }
+  }, [searchText, message, fetchCategories])
 
   useEffect(() => {
-    fetchProducts()
-  }, [])
+    fetchData()
+  }, [fetchData])
 
-  const handleCreate = () => {
-    setEditingProduct(null)
-    form.resetFields()
-    setModalVisible(true)
+  const handleSearch = (value: string) => {
+    setSearchText(value)
   }
 
-  const handleEdit = (product: Product) => {
-    setEditingProduct(product)
-    form.setFieldsValue({
-      name: product.name,
-      description: product.description
-    })
+  const handleEdit = (record: Product) => {
+    // Ensure the editing record has the categoryId for the form
+    setEditingRecord({ ...record, categoryId: record.category.id } as any)
     setModalVisible(true)
   }
 
   const handleDelete = async (id: string) => {
+    const token = localStorage.getItem('auth-token');
     try {
       const response = await fetch(`/api/admin/products/${id}`, {
         method: 'DELETE',
-        credentials: 'include'
-      })
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
 
       if (response.ok) {
-        message.success('Product deleted successfully')
-        fetchProducts()
+        message.success('Product deleted successfully');
+        fetchData();
       } else {
-        const error = await response.json()
-        message.error(error.message || 'Failed to delete product')
+        const error = await response.json();
+        message.error(error.message || 'Failed to delete product');
       }
     } catch (error) {
-      console.error('Error deleting product:', error)
-      message.error('Failed to delete product')
+      console.error("Delete error:", error);
+      message.error('An error occurred while deleting the product.');
     }
   }
 
-  const handleSubmit = async (values: { name: string; description?: string }) => {
-    try {
-      const url = editingProduct 
-        ? `/api/admin/products/${editingProduct.id}`
-        : '/api/admin/products'
-      
-      const method = editingProduct ? 'PUT' : 'POST'
+  const handleSubmit = async (values: any, record: Product | null) => {
+    const token = localStorage.getItem('auth-token');
+    const url = record ? `/api/admin/products/${record.id}` : '/api/admin/products';
+    const method = record ? 'PUT' : 'POST';
 
+    try {
       const response = await fetch(url, {
         method,
-        headers: {
+        headers: { 
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
-        credentials: 'include',
         body: JSON.stringify(values)
-      })
+      });
 
       if (response.ok) {
-        message.success(`Product ${editingProduct ? 'updated' : 'created'} successfully`)
-        setModalVisible(false)
-        form.resetFields()
-        fetchProducts()
+        message.success(`Product ${record ? 'updated' : 'created'} successfully`);
+        setModalVisible(false);
+        setEditingRecord(null);
+        fetchData();
       } else {
-        const error = await response.json()
-        message.error(error.message || `Failed to ${editingProduct ? 'update' : 'create'} product`)
+        const error = await response.json();
+        message.error(error.message || `Failed to save product`);
       }
     } catch (error) {
-      console.error('Error saving product:', error)
-      message.error(`Failed to ${editingProduct ? 'update' : 'create'} product`)
+      console.error("Submit error:", error);
+      message.error('An error occurred while saving the product.');
     }
   }
 
-  const columns = [
+  const fields: CrudField[] = useMemo(() => [
+    { name: 'name', label: 'Product Name', type: 'text', required: true },
+    { name: 'description', label: 'Description', type: 'textarea' },
     {
-      title: 'Name',
-      dataIndex: 'name',
-      key: 'name',
-      sorter: (a: Product, b: Product) => a.name.localeCompare(b.name),
+      name: 'categoryId',
+      label: 'Category',
+      type: 'select',
+      required: true,
+      options: categories.map(cat => ({ label: cat.name, value: cat.id }))
+    }
+  ], [categories])
+
+  const columns: ColumnsType<Product> = useMemo(() => [
+    { title: 'Name', dataIndex: 'name', key: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
+    { title: 'Description', dataIndex: 'description', key: 'description' },
+    { 
+      title: 'Category', 
+      dataIndex: ['category', 'name'], 
+      key: 'category',
+      render: (categoryName: string) => <Tag>{categoryName}</Tag>
     },
-    {
-      title: 'Description',
-      dataIndex: 'description',
-      key: 'description',
-      render: (text: string) => text || '-',
-    },
-    {
-      title: 'Created At',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      render: (date: string) => new Date(date).toLocaleDateString(),
-      sorter: (a: Product, b: Product) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (_: any, record: Product) => (
-        <Space>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          >
-            Edit
-          </Button>
-          <Popconfirm
-            title="Are you sure you want to delete this product?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button
-              type="link"
-              danger
-              icon={<DeleteOutlined />}
-            >
-              Delete
-            </Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ]
+  ], [])
 
   return (
-    <div style={{ padding: 24 }}>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Title level={2}>Products Management</Title>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleCreate}
-        >
-          Add Product
-        </Button>
-      </div>
-
-      <Table
-        columns={columns}
-        dataSource={products}
-        rowKey="id"
-        loading={loading}
-        pagination={{
-          pageSize: 10,
-          showSizeChanger: true,
-          showQuickJumper: true,
-          showTotal: (total) => `Total ${total} products`,
-        }}
-      />
-
-      <Modal
-        title={editingProduct ? 'Edit Product' : 'Add Product'}
-        open={modalVisible}
-        onCancel={() => {
-          setModalVisible(false)
-          form.resetFields()
-        }}
-        footer={null}
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-        >
-          <Form.Item
-            name="name"
-            label="Product Name"
-            rules={[
-              { required: true, message: 'Please enter product name' },
-              { min: 2, message: 'Product name must be at least 2 characters' }
-            ]}
-          >
-            <Input placeholder="Enter product name" />
-          </Form.Item>
-
-          <Form.Item
-            name="description"
-            label="Description"
-          >
-            <TextArea
-              rows={4}
-              placeholder="Enter product description (optional)"
-            />
-          </Form.Item>
-
-          <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
-            <Space>
-              <Button onClick={() => setModalVisible(false)}>
-                Cancel
-              </Button>
-              <Button type="primary" htmlType="submit">
-                {editingProduct ? 'Update' : 'Create'}
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
-    </div>
+    <CrudTable<Product>
+      title="Products"
+      columns={columns}
+      fields={fields}
+      dataSource={data}
+      loading={loading}
+      onSearch={handleSearch}
+      onEdit={handleEdit}
+      onDelete={handleDelete}
+      onSubmit={handleSubmit}
+      isModalVisible={isModalVisible}
+      closeModal={() => {
+        setModalVisible(false)
+        setEditingRecord(null)
+      }}
+      editingRecord={editingRecord}
+    />
   )
 }

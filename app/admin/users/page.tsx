@@ -1,110 +1,228 @@
 'use client'
 
-import { Table, Card, Typography, Tag, Button, Space } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { Tag, Button, Space, App } from 'antd'
+import { ColumnsType } from 'antd/es/table'
+import { DownloadOutlined, DeleteOutlined, UserAddOutlined } from '@ant-design/icons'
+import { useRouter } from 'next/navigation'
+import { useSelector } from 'react-redux'
+import { RootState } from '@/lib/store'
+import Papa from 'papaparse'
 
-const { Title } = Typography
+import CrudTable, { CrudField } from '@/components/admin/CrudTable'
+import AddUser from '@/components/admin/AddUser'
 
+// --- TYPE DEFINITIONS ---
+interface User {
+  id: string
+  name: string
+  email: string
+  role: 'ADMIN' | 'BSS' | 'INFOSEC' | 'AGENT' | 'TEAMLEADER'
+  createdAt: string
+  updatedAt?: string
+  lastLogin?: string
+}
+
+// --- COMPONENT ---
 export default function UsersPage() {
-  const users = [
-    {
-      key: '1',
-      name: 'Admin User',
-      email: 'admin@nexus.com',
-      role: 'admin',
-      status: 'active',
-      lastLogin: '2024-01-15',
-    },
-    {
-      key: '2',
-      name: 'John Manager',
-      email: 'john@nexus.com',
-      role: 'manager',
-      status: 'active',
-      lastLogin: '2024-01-14',
-    },
-    {
-      key: '3',
-      name: 'Sarah Agent',
-      email: 'sarah@nexus.com',
-      role: 'user',
-      status: 'active',
-      lastLogin: '2024-01-13',
-    },
-  ]
+  // --- STATE MANAGEMENT ---
+  const [data, setData] = useState<User[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchText, setSearchText] = useState('')
+  const [isAddUserModalVisible, setAddUserModalVisible] = useState(false)
+  const [isEditModalVisible, setEditModalVisible] = useState(false)
+  const [editingRecord, setEditingRecord] = useState<User | null>(null)
+  
+  // --- HOOKS ---
+  const router = useRouter()
+  const { message } = App.useApp()
+  const userRole = useSelector((state: RootState) => state.auth.user?.role)
 
-  const columns = [
-    {
-      title: 'Name',
-      dataIndex: 'name',
-      key: 'name',
-    },
-    {
-      title: 'Email',
-      dataIndex: 'email',
-      key: 'email',
-    },
-    {
-      title: 'Role',
-      dataIndex: 'role',
+  // --- DATA FETCHING ---
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    try {
+      const url = new URL('/api/admin/users', window.location.origin)
+      if (searchText) {
+        url.searchParams.set('search', searchText)
+      }
+      
+      const token = localStorage.getItem('auth-token')
+      const response = await fetch(url.toString(), {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (!response.ok) throw new Error(`Failed to fetch: ${response.statusText}`)
+      
+      const result = await response.json()
+      setData(Array.isArray(result) ? result : result.user || [])
+      
+    } catch (error) {
+      console.error("Fetch error:", error)
+      message.error('Failed to load user data.')
+    } finally {
+      setLoading(false)
+    }
+  }, [searchText, message])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  // --- EVENT HANDLERS ---
+  const handleSearch = (value: string) => {
+    setSearchText(value)
+  }
+
+  const handleEdit = (record: User) => {
+    setEditingRecord(record)
+    setEditModalVisible(true)
+  }
+
+  const handleDelete = async (id: string) => {
+    const token = localStorage.getItem('auth-token');
+    try {
+      const response = await fetch(`/api/admin/users/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        message.success('User deleted successfully');
+        fetchData(); // Refresh data
+      } else {
+        const error = await response.json();
+        message.error(error.message || 'Failed to delete user');
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+      message.error('An error occurred while deleting the user.');
+    }
+  }
+
+  const handleSubmit = async (values: any, record: User | null) => {
+    const token = localStorage.getItem('auth-token');
+    const url = record ? `/api/admin/users/${record.id}` : '/api/admin/users';
+    const method = record ? 'PUT' : 'POST';
+
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(values)
+      });
+
+      if (response.ok) {
+        message.success(`User ${record ? 'updated' : 'created'} successfully`);
+        setEditModalVisible(false);
+        setEditingRecord(null);
+        fetchData(); // Refresh data
+      } else {
+        const error = await response.json();
+        message.error(error.message || `Failed to save user`);
+      }
+    } catch (error) {
+      console.error("Submit error:", error);
+      message.error('An error occurred while saving the user.');
+    }
+  }
+
+  const handleExport = () => {
+    const csv = Papa.unparse(data)
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.setAttribute('download', 'users.csv')
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  // --- MEMOIZED PROPS ---
+  const fields: CrudField[] = useMemo(() => [
+    { name: 'name', label: 'Name', type: 'text', required: true },
+    { name: 'email', label: 'Email', type: 'email', required: true },
+    { 
+      name: 'role', 
+      label: 'Role', 
+      type: 'select', 
+      required: true,
+      options: [
+        { label: 'Admin', value: 'ADMIN' },
+        { label: 'BSS', value: 'BSS' },
+        { label: 'InfoSec', value: 'INFOSEC' },
+        { label: 'Agent', value: 'AGENT' },
+        { label: 'Teamleader', value: 'TEAMLEADER' },
+      ]
+    }
+  ], [])
+
+  const columns: ColumnsType<User> = useMemo(() => [
+    { title: 'Name', dataIndex: 'name', key: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
+    { title: 'Email', dataIndex: 'email', key: 'email' },
+    { 
+      title: 'Role', 
+      dataIndex: 'role', 
       key: 'role',
-      render: (role: string) => {
-        const colors = {
-          admin: 'red',
-          manager: 'blue',
-          user: 'green',
-        }
-        return <Tag color={colors[role as keyof typeof colors]}>{role.toUpperCase()}</Tag>
-      },
+      render: (role: string) => <Tag>{role.toUpperCase()}</Tag>
     },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status: string) => (
-        <Tag color={status === 'active' ? 'green' : 'red'}>
-          {status.toUpperCase()}
-        </Tag>
-      ),
+    { 
+      title: 'Created Date', 
+      dataIndex: 'createdAt', 
+      key: 'createdAt',
+      render: (date: string) => new Date(date).toLocaleDateString()
     },
-    {
-      title: 'Last Login',
-      dataIndex: 'lastLogin',
+    { 
+      title: 'Last Login', 
+      dataIndex: 'lastLogin', 
       key: 'lastLogin',
+      render: (date: string) => date ? new Date(date).toLocaleDateString() : '-'
     },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: () => (
-        <Space>
-          <Button type="text" icon={<EditOutlined />} size="small" />
-          <Button type="text" icon={<DeleteOutlined />} size="small" danger />
-        </Space>
-      ),
-    },
-  ]
+  ], [])
+
+  // --- RENDER LOGIC ---
+  const hasAccess = userRole && ['ADMIN', 'BSS', 'INFOSEC'].includes(userRole)
+  if (!hasAccess) {
+    return <p>Access Denied</p> // Or a more sophisticated component
+  }
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <Title level={2}>User Management</Title>
-        <Button type="primary" icon={<PlusOutlined />}>
-          Add User
-        </Button>
-      </div>
-
-      <Card>
-        <Table
-          columns={columns}
-          dataSource={users}
-          rowKey="key"
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-          }}
-        />
-      </Card>
-    </div>
+    <>
+      <CrudTable<User>
+        title="User Management"
+        columns={columns}
+        fields={fields}
+        dataSource={data}
+        loading={loading}
+        onSearch={handleSearch}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onSubmit={handleSubmit}
+        isModalVisible={isEditModalVisible}
+        closeModal={() => setEditModalVisible(false)}
+        editingRecord={editingRecord}
+        customActions={
+          <Space>
+            <Button icon={<UserAddOutlined />} onClick={() => setAddUserModalVisible(true)}>
+              Add User
+            </Button>
+            <Button icon={<DownloadOutlined />} onClick={handleExport}>
+              Export to CSV
+            </Button>
+            <Button icon={<DeleteOutlined />} onClick={() => router.push('/admin/users/deleted')}>
+              View Deleted Users
+            </Button>
+          </Space>
+        }
+      />
+      <AddUser
+        visible={isAddUserModalVisible}
+        onClose={() => setAddUserModalVisible(false)}
+        onUserAdded={fetchData} // Refetch data when a user is added
+      />
+    </>
   )
 }

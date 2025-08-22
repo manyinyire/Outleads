@@ -1,9 +1,10 @@
 'use client'
 
-import { ConfigProvider } from 'antd'
+import { ConfigProvider, App } from 'antd'
 import { Provider } from 'react-redux'
 import { store } from '@/lib/store'
 import { theme } from '@/lib/theme'
+import AuthProvider from '@/components/AuthProvider' // Import the new provider
 import './globals.css'
 
 export default function RootLayout({
@@ -13,11 +14,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
+      <body suppressHydrationWarning={true}>
         <Provider store={store}>
-          <ConfigProvider theme={theme}>
-            {children}
-          </ConfigProvider>
+          <AuthProvider> {/* Wrap the app with AuthProvider */}
+            <ConfigProvider theme={theme}>
+              <App>
+                {children}
+              </App>
+            </ConfigProvider>
+          </AuthProvider>
         </Provider>
       </body>
     </html>

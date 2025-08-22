@@ -6,8 +6,16 @@ async function handler(req: any) {
   try {
     const { searchParams } = new URL(req.url);
     const campaignId = searchParams.get('campaignId');
+    const user = req.user;
 
-    const where = campaignId ? { campaignId } : {};
+    let where: any = campaignId ? { campaignId } : {};
+
+    if (user.role === 'TEAMLEADER') {
+      where = {
+        ...where,
+        teamId: user.teamId,
+      };
+    }
 
     const leads = await prisma.lead.findMany({
       where,

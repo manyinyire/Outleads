@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit'
 
+// --- TYPE DEFINITIONS ---
 export interface User {
   id: string
   email: string
@@ -13,60 +14,72 @@ export interface User {
 export interface AuthState {
   user: User | null
   isAuthenticated: boolean
-  loading: boolean
+  status: 'idle' | 'loading' | 'succeeded' | 'failed'
   error: string | null
 }
 
-// Load initial state from localStorage if available
-const loadInitialState = (): AuthState => {
-  if (typeof window !== 'undefined') {
-    try {
-      const savedAuth = localStorage.getItem('nexus-auth')
-      if (savedAuth) {
-        const parsed = JSON.parse(savedAuth)
-        return {
-          user: parsed.user || null,
-          isAuthenticated: parsed.isAuthenticated || false,
-          loading: false,
-          error: null,
-        }
-      }
-    } catch (error) {
-      console.error('Error loading auth from localStorage:', error)
-    }
-  }
-  
-  return {
-    user: null,
-    isAuthenticated: false,
-    loading: false,
-    error: null,
-  }
+// --- INITIAL STATE ---
+const initialState: AuthState = {
+  user: null,
+  isAuthenticated: false,
+  status: 'idle', // 'idle' means we haven't started verifying yet
+  error: null,
 }
 
-const initialState: AuthState = loadInitialState()
+// --- ASYNC THUNKS ---
 
+// Thunk for logging in
 export const login = createAsyncThunk(
   'auth/login',
-  async (credentials: { username: string; password: string }) => {
-    const response = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(credentials),
-    })
-    
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.message || 'Login failed')
+  async (credentials: { username: string; password: string }, { rejectWithValue }) => {
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credentials),
+      })
+      
+      const data = await response.json()
+      if (!response.ok) {
+        return rejectWithValue(data.message || 'Login failed')
+      }
+      
+      localStorage.setItem('auth-token', data.token)
+      return data.user
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'An unknown error occurred')
     }
-    
-    const data = await response.json()
-    return data.user
   }
 )
 
+// Thunk for verifying an existing token
+export const verifyToken = createAsyncThunk(
+  'auth/verifyToken',
+  async (_, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem('auth-token')
+      if (!token) {
+        return rejectWithValue('No token found')
+      }
+
+      const response = await fetch('/api/auth/verify', {
+        headers: { 'Authorization': `Bearer ${token}` },
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        localStorage.removeItem('auth-token')
+        return rejectWithValue(data.message || 'Session expired')
+      }
+      
+      return data.user
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Verification failed')
+    }
+  }
+)
+
+// --- SLICE DEFINITION ---
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -74,12 +87,9 @@ const authSlice = createSlice({
     logout: (state) => {
       state.user = null
       state.isAuthenticated = false
+      state.status = 'idle'
       state.error = null
-      
-      // Clear localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('nexus-auth')
-      }
+      localStorage.removeItem('auth-token')
     },
     clearError: (state) => {
       state.error = null
@@ -87,26 +97,34 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // Login cases
       .addCase(login.pending, (state) => {
-        state.loading = true
+        state.status = 'loading'
         state.error = null
       })
-      .addCase(login.fulfilled, (state, action) => {
-        state.loading = false
+      .addCase(login.fulfilled, (state, action: PayloadAction<User>) => {
+        state.status = 'succeeded'
         state.user = action.payload
         state.isAuthenticated = true
-        
-        // Save to localStorage
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('nexus-auth', JSON.stringify({
-            user: action.payload,
-            isAuthenticated: true
-          }))
-        }
       })
       .addCase(login.rejected, (state, action) => {
-        state.loading = false
-        state.error = action.error.message || 'Login failed'
+        state.status = 'failed'
+        state.error = action.payload as string
+      })
+      // Verify token cases
+      .addCase(verifyToken.pending, (state) => {
+        state.status = 'loading'
+      })
+      .addCase(verifyToken.fulfilled, (state, action: PayloadAction<User>) => {
+        state.status = 'succeeded'
+        state.user = action.payload
+        state.isAuthenticated = true
+      })
+      .addCase(verifyToken.rejected, (state, action) => {
+        state.status = 'failed'
+        state.isAuthenticated = false
+        state.user = null
+        state.error = action.payload as string
       })
   },
 })

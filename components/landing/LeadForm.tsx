@@ -2,80 +2,55 @@
 
 import { Form, Input, Select, Button, Card, Typography, message } from 'antd'
 import { UserOutlined, PhoneOutlined, BankOutlined } from '@ant-design/icons'
-import { useSelector, useDispatch } from 'react-redux'
-import { RootState, AppDispatch } from '@/lib/store'
 import { useState, useEffect } from 'react'
-import { setSectors } from '@/lib/store/slices/landingSlice'
 
 const { Title } = Typography
 const { Option } = Select
 
-interface LeadFormProps {
-  campaignId?: string | null
+interface Sector {
+  id: string;
+  name: string;
 }
 
-export default function LeadForm({ campaignId }: LeadFormProps) {
+interface LeadFormProps {
+  campaignId?: string | null
+  onNext?: (formData: any) => void
+  initialData?: any
+}
+
+export default function LeadForm({ campaignId, onNext, initialData }: LeadFormProps) {
   const [form] = Form.useForm()
-  const dispatch = useDispatch<AppDispatch>()
-  const { businessSectors, selectedProducts, products } = useSelector((state: RootState) => state.landing)
+  const [sectors, setSectors] = useState<Sector[]>([])
+  const [loadingSectors, setLoadingSectors] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     const fetchSectors = async () => {
       try {
         const response = await fetch('/api/sectors')
+        if (!response.ok) throw new Error('Failed to fetch sectors')
         const data = await response.json()
-        dispatch(setSectors(Array.isArray(data) ? data : []))
+        setSectors(Array.isArray(data) ? data : [])
       } catch (error) {
         console.error('Failed to fetch sectors:', error)
+        message.error('Failed to load business sectors.')
+      } finally {
+        setLoadingSectors(false)
       }
     }
-
     fetchSectors()
-  }, [dispatch])
+  }, [])
 
-  const selectedProductIds = products
-    .filter(p => selectedProducts.includes(p.id))
-    .map(p => p.id)
-
-  const selectedProductNames = products
-    .filter(p => selectedProducts.includes(p.id))
-    .map(p => p.name)
-
-  const handleSubmit = async (values: any) => {
-    if (selectedProducts.length === 0) {
-      message.warning('Please select at least one product you are interested in.')
-      return
+  // Set initial form data if it exists (when user goes back a step)
+  useEffect(() => {
+    if (initialData) {
+      form.setFieldsValue(initialData)
     }
+  }, [initialData, form])
 
-    setSubmitting(true)
-
-    try {
-      const response = await fetch('/api/leads', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: values.fullName,
-          email: values.email,
-          phone: values.phoneNumber,
-          company: values.businessSector,
-          productIds: selectedProductIds,
-          campaignId: campaignId || undefined,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to submit lead')
-      }
-
-      message.success('Thank you! Your information has been submitted successfully. Our team will contact you soon.')
-      form.resetFields()
-    } catch (error) {
-      message.error('Failed to submit your information. Please try again.')
-    } finally {
-      setSubmitting(false)
+  const handleSubmit = (values: any) => {
+    if (onNext) {
+      onNext(values)
     }
   }
 
@@ -99,10 +74,7 @@ export default function LeadForm({ campaignId }: LeadFormProps) {
         <Form.Item
           name="fullName"
           label="Full Name"
-          rules={[
-            { required: true, message: 'Please enter your full name' },
-            { min: 2, message: 'Name must be at least 2 characters' }
-          ]}
+          rules={[{ required: true, message: 'Please enter your full name' }]}
         >
           <Input
             prefix={<UserOutlined />}
@@ -112,27 +84,9 @@ export default function LeadForm({ campaignId }: LeadFormProps) {
         </Form.Item>
 
         <Form.Item
-          name="email"
-          label="Email Address"
-          rules={[
-            { required: true, message: 'Please enter your email address' },
-            { type: 'email', message: 'Please enter a valid email address' }
-          ]}
-        >
-          <Input
-            prefix={<UserOutlined />}
-            placeholder="Enter your email address"
-            size="large"
-          />
-        </Form.Item>
-
-        <Form.Item
           name="phoneNumber"
           label="Phone Number"
-          rules={[
-            { required: true, message: 'Please enter your phone number' },
-            { pattern: /^[\+]?[1-9][\d]{0,15}$/, message: 'Please enter a valid phone number' }
-          ]}
+          rules={[{ required: true, message: 'Please enter your phone number' }]}
         >
           <Input
             prefix={<PhoneOutlined />}
@@ -142,47 +96,23 @@ export default function LeadForm({ campaignId }: LeadFormProps) {
         </Form.Item>
 
         <Form.Item
-          name="businessSector"
+          name="sectorId"
           label="Business Sector"
           rules={[{ required: true, message: 'Please select your business sector' }]}
         >
           <Select
             placeholder="Select your business sector"
             size="large"
+            loading={loadingSectors}
             suffixIcon={<BankOutlined />}
           >
-            {businessSectors.map(sector => (
-              <Option key={sector.id} value={sector.name}>
+            {sectors.map(sector => (
+              <Option key={sector.id} value={sector.id}>
                 {sector.name}
               </Option>
             ))}
           </Select>
         </Form.Item>
-
-        {selectedProducts.length > 0 && (
-          <div style={{ marginBottom: '16px' }}>
-            <Typography.Text strong>Selected Products:</Typography.Text>
-            <div style={{ marginTop: '8px' }}>
-              {selectedProductNames.map((name, index) => (
-                <span
-                  key={index}
-                  style={{
-                    display: 'inline-block',
-                    background: '#e6f7ff',
-                    color: '#1890ff',
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    fontSize: '12px',
-                    marginRight: '8px',
-                    marginBottom: '4px',
-                  }}
-                >
-                  {name}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
 
         <Form.Item>
           <Button
@@ -191,24 +121,12 @@ export default function LeadForm({ campaignId }: LeadFormProps) {
             size="large"
             block
             loading={submitting}
-            style={{
-              height: '48px',
-              fontSize: '16px',
-              fontWeight: 'bold',
-            }}
+            style={{ height: '48px', fontSize: '16px', fontWeight: 'bold' }}
           >
-            Submit Information
+            Next: Choose Products
           </Button>
         </Form.Item>
       </Form>
-
-      {campaignId && (
-        <div style={{ textAlign: 'center', marginTop: '16px' }}>
-          <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
-            Campaign ID: {campaignId}
-          </Typography.Text>
-        </div>
-      )}
     </Card>
   )
 }

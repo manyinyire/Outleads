@@ -7,6 +7,22 @@ async function main() {
   console.log('🌱 Starting database seed...');
 
   try {
+    // Clear existing data
+    console.log('--- Deleting Data ---');
+    await prisma.lead.deleteMany({});
+    console.log('Leads deleted.');
+    await prisma.product.deleteMany({});
+    console.log('Products deleted.');
+    await prisma.productCategory.deleteMany({});
+    console.log('ProductCategories deleted.');
+    await prisma.sector.deleteMany({});
+    console.log('Sectors deleted.');
+    await prisma.campaign.deleteMany({});
+    console.log('Campaigns deleted.');
+    await prisma.user.deleteMany({});
+    console.log('Users deleted.');
+    console.log('--- Data Deletion Complete ---');
+
     // Create default sectors
     const sectors = [
       { name: 'Technology' },
@@ -21,104 +37,63 @@ async function main() {
       { name: 'Other' }
     ];
 
-    console.log('Creating sectors...');
+    console.log('--- Creating Sectors ---');
     for (const sector of sectors) {
-      await prisma.sector.upsert({
-        where: { id: `sector-${sector.name.toLowerCase().replace(/\s+/g, '-')}` },
-        update: {},
-        create: {
-          id: `sector-${sector.name.toLowerCase().replace(/\s+/g, '-')}`,
-          ...sector
-        }
-      });
+      await prisma.sector.create({ data: sector });
+      console.log(`Created sector: ${sector.name}`);
     }
+    console.log('--- Sector Creation Complete ---');
 
-    // Create default products
-    const products = [
-      {
-        name: 'Business Loan',
-        description: 'Flexible business loans for growth and expansion'
-      },
-      {
-        name: 'Equipment Financing',
-        description: 'Financing solutions for business equipment and machinery'
-      },
-      {
-        name: 'Working Capital',
-        description: 'Short-term financing for operational expenses'
-      },
-      {
-        name: 'Commercial Real Estate',
-        description: 'Loans for commercial property purchases and refinancing'
-      },
-      {
-        name: 'Invoice Factoring',
-        description: 'Convert outstanding invoices into immediate cash flow'
-      },
-      {
-        name: 'Merchant Cash Advance',
-        description: 'Quick funding based on future credit card sales'
-      },
-      {
-        name: 'SBA Loans',
-        description: 'Government-backed loans with favorable terms'
-      },
-      {
-        name: 'Line of Credit',
-        description: 'Flexible credit line for ongoing business needs'
-      }
-    ];
+    // Create product categories and products
+    const productData = {
+      "Bank Accounts": ["Individual Account", "Company Account"],
+      "Motor Insurance": ["Comprehensive", "Third Party", "Passenger Insurance"],
+      "Micro Insurance": ["Health Cash Plan", "Funeral Cash Plan"],
+      "Business & Agriculture": ["Assets All Risks", "Goods in Transit", "Crop Insurance", "Livestock Insurance"],
+      "Personal Loan": ["Borehole Loan", "Car Loan", "School Fees"],
+      "Credit Cards": ["Mastercard", "Visacard"]
+    };
 
-    console.log('Creating products...');
-    for (const product of products) {
-      await prisma.product.upsert({
-        where: { id: `product-${product.name.toLowerCase().replace(/\s+/g, '-')}` },
-        update: {},
-        create: {
-          id: `product-${product.name.toLowerCase().replace(/\s+/g, '-')}`,
-          ...product
-        }
+    console.log('--- Creating Products & Categories ---');
+    for (const categoryName in productData) {
+      const category = await prisma.productCategory.create({
+        data: { name: categoryName }
       });
-    }
+      console.log(`Created category: ${category.name}`);
 
-    // Create default admin user
-    const adminPassword = await hashPassword('admin123!');
+      const products = productData[categoryName as keyof typeof productData].map(productName => ({
+        name: productName,
+        categoryId: category.id
+      }));
+
+      await prisma.product.createMany({
+        data: products
+      });
+      console.log(`-- Created ${products.length} products for ${category.name}`);
+    }
+    console.log('--- Product & Category Creation Complete ---');
+
+    // Create the superuser
+    const superuserPassword = await hashPassword('superuser123!');
     
-    console.log('Creating default admin user...');
-    await prisma.user.upsert({
-      where: { email: 'admin@nexus.com' },
-      update: {},
-      create: {
-        email: 'admin@nexus.com',
-        username: 'admin_nexus',
-        password: adminPassword,
-        name: 'Admin User',
+    console.log('--- Creating Superuser ---');
+    await prisma.user.create({
+      data: {
+        email: 'superuser@fbc.co.zw',
+        username: 'superuser',
+        password: superuserPassword,
+        name: 'Super User',
         role: 'ADMIN' as const,
         status: 'ACTIVE' as const
       }
     });
-
-    // Create default agent user
-    const agentPassword = await hashPassword('agent123!');
-    
-    console.log('Creating default agent user...');
-    await prisma.user.upsert({
-      where: { email: 'agent@nexus.com' },
-      update: {},
-      create: {
-        email: 'agent@nexus.com',
-        username: 'agent_nexus',
-        password: agentPassword,
-        name: 'Agent User',
-        role: 'AGENT' as const,
-        status: 'ACTIVE' as const
-      }
-    });
+    console.log('Superuser created.');
+    console.log('--- Superuser Creation Complete ---');
 
     console.log('✅ Database seeded successfully!');
-    console.log('\n📋 Default Users Created:');
-    console.log('Admin: admin@nexus.com / admin123!');
-    console.log('Agent: agent@nexus.com / agent123!');
+    console.log('Superuser Created:');
+    console.log('Email: superuser@fbc.co.zw');
+    console.log('Password: superuser123!');
 
   } catch (error) {
     console.error('❌ Error seeding database:', error);

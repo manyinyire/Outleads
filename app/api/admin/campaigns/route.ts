@@ -1,62 +1,39 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { withAuth, AuthenticatedRequest } from '@/lib/auth';
-import { validateData, createCampaignSchema } from '@/lib/validation';
+import { z } from 'zod';
+import { createCrudHandlers } from '@/lib/crud-factory';
+import { withAuthAndRole } from '@/lib/api-utils';
 import { generateCampaignLink } from '@/lib/auth-utils';
+import { prisma } from '@/lib/prisma';
 
-// GET /api/admin/campaigns - Retrieve all campaigns
-export const GET = withAuth(async (req: AuthenticatedRequest) => {
-  try {
-    const campaigns = await prisma.campaign.findMany({
-      include: {
-        createdBy: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        },
-        _count: {
-          select: {
-            leads: true
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
-
-    return NextResponse.json({
-      campaigns
-    });
-
-  } catch (error) {
-    console.error('Error fetching campaigns:', error);
-    return NextResponse.json({
-      error: 'Internal Server Error',
-      message: 'Failed to fetch campaigns'
-    }, { status: 500 });
-  }
+const campaignSchema = z.object({
+  name: z.string().min(1, 'Campaign name is required'),
+  companyName: z.string().min(1, 'Company name is required'),
 });
 
-// POST /api/admin/campaigns - Create a new campaign
-export const POST = withAuth(async (req: AuthenticatedRequest) => {
-  try {
-    const body = await req.json();
-    
-    // Validate request data
-    const validation = validateData(createCampaignSchema, body);
-    if (!validation.success) {
-      return NextResponse.json({
-        error: 'Validation Error',
-        message: validation.error
-      }, { status: 400 });
+const handlers = createCrudHandlers({
+  modelName: 'campaign',
+  entityName: 'Campaign',
+  createSchema: campaignSchema,
+  updateSchema: campaignSchema,
+  includeRelations: {
+    createdBy: {
+      select: {
+        id: true,
+        name: true,
+        email: true
+      }
+    },
+    _count: {
+      select: {
+        leads: true
+      }
     }
-
-    const { name, companyName } = validation.data;
-    const userId = req.user!.id;
-
+  },
+  orderBy: { createdAt: 'desc' },
+  searchFields: ['name', 'companyName'],
+  
+  // Custom hook to generate unique link before creation
+  beforeCreate: async (data, context) => {
     // Generate unique campaign link
     let uniqueLink: string;
     let isUnique = false;
@@ -73,45 +50,33 @@ export const POST = withAuth(async (req: AuthenticatedRequest) => {
     }
 
     if (!isUnique) {
-      return NextResponse.json({
-        error: 'Internal Server Error',
-        message: 'Failed to generate unique campaign link'
-      }, { status: 500 });
+      throw new Error('Failed to generate unique campaign link');
     }
 
-    const campaign = await prisma.campaign.create({
-      data: {
-        name,
-        companyName,
-        uniqueLink: uniqueLink!,
-        createdById: userId
-      },
-      include: {
-        createdBy: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        },
-        _count: {
-          select: {
-            leads: true
-          }
-        }
-      }
+    return {
+      ...data,
+      uniqueLink: uniqueLink!,
+      createdById: context.user?.id
+    };
+  },
+
+  // Custom hook to check if campaign can be deleted
+  canDelete: async (id) => {
+    const campaign = await prisma.campaign.findUnique({
+      where: { id },
+      include: { _count: { select: { leads: true } } }
     });
-
-    return NextResponse.json({
-      message: 'Campaign created successfully',
-      campaign
-    }, { status: 201 });
-
-  } catch (error) {
-    console.error('Error creating campaign:', error);
-    return NextResponse.json({
-      error: 'Internal Server Error',
-      message: 'Failed to create campaign'
-    }, { status: 500 });
+    
+    if (campaign && campaign._count.leads > 0) {
+      return {
+        allowed: false,
+        reason: 'Cannot delete campaign with existing leads'
+      };
+    }
+    
+    return { allowed: true };
   }
 });
+
+export const GET = withAuthAndRole(['ADMIN', 'AGENT'], handlers.GET);
+export const POST = withAuthAndRole(['ADMIN', 'AGENT'], handlers.POST);

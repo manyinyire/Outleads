@@ -45,28 +45,42 @@ model Campaign {
 
 // A captured lead from a client
 model Lead {
-  id             String    @id @default(cuid())
+  id             String         @id @default(cuid())
   fullName       String
   phoneNumber    String
-  businessSector Sector    @relation(fields: [sectorId], references: [id])
+  businessSector Sector         @relation(fields: [sectorId], references: [id])
   sectorId       String
-  products       Product[] @relation("LeadProducts")
-  campaign       Campaign? @relation(fields: [campaignId], references: [id])
+  products       Product[]
+  campaign       Campaign?      @relation(fields: [campaignId], references: [id])
   campaignId     String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   @@map("leads")
 }
 
-// A list of available products
-model Product {
-  id          String   @id @default(cuid())
-  name        String
+// Parent Product Category
+model ProductCategory {
+  id          String    @id @default(cuid())
+  name        String    @unique
   description String?
-  leads       Lead[]   @relation("LeadProducts")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("product_categories")
+}
+
+// A list of available products (sub-products)
+model Product {
+  id              String         @id @default(cuid())
+  name            String
+  description     String?
+  category        ProductCategory @relation(fields: [categoryId], references: [id])
+  categoryId      String
+  leads           Lead[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   @@map("products")
 }

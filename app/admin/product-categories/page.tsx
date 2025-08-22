@@ -1,35 +1,39 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { App } from 'antd'
+import { App, Tag } from 'antd'
 import { ColumnsType } from 'antd/es/table'
 import CrudTable, { CrudField } from '@/components/admin/CrudTable'
 
-interface Sector {
+interface ProductCategory {
   id: string
   name: string
+  description?: string
+  _count: {
+    products: number
+  }
 }
 
-export default function SectorsPage() {
-  const [data, setData] = useState<Sector[]>([])
+export default function ProductCategoriesPage() {
+  const [data, setData] = useState<ProductCategory[]>([])
   const [loading, setLoading] = useState(true)
   const [searchText, setSearchText] = useState('')
   const [isModalVisible, setModalVisible] = useState(false)
-  const [editingRecord, setEditingRecord] = useState<Sector | null>(null)
+  const [editingRecord, setEditingRecord] = useState<ProductCategory | null>(null)
   
   const { message } = App.useApp()
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const token = localStorage.getItem('auth-token')
-    if (!token) {
-      message.error("Authentication token not found. Please log in again.");
-      setLoading(false);
-      return;
-    }
-
     try {
-      const url = new URL('/api/admin/sectors', window.location.origin)
+      const token = localStorage.getItem('auth-token')
+      if (!token) {
+        message.error("Authentication token not found. Please log in again.");
+        setLoading(false);
+        return;
+      }
+
+      const url = new URL('/api/admin/product-categories', window.location.origin)
       if (searchText) {
         url.searchParams.set('search', searchText)
       }
@@ -41,11 +45,11 @@ export default function SectorsPage() {
       if (!response.ok) throw new Error(`Failed to fetch: ${response.statusText}`)
       
       const result = await response.json()
-      setData(result.sector || [])
+      setData(result.productCategory || [])
       
     } catch (error) {
       console.error("Fetch error:", error)
-      message.error('Failed to load sectors.')
+      message.error('Failed to load product categories.')
     } finally {
       setLoading(false)
     }
@@ -59,7 +63,7 @@ export default function SectorsPage() {
     setSearchText(value)
   }
 
-  const handleEdit = (record: Sector) => {
+  const handleEdit = (record: ProductCategory) => {
     setEditingRecord(record)
     setModalVisible(true)
   }
@@ -67,27 +71,27 @@ export default function SectorsPage() {
   const handleDelete = async (id: string) => {
     const token = localStorage.getItem('auth-token');
     try {
-      const response = await fetch(`/api/admin/sectors/${id}`, {
+      const response = await fetch(`/api/admin/product-categories/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
       if (response.ok) {
-        message.success('Sector deleted successfully');
+        message.success('Category deleted successfully');
         fetchData();
       } else {
         const error = await response.json();
-        message.error(error.message || 'Failed to delete sector');
+        message.error(error.message || 'Failed to delete category');
       }
     } catch (error) {
       console.error("Delete error:", error);
-      message.error('An error occurred while deleting the sector.');
+      message.error('An error occurred while deleting the category.');
     }
   }
 
-  const handleSubmit = async (values: any, record: Sector | null) => {
+  const handleSubmit = async (values: any, record: ProductCategory | null) => {
     const token = localStorage.getItem('auth-token');
-    const url = record ? `/api/admin/sectors/${record.id}` : '/api/admin/sectors';
+    const url = record ? `/api/admin/product-categories/${record.id}` : '/api/admin/product-categories';
     const method = record ? 'PUT' : 'POST';
 
     try {
@@ -101,31 +105,39 @@ export default function SectorsPage() {
       });
 
       if (response.ok) {
-        message.success(`Sector ${record ? 'updated' : 'created'} successfully`);
+        message.success(`Category ${record ? 'updated' : 'created'} successfully`);
         setModalVisible(false);
         setEditingRecord(null);
         fetchData();
       } else {
         const error = await response.json();
-        message.error(error.message || `Failed to save sector`);
+        message.error(error.message || `Failed to save category`);
       }
     } catch (error) {
       console.error("Submit error:", error);
-      message.error('An error occurred while saving the sector.');
+      message.error('An error occurred while saving the category.');
     }
   }
 
   const fields: CrudField[] = useMemo(() => [
-    { name: 'name', label: 'Sector Name', type: 'text', required: true },
+    { name: 'name', label: 'Category Name', type: 'text', required: true },
+    { name: 'description', label: 'Description', type: 'textarea' },
   ], [])
 
-  const columns: ColumnsType<Sector> = useMemo(() => [
+  const columns: ColumnsType<ProductCategory> = useMemo(() => [
     { title: 'Name', dataIndex: 'name', key: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
+    { title: 'Description', dataIndex: 'description', key: 'description' },
+    { 
+      title: 'Sub-Products', 
+      dataIndex: ['_count', 'products'], 
+      key: 'products_count',
+      render: (count: number) => <Tag>{count}</Tag>
+    },
   ], [])
 
   return (
-    <CrudTable<Sector>
-      title="Business Sectors"
+    <CrudTable<ProductCategory>
+      title="Product Categories"
       columns={columns}
       fields={fields}
       dataSource={data}

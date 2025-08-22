@@ -1,53 +1,24 @@
 'use client'
 
-import { List, Checkbox, Skeleton, Typography } from 'antd'
-import { useDispatch, useSelector } from 'react-redux'
-import { RootState, AppDispatch } from '@/lib/store'
-import { toggleProductSelection, setProducts } from '@/lib/store/slices/landingSlice'
-import { Product } from '@/lib/store/slices/landingSlice'
-import { useEffect, useState } from 'react'
+import { List, Checkbox, Typography } from 'antd'
 
 const { Text } = Typography
 
-export default function ProductList() {
-  const dispatch = useDispatch<AppDispatch>()
-  const { products, selectedProducts } = useSelector((state: RootState) => state.landing)
-  const [loading, setLoading] = useState(true)
+// --- TYPE DEFINITIONS ---
+interface Product {
+  id: string;
+  name: string;
+  description?: string;
+}
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await fetch('/api/products')
-        const data = await response.json()
-        dispatch(setProducts(data.products || []))
-      } catch (error) {
-        console.error('Failed to fetch products:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
+interface ProductListProps {
+  products: Product[];
+  selectedProductIds: string[];
+  onProductSelect: (product: Product) => void;
+}
 
-    fetchProducts()
-  }, [dispatch])
-
-  const handleProductToggle = (productId: string) => {
-    dispatch(toggleProductSelection(productId))
-  }
-
-  if (loading) {
-    return (
-      <List
-        dataSource={Array.from({ length: 4 }, (_, index) => ({ key: index }))}
-        rowKey="key"
-        renderItem={() => (
-          <List.Item>
-            <Skeleton active paragraph={{ rows: 2 }} />
-          </List.Item>
-        )}
-      />
-    )
-  }
-
+// --- COMPONENT ---
+export default function ProductList({ products, selectedProductIds, onProductSelect }: ProductListProps) {
   return (
     <List
       dataSource={products}
@@ -55,33 +26,23 @@ export default function ProductList() {
       renderItem={(product) => (
         <List.Item
           style={{
-            padding: '16px',
-            border: '1px solid #e5e7eb',
+            padding: '12px',
+            border: `1px solid ${selectedProductIds.includes(product.id) ? '#3b82f6' : '#e5e7eb'}`,
+            backgroundColor: selectedProductIds.includes(product.id) ? '#f0f9ff' : '#fff',
             borderRadius: '8px',
-            marginBottom: '12px',
-            backgroundColor: selectedProducts.includes(product.id) ? '#f0f9ff' : '#fff',
+            marginBottom: '8px',
             cursor: 'pointer',
-            transition: 'all 0.2s ease',
           }}
-          onClick={() => handleProductToggle(product.id)}
+          onClick={() => onProductSelect(product)}
         >
           <List.Item.Meta
             avatar={
-              <Checkbox
-                checked={selectedProducts.includes(product.id)}
-                onChange={() => handleProductToggle(product.id)}
+              <Checkbox 
+                checked={selectedProductIds.includes(product.id)} 
               />
             }
-            title={
-              <Text strong style={{ color: '#1f2937' }}>
-                {product.name}
-              </Text>
-            }
-            description={
-              <Text style={{ color: '#6b7280' }}>
-                {product.description}
-              </Text>
-            }
+            title={<Text strong>{product.name}</Text>}
+            description={product.description && <Text type="secondary">{product.description}</Text>}
           />
         </List.Item>
       )}

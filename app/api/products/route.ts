@@ -1,41 +1,27 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { withErrorHandler, successResponse, errorResponse } from '@/lib/api-utils';
 
-// GET /api/products - Retrieve all products and sectors (public endpoint)
-export async function GET() {
+const handler = withErrorHandler(async () => {
   try {
-    const [products, sectors] = await Promise.all([
-      prisma.product.findMany({
-        select: {
-          id: true,
-          name: true,
-          description: true
+    const productCategories = await prisma.productCategory.findMany({
+      include: {
+        products: {
+          orderBy: {
+            name: 'asc',
+          },
         },
-        orderBy: {
-          name: 'asc'
-        }
-      }),
-      prisma.sector.findMany({
-        select: {
-          id: true,
-          name: true
-        },
-        orderBy: {
-          name: 'asc'
-        }
-      })
-    ]);
-
-    return NextResponse.json({
-      products,
-      sectors
+      },
+      orderBy: {
+        name: 'asc',
+      },
     });
 
+    return successResponse(productCategories);
   } catch (error) {
-    console.error('Error fetching products and sectors:', error);
-    return NextResponse.json({
-      error: 'Internal Server Error',
-      message: 'Failed to fetch products and sectors'
-    }, { status: 500 });
+    console.error('Failed to fetch products for landing page:', error);
+    return errorResponse('An error occurred while fetching products.', 500);
   }
-}
+});
+
+export { handler as GET };

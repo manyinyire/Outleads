@@ -99,8 +99,8 @@ export function withAuth(handler: (req: AuthenticatedRequest, context?: any) => 
   };
 }
 
-export function withAuthAndRole(roles: string[], handler: (req: AuthenticatedRequest) => Promise<NextResponse>) {
-  return async (req: Request) => {
+export function withAuthAndRole(roles: string[], handler: (req: AuthenticatedRequest, context?: any) => Promise<NextResponse>) {
+  return async (req: Request, context?: any) => {
     const authReq = req as AuthenticatedRequest;
     const authError = await authenticateToken(authReq);
     if (authError) return authError;
@@ -108,7 +108,7 @@ export function withAuthAndRole(roles: string[], handler: (req: AuthenticatedReq
     const roleError = requireRole(roles)(authReq.user!);
     if (roleError) return roleError;
     
-    return handler(authReq);
+    return handler(authReq, context);
   };
 }
 

@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Form, Input, Button, Card, Typography, message, Layout } from 'antd'
+import { Form, Input, Button, Card, Typography, App, Layout } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState, AppDispatch } from '@/lib/store'
@@ -15,6 +15,7 @@ export default function LoginPage() {
   const [form] = Form.useForm()
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
+  const { message } = App.useApp()
   
   const { loading, error, isAuthenticated } = useSelector((state: RootState) => state.auth)
 

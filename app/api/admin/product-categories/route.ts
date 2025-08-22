@@ -2,19 +2,21 @@ import { withAuthAndRole } from '@/lib/auth';
 import { createCrudHandlers } from '@/lib/crud-factory';
 import { z } from 'zod';
 
-const productSchema = z.object({
-  name: z.string().min(1, 'Product name is required'),
+const categorySchema = z.object({
+  name: z.string().min(1, 'Category name is required'),
   description: z.string().optional(),
-  categoryId: z.string().cuid('Invalid category ID'),
 });
 
 const handlers = createCrudHandlers({
-  modelName: 'product',
-  entityName: 'Product',
-  createSchema: productSchema,
-  updateSchema: productSchema.partial(),
+  modelName: 'productCategory',
+  entityName: 'Product Category',
+  createSchema: categorySchema,
+  updateSchema: categorySchema.partial(),
   includeRelations: {
-    category: true, // Include parent category
+    products: true, // Include sub-products
+    _count: {
+      select: { products: true }
+    }
   },
   orderBy: { name: 'asc' },
   searchFields: ['name'],

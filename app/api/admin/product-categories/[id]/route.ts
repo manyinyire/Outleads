@@ -2,17 +2,16 @@ import { withAuthAndRole } from '@/lib/auth';
 import { createCrudHandlers } from '@/lib/crud-factory';
 import { z } from 'zod';
 
-const productSchema = z.object({
-  name: z.string().min(1, 'Product name is required'),
+const categorySchema = z.object({
+  name: z.string().min(1, 'Category name is required'),
   description: z.string().nullable().transform(val => val ?? undefined).optional(),
-  categoryId: z.string().cuid('Invalid category ID'),
 });
 
 const handlers = createCrudHandlers({
-  modelName: 'product',
-  entityName: 'Product',
-  createSchema: productSchema,
-  updateSchema: productSchema.partial(),
+  modelName: 'productCategory',
+  entityName: 'Product Category',
+  createSchema: categorySchema,
+  updateSchema: categorySchema.partial(),
 });
 
 export const GET = withAuthAndRole(['ADMIN'], handlers.GET_BY_ID);

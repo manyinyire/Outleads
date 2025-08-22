@@ -1,56 +1,19 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import jwt from 'jsonwebtoken';
+import { withAuth, AuthenticatedRequest } from '@/lib/auth';
+import { successResponse, errorResponse } from '@/lib/api-utils';
 
-export async function POST(request: Request) {
+// This handler is protected by the withAuth middleware.
+// If the token is valid, the middleware attaches the user object to the request.
+async function handler(req: AuthenticatedRequest) {
   try {
-    const authHeader = request.headers.get('authorization');
-    const token = authHeader && authHeader.split(' ')[1];
-
-    if (!token) {
-      return NextResponse.json({
-        error: 'Authentication Error',
-        message: 'Access token is required'
-      }, { status: 401 });
-    }
-
-    const jwtSecret = process.env.JWT_SECRET;
-    
-    if (!jwtSecret) {
-      throw new Error('JWT_SECRET is not configured');
-    }
-
-    const decoded = jwt.verify(token, jwtSecret) as any;
-    
-    // Fetch user to ensure they still exist
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true
-      }
-    });
-
-    if (!user) {
-      return NextResponse.json({
-        error: 'Authentication Error',
-        message: 'User not found'
-      }, { status: 401 });
-    }
-
-    return NextResponse.json({
-      message: 'Token is valid',
-      user,
-      expiresIn: '24h'
-    });
-
+    // If withAuth middleware succeeds, req.user will be populated.
+    // We can just return the user data.
+    return successResponse({ user: req.user });
   } catch (error) {
-    console.error('Token verification error:', error);
-    return NextResponse.json({
-      error: 'Authentication Error',
-      message: 'Invalid or expired token'
-    }, { status: 403 });
+    // This catch block is for unexpected errors, as withAuth handles auth errors.
+    console.error('Verification error:', error);
+    return errorResponse('An internal server error occurred during verification.', 500);
   }
 }
+
+export const GET = withAuth(handler);
