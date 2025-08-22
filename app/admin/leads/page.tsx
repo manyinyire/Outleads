@@ -9,7 +9,7 @@ interface Lead {
   id: string
   fullName: string
   phoneNumber: string
-  sector: { name: string }
+  businessSector: { name: string }
   products: Array<{ name: string }>
   campaign?: { name: string }
   createdAt: string
@@ -86,7 +86,7 @@ export default function LeadsPage() {
   const columns: ColumnsType<Lead> = useMemo(() => [
     { title: 'Name', dataIndex: 'fullName', key: 'fullName' },
     { title: 'Phone', dataIndex: 'phoneNumber', key: 'phoneNumber' },
-    { title: 'Sector', dataIndex: ['sector', 'name'], key: 'sector' },
+    { title: 'Sector', dataIndex: ['businessSector', 'name'], key: 'sector' },
     {
       title: 'Products',
       dataIndex: 'products',
@@ -97,7 +97,12 @@ export default function LeadsPage() {
         </>
       ),
     },
-    { title: 'Campaign', dataIndex: ['campaign', 'name'], key: 'campaign' },
+    { 
+      title: 'Campaign', 
+      dataIndex: 'campaign', 
+      key: 'campaign',
+      render: (campaign) => campaign ? campaign.name : <Tag>Direct Lead</Tag>
+    },
     { title: 'Date', dataIndex: 'createdAt', key: 'createdAt', render: (date) => new Date(date).toLocaleDateString() },
   ], [])
 

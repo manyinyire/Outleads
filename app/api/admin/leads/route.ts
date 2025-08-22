@@ -15,7 +15,7 @@ const handlers = createCrudHandlers({
   createSchema: leadSchema,
   updateSchema: leadSchema.partial(),
   includeRelations: {
-    sector: true,
+    businessSector: true,
     products: true,
     campaign: true,
   },
