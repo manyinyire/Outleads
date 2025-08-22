@@ -37,7 +37,20 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true)
   const [selectedCategoryKey, setSelectedCategoryKey] = useState<string>('')
 
-  const campaignId = searchParams.get('campaign')
+  const campaignIdFromUrl = searchParams.get('campaignId');
+  const [campaignId, setCampaignId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (campaignIdFromUrl) {
+      localStorage.setItem('campaignId', campaignIdFromUrl);
+      setCampaignId(campaignIdFromUrl);
+    } else {
+      const storedCampaignId = localStorage.getItem('campaignId');
+      if (storedCampaignId) {
+        setCampaignId(storedCampaignId);
+      }
+    }
+  }, [campaignIdFromUrl]);
 
   useEffect(() => {
     const fetchCategories = async () => {

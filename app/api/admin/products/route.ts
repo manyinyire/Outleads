@@ -6,6 +6,9 @@ const handlers = {
     modelName: 'product',
     entityName: 'Product',
     orderBy: { name: 'asc' },
+    includeRelations: {
+      category: true,
+    },
   }),
 };
 

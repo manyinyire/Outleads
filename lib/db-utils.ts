@@ -2,8 +2,19 @@ import { Prisma } from '@prisma/client'
 import { prisma } from './prisma'
 
 /**
+ * Get user by email
+ */
+export const getUserByEmail = async (email: string) => {
+  return prisma.user.findUnique({
+    where: { email },
+  });
+};
+
+/**
  * Database query optimization utilities
  */
+// ... (rest of the file remains the same)
+
 
 /**
  * Build optimized include/select queries to prevent overfetching

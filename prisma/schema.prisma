@@ -30,15 +30,18 @@ model User {
 
 // Campaign for a specific company or use case
 model Campaign {
-  id          String   @id @default(cuid())
-  name        String
-  companyName String
-  uniqueLink  String   @unique
-  leads       Lead[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  createdBy   User     @relation(fields: [createdById], references: [id])
-  createdById String
+  id                String   @id @default(cuid())
+  campaign_name     String
+  organization_name String
+  uniqueLink        String   @unique
+  leads             Lead[]
+  is_active         Boolean  @default(true)
+  lead_count        Int      @default(0)
+  click_count       Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  createdBy         User     @relation(fields: [createdById], references: [id])
+  createdById       String
 
   @@map("campaigns")
 }
@@ -103,6 +106,7 @@ enum Role {
   INFOSEC
   AGENT
   SUPERVISOR
+  TEAMLEADER
 }
 
 // User status for account management

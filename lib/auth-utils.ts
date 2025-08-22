@@ -1,41 +1,49 @@
-import bcrypt from 'bcryptjs';
+import { prisma } from './prisma';
+import { Role } from '@prisma/client';
+import { headers } from 'next/headers';
 import jwt from 'jsonwebtoken';
-import { nanoid } from 'nanoid';
 
-// Hash password
-export const hashPassword = async (password: string): Promise<string> => {
-  const saltRounds = 12;
-  return await bcrypt.hash(password, saltRounds);
-};
+// ... (keep existing functions: hashPassword, comparePassword, generateToken, etc.)
 
-// Compare password
-export const comparePassword = async (password: string, hashedPassword: string): Promise<boolean> => {
-  return await bcrypt.compare(password, hashedPassword);
-};
-
-// Generate JWT token
-export const generateToken = (userId: string): string => {
+// Verify JWT token and get user ID
+export const getUserIdFromToken = (token: string): string | null => {
   const jwtSecret = process.env.JWT_SECRET;
   if (!jwtSecret) {
-    throw new Error('JWT_SECRET is not configured');
+    console.error('JWT_SECRET is not configured');
+    return null;
   }
 
-  return jwt.sign(
-    { userId },
-    jwtSecret,
-    { expiresIn: '24h' }
-  );
+  try {
+    const decoded = jwt.verify(token, jwtSecret) as { userId: string };
+    return decoded.userId;
+  } catch (error) {
+    console.error('Invalid token:', error);
+    return null;
+  }
 };
 
-// Generate unique campaign link
-export const generateCampaignLink = (): string => {
-  // Generate a short, URL-safe, unique identifier
-  return nanoid(10); // 10 characters, URL-safe
-};
+// Check user role
+export const checkUserRole = async (allowedRoles: Role[]): Promise<boolean> => {
+  const authorization = headers().get('authorization');
+  if (!authorization || !authorization.startsWith('Bearer ')) {
+    return false;
+  }
 
-// Validate campaign link format
-export const isValidCampaignLink = (link: string): boolean => {
-  // Check if it's a valid nanoid format (alphanumeric + underscore + hyphen)
-  const nanoidRegex = /^[A-Za-z0-9_-]{10}$/;
-  return nanoidRegex.test(link);
+  const token = authorization.split(' ')[1];
+  const userId = getUserIdFromToken(token);
+
+  if (!userId) {
+    return false;
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+
+  if (!user) {
+    return false;
+  }
+
+  return allowedRoles.includes(user.role);
 };

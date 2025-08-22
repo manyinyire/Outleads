@@ -67,7 +67,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       key: '/admin/campaigns',
       icon: <BulbOutlined />,
       label: 'Campaigns',
-      hidden: !user || user.role !== 'ADMIN',
+      hidden: !user || !['ADMIN', 'TEAMLEADER'].includes(user.role),
     },
     {
       key: '/admin/reports',
