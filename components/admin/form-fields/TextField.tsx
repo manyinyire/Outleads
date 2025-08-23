@@ -4,13 +4,18 @@ import { Form, Input } from 'antd'
 import { CrudField } from '../CrudTable'
 
 interface TextFieldProps {
-  field: CrudField
-  disabled?: boolean
+  readonly field: CrudField
+  readonly disabled?: boolean
 }
 
 export default function TextField({ field, disabled }: TextFieldProps) {
-  const InputComponent = field.type === 'textarea' ? Input.TextArea : 
-                         field.type === 'password' ? Input.Password : Input
+  const getInputComponent = () => {
+    if (field.type === 'textarea') return Input.TextArea;
+    if (field.type === 'password') return Input.Password;
+    return Input;
+  };
+
+  const InputComponent = getInputComponent();
 
   return (
     <Form.Item

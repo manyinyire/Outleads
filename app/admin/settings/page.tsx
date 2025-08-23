@@ -8,7 +8,6 @@ const { TabPane } = Tabs
 
 const SettingsPage = () => {
   const [loading, setLoading] = useState(true)
-  const [settings, setSettings] = useState<Record<string, string>>({})
   const [form] = Form.useForm()
 
   useEffect(() => {
@@ -25,7 +24,6 @@ const SettingsPage = () => {
           acc[setting.key] = setting.value
           return acc
         }, {})
-        setSettings(settingsMap)
         form.setFieldsValue(settingsMap)
       } catch (error) {
         console.error('Error fetching settings:', error)

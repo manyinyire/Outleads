@@ -12,7 +12,7 @@ async function createAdminUsers() {
     const agentPassword = await bcrypt.hash('agent123!', 12);
 
     // Create admin user
-    const admin = await prisma.user.upsert({
+    await prisma.user.upsert({
       where: { email: 'admin@nexus.com' },
       update: {},
       create: {
@@ -26,7 +26,7 @@ async function createAdminUsers() {
     });
 
     // Create agent user
-    const agent = await prisma.user.upsert({
+    await prisma.user.upsert({
       where: { email: 'agent@nexus.com' },
       update: {},
       create: {

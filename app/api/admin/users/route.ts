@@ -1,6 +1,4 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth';
+import { withAuthAndRole } from '@/lib/auth';
 import { z } from 'zod';
 import { createCrudHandlers } from '@/lib/crud-factory';
 import nodemailer from 'nodemailer';

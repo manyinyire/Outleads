@@ -5,8 +5,8 @@ import { ReloadOutlined, HomeOutlined } from '@ant-design/icons'
 import ErrorBoundary from './ErrorBoundary'
 
 interface TableErrorBoundaryProps {
-  children: React.ReactNode
-  entityName?: string
+  readonly children: React.ReactNode
+  readonly entityName?: string
 }
 
 export default function TableErrorBoundary({ children, entityName = 'data' }: TableErrorBoundaryProps) {

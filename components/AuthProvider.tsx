@@ -5,7 +5,7 @@ import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/lib/store';
 import { verifyToken } from '@/lib/store/slices/authSlice';
 
-export default function AuthProvider({ children }: { children: React.ReactNode }) {
+export default function AuthProvider({ children }: { readonly children: React.ReactNode }) {
   const dispatch = useDispatch<AppDispatch>();
 
   useEffect(() => {

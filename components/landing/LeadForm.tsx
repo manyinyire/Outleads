@@ -13,16 +13,16 @@ interface Sector {
 }
 
 interface LeadFormProps {
-  campaignId?: string | null
-  onNext?: (formData: any) => void
-  initialData?: any
+  readonly campaignId?: string | null
+  readonly onNext?: (formData: any) => void
+  readonly initialData?: any
 }
 
 export default function LeadForm({ campaignId, onNext, initialData }: LeadFormProps) {
   const [form] = Form.useForm()
   const [sectors, setSectors] = useState<Sector[]>([])
   const [loadingSectors, setLoadingSectors] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
+  const [submitting] = useState(false)
 
   useEffect(() => {
     const fetchSectors = async () => {

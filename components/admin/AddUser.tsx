@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Modal, Form, Select, Button, message, Spin } from 'antd'
+import { Modal, Form, Select, Button, message } from 'antd'
 
 const { Option } = Select
 
@@ -12,9 +12,9 @@ interface UserData {
 }
 
 interface AddUserProps {
-  visible: boolean
-  onClose: () => void
-  onUserAdded: () => void
+  readonly visible: boolean
+  readonly onClose: () => void
+  readonly onUserAdded: () => void
 }
 
 export default function AddUser({ visible, onClose, onUserAdded }: AddUserProps) {
@@ -37,9 +37,8 @@ export default function AddUser({ visible, onClose, onUserAdded }: AddUserProps)
           })
 
           if (response.ok) {
-            const data = await response.json()
-            const validUsers = data.filter((user: any) => user && user.id && user.name && user.email)
-            setAllUsersCache(validUsers)
+            const validUsers = data?.filter((user: any) => user?.id && user?.name && user?.email)
+            setAllUsersCache(validUsers || [])
           } else {
             message.error('Failed to load the user list from HRMS.')
           }

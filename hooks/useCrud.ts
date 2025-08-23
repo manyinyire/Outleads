@@ -10,10 +10,10 @@ interface CrudHook<T> {
   editingRecord: T | null
   handleSearch: (value: string) => void
   handleEdit: (record: T) => void
-  handleDelete: (id: string) => void
-  handleSubmit: (values: any, record: T | null) => void
+  handleDelete: (id: string) => Promise<void>
+  handleSubmit: (values: any, record: T | null) => Promise<void>
   closeModal: () => void
-  fetchData: () => void
+  fetchData: () => Promise<void>
 }
 
 export function useCrud<T extends { id: string }>(
@@ -27,38 +27,6 @@ export function useCrud<T extends { id: string }>(
   const [editingRecord, setEditingRecord] = useState<T | null>(null)
   
   const { message } = App.useApp()
-
-  const fetchData = useCallback(async () => {
-    setLoading(true)
-    try {
-      const token = localStorage.getItem('auth-token')
-      if (!token) {
-        message.error("Authentication token not found. Please log in again.");
-        setLoading(false);
-        return;
-      }
-
-      const url = new URL(apiPath, window.location.origin)
-      if (searchText) {
-        url.searchParams.set('search', searchText)
-      }
-      
-      const response = await fetch(url.toString(), {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-      
-      if (!response.ok) throw new Error(`Failed to fetch ${entityName}`)
-      
-      const result = await response.json()
-      setData(result[entityName.toLowerCase()] || result[Object.keys(result)[0]] || [])
-      
-    } catch (error) {
-      console.error(`Fetch error for ${entityName}:`, error)
-      message.error(`Failed to load ${entityName}.`)
-    } finally {
-      setLoading(false)
-    }
-  }, [apiPath, entityName, searchText, message])
 
   useEffect(() => {
     fetchData()

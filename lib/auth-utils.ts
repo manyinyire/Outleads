@@ -29,7 +29,7 @@ export const checkUserRole = async (allowedRoles: Role[]): Promise<boolean> => {
     return false;
   }
 
-  const token = authorization.split(' ')[1];
+  const token = authorization?.split(' ')[1];
   const userId = getUserIdFromToken(token);
 
   if (!userId) {

@@ -16,9 +16,9 @@ interface Lead {
 }
 
 interface LeadDetailModalProps {
-  lead: Lead | null
-  visible: boolean
-  onClose: () => void
+  readonly lead: Lead | null
+  readonly visible: boolean
+  readonly onClose: () => void
 }
 
 const DetailItem = ({ icon, title, children }: { icon: React.ReactNode, title: string, children: React.ReactNode }) => (

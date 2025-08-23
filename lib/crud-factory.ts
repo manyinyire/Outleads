@@ -1,4 +1,3 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { AuthenticatedRequest } from '@/lib/auth';
 import { z } from 'zod';
@@ -8,8 +7,6 @@ import {
   withErrorHandler,
   validateRequestBody,
   extractId,
-  checkRecordExists,
-  performCrudOperation,
   extractPaginationParams,
   calculatePaginationMeta
 } from './api-utils';
@@ -25,13 +22,13 @@ export interface CrudConfig<T = any> {
   includeRelations?: Record<string, any>;
   orderBy?: Record<string, 'asc' | 'desc'>;
   searchFields?: string[];
-  beforeCreate?: (data: any, req: AuthenticatedRequest) => Promise<any> | any;
+  beforeCreate?: (data: any, req: AuthenticatedRequest) => Promise<any>;
   afterCreate?: (record: T, req: AuthenticatedRequest) => Promise<void> | void;
-  beforeUpdate?: (id: string, data: any, req: AuthenticatedRequest) => Promise<any> | any;
+  beforeUpdate?: (id: string, data: any, req: AuthenticatedRequest) => Promise<any>;
   afterUpdate?: (record: T, req: AuthenticatedRequest) => Promise<void> | void;
   beforeDelete?: (id: string, req: AuthenticatedRequest) => Promise<void> | void;
   afterDelete?: (id: string, req: AuthenticatedRequest) => Promise<void> | void;
-  canDelete?: (record: any) => Promise<{ allowed: boolean; reason?: string }> | { allowed: boolean; reason?: string };
+  canDelete?: (record: any) => Promise<{ allowed: boolean; reason?: string }>;
 }
 
 /**

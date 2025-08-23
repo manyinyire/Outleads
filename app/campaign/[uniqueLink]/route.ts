@@ -10,7 +10,7 @@ export async function GET(req: Request, { params }: { params: { uniqueLink: stri
       where: { uniqueLink },
     });
 
-    if (!campaign || !campaign.is_active) {
+    if (!campaign?.is_active) {
       // Redirect to the main page even if the campaign is not found or inactive
       return NextResponse.redirect(baseUrl);
     }

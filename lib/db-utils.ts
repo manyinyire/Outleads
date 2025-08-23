@@ -203,8 +203,8 @@ export const performanceMonitor = {
  * Cache helpers for frequently accessed data
  */
 export class QueryCache<T> {
-  private cache: Map<string, { data: T; timestamp: number }> = new Map()
-  private ttl: number // Time to live in milliseconds
+  private readonly cache: Map<string, { data: T; timestamp: number }> = new Map()
+  private readonly ttl: number // Time to live in milliseconds
 
   constructor(ttlSeconds: number = 60) {
     this.ttl = ttlSeconds * 1000

@@ -1,10 +1,8 @@
-import { withAuthAndRole } from '@/lib/auth';
+import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth';
 import { createCrudHandlers } from '@/lib/crud-factory';
 import { z } from 'zod';
-import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { successResponse, withErrorHandler, extractPaginationParams, calculatePaginationMeta } from '@/lib/api-utils';
-import { AuthenticatedRequest } from '@/lib/auth';
 
 const leadSchema = z.object({
   fullName: z.string(),

@@ -4,8 +4,8 @@ import { Form, Select } from 'antd'
 import { CrudField } from '../CrudTable'
 
 interface SelectFieldProps {
-  field: CrudField
-  disabled?: boolean
+  readonly field: CrudField
+  readonly disabled?: boolean
 }
 
 export default function SelectField({ field, disabled }: SelectFieldProps) {

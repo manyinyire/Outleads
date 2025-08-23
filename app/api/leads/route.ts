@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { errorResponse, successResponse } from '@/lib/api-utils';
 import { z } from 'zod';

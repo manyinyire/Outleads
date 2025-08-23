@@ -19,41 +19,41 @@ export interface CrudField {
 }
 
 export interface CrudTableProps<T extends { id: string }> {
-  title: string
-  columns: ColumnsType<T>
-  fields?: CrudField[]
-  dataSource: T[]
-  loading: boolean
+  readonly title: string
+  readonly columns: ColumnsType<T>
+  readonly fields?: CrudField[]
+  readonly dataSource: T[]
+  readonly loading: boolean
   
   // Event Handlers
-  onSearch?: (value: string) => void
-  onEdit?: (record: T) => void
-  onDelete?: (id: string) => Promise<void>
-  onView?: (record: T) => void
-  onSubmit?: (values: any, record: T | null) => Promise<void>
+  readonly onSearch?: (value: string) => void
+  readonly onEdit?: (record: T) => void
+  readonly onDelete?: (id: string) => Promise<void>
+  readonly onView?: (record: T) => void
+  readonly onSubmit?: (values: any, record: T | null) => Promise<void>
   
   // Modal Control
-  isModalVisible?: boolean
-  closeModal?: () => void
-  editingRecord?: T | null
+  readonly isModalVisible?: boolean
+  readonly closeModal?: () => void
+  readonly editingRecord?: T | null
   
   // Customization
-  searchPlaceholder?: string
-  customActions?: React.ReactNode
-  customHeader?: React.ReactNode
-  deleteConfirmMessage?: (record: T) => string
-  hideDefaultActions?: boolean
+  readonly searchPlaceholder?: string
+  readonly customActions?: React.ReactNode
+  readonly customHeader?: React.ReactNode
+  readonly deleteConfirmMessage?: (record: T) => string
+  readonly hideDefaultActions?: boolean
 }
 
 // --- EDIT MODAL SUBCOMPONENT ---
 interface EditModalProps<T> {
-  title: string
-  visible: boolean
-  fields: CrudField[]
-  editingRecord: T | null
-  onClose: () => void
-  onSubmit: (values: any, record: T | null) => Promise<void>
-  isViewOnly?: boolean
+  readonly title: string
+  readonly visible: boolean
+  readonly fields: CrudField[]
+  readonly editingRecord: T | null
+  readonly onClose: () => void
+  readonly onSubmit: (values: any, record: T | null) => Promise<void>
+  readonly isViewOnly?: boolean
 }
 
 function EditModal<T>({ title, visible, fields, editingRecord, onClose, onSubmit, isViewOnly }: EditModalProps<T>) {
@@ -67,12 +67,15 @@ function EditModal<T>({ title, visible, fields, editingRecord, onClose, onSubmit
     }
   }, [editingRecord, form, visible])
 
+  const modalTitle = isViewOnly ? `View ${title}` : (editingRecord ? `Edit ${title}` : `Add New ${title}`);
+  const modalFooter = isViewOnly ? [<Button key="back" onClick={onClose}>Close</Button>] : null;
+
   return (
     <Modal
-      title={isViewOnly ? `View ${title}` : (editingRecord ? `Edit ${title}` : `Add New ${title}`)}
+      title={modalTitle}
       open={visible}
       onCancel={onClose}
-      footer={isViewOnly ? [<Button key="back" onClick={onClose}>Close</Button>] : null}
+      footer={modalFooter}
       destroyOnClose
     >
       <Form form={form} layout="vertical" onFinish={(values) => onSubmit(values, editingRecord)}>

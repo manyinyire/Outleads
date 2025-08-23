@@ -108,9 +108,10 @@ export function withErrorHandler<T extends (...args: any[]) => Promise<NextRespo
  */
 export function handlePrismaError(error: Prisma.PrismaClientKnownRequestError): NextResponse {
   switch (error.code) {
-    case 'P2002':
+    case 'P2002': {
       const field = (error.meta?.target as string[])?.join(', ') || 'field';
       return errorResponse(`A record with this ${field} already exists`, 409);
+    }
     
     case 'P2003':
       return errorResponse('Invalid reference: related record not found', 400);
@@ -222,6 +223,7 @@ export async function checkRecordExists<T>(
     
     return { success: true, record };
   } catch (error: any) {
+    console.error(`Error checking for ${entityName}:`, error);
     return {
       success: false,
       error: errorResponse(`Failed to check ${entityName.toLowerCase()} existence`, 500)

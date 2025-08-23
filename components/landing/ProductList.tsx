@@ -12,9 +12,9 @@ interface Product {
 }
 
 interface ProductListProps {
-  products: Product[];
-  selectedProductIds: string[];
-  onProductSelect: (product: Product) => void;
+  readonly products: Product[];
+  readonly selectedProductIds: string[];
+  readonly onProductSelect: (product: Product) => void;
 }
 
 // --- COMPONENT ---

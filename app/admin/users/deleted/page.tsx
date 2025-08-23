@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Table, Button, Space, Typography } from 'antd'
+import { Table, Button, Typography } from 'antd'
 import { DownloadOutlined } from '@ant-design/icons'
 import { ColumnsType } from 'antd/es/table'
 import Papa from 'papaparse'

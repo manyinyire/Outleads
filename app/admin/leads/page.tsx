@@ -32,12 +32,17 @@ export default function LeadsPage() {
   const [searchText, setSearchText] = useState('')
   const [isViewModalVisible, setViewModalVisible] = useState(false)
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<{
+    productId: string | undefined;
+    campaignId: string | undefined;
+    sectorId: string | undefined;
+    dateRange: [moment.Moment, moment.Moment] | undefined;
+  }>({
     productId: undefined,
     campaignId: undefined,
     sectorId: undefined,
     dateRange: undefined,
-  })
+  });
   const [filterData, setFilterData] = useState<FilterData>({
     products: [],
     campaigns: [],
@@ -87,7 +92,7 @@ export default function LeadsPage() {
       if (filters.productId) url.searchParams.set('productId', filters.productId)
       if (filters.campaignId) url.searchParams.set('campaignId', filters.campaignId)
       if (filters.sectorId) url.searchParams.set('sectorId', filters.sectorId)
-      if (filters.dateRange && filters.dateRange[0] && filters.dateRange[1]) {
+      if (filters.dateRange?.[0] && filters.dateRange?.[1]) {
         url.searchParams.set('startDate', moment(filters.dateRange[0]).toISOString())
         url.searchParams.set('endDate', moment(filters.dateRange[1]).toISOString())
       }
