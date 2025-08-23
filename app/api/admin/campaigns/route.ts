@@ -2,33 +2,20 @@ import { NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { nanoid } from 'nanoid';
-import { headers } from 'next/headers';
 
 import { prisma } from '@/lib/prisma';
-import { getUserIdFromToken, checkUserRole } from '@/lib/auth-utils';
+import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth';
 
 const campaignCreateSchema = z.object({
   campaign_name: z.string().min(1, 'Campaign name is required'),
   organization_name: z.string().min(1, 'Organization name is required'),
 });
 
-export async function POST(req: Request) {
+const postCampaigns = async (req: AuthenticatedRequest) => {
   try {
-    // Check user role
-    const hasAccess = await checkUserRole(['ADMIN', 'TEAMLEADER']);
-    if (!hasAccess) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    // Get user ID from token
-    const authorization = headers().get('authorization');
-    const token = authorization?.split(' ')[1];
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const userId = getUserIdFromToken(token);
+    const userId = req.user?.id;
     if (!userId) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+      return NextResponse.json({ error: 'User not found in token' }, { status: 401 });
     }
 
     const body = await req.json();
@@ -39,7 +26,7 @@ export async function POST(req: Request) {
     }
 
     const { campaign_name, organization_name } = validation.data;
-    const unique_link = nanoid(10); // Generate a unique link
+    const unique_link = nanoid(10);
 
     const newCampaign = await prisma.campaign.create({
       data: {
@@ -53,23 +40,15 @@ export async function POST(req: Request) {
     return NextResponse.json(newCampaign, { status: 201 });
   } catch (error) {
     console.error('Error creating campaign:', error);
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      if (error.code === 'P2002') {
-        return NextResponse.json({ error: 'A campaign with this name already exists.' }, { status: 409 });
-      }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return NextResponse.json({ error: 'A campaign with this name already exists.' }, { status: 409 });
     }
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
 
-export async function GET() {
+const getCampaigns = async (req: AuthenticatedRequest) => {
   try {
-    // Check user role
-    const hasAccess = await checkUserRole(['ADMIN', 'TEAMLEADER']);
-    if (!hasAccess) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
     const campaigns = await prisma.campaign.findMany({
       orderBy: {
         createdAt: 'desc',
@@ -82,3 +61,6 @@ export async function GET() {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
+
+export const POST = withAuthAndRole(['ADMIN', 'TEAMLEADER'], postCampaigns);
+export const GET = withAuthAndRole(['ADMIN', 'TEAMLEADER'], getCampaigns);

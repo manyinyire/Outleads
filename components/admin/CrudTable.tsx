@@ -28,9 +28,9 @@ export interface CrudTableProps<T extends { id: string }> {
   // Event Handlers
   onSearch?: (value: string) => void
   onEdit?: (record: T) => void
-  onDelete?: (id: string) => void
+  onDelete?: (id: string) => Promise<void>
   onView?: (record: T) => void
-  onSubmit?: (values: any, record: T | null) => void
+  onSubmit?: (values: any, record: T | null) => Promise<void>
   
   // Modal Control
   isModalVisible?: boolean
@@ -52,7 +52,7 @@ interface EditModalProps<T> {
   fields: CrudField[]
   editingRecord: T | null
   onClose: () => void
-  onSubmit: (values: any, record: T | null) => void
+  onSubmit: (values: any, record: T | null) => Promise<void>
   isViewOnly?: boolean
 }
 
