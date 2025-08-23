@@ -156,12 +156,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               padding: '0 1rem',
             }}
           >
-            <Image src="/logos/logo.png" alt="Nexus Logo" width={40} height={40} />
-            {!collapsed && (
-              <Title level={4} style={{ color: '#FFFFFF', margin: '0 0 0 0.75rem', fontWeight: 'bold' }}>
-                Nexus
-              </Title>
-            )}
+            <Image src="/logos/logo.png" alt="Nexus Logo" width={50} height={50} />
           </div>
           
           <Menu

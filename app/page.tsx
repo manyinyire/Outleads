@@ -164,14 +164,17 @@ export default function HomePage() {
     <Layout style={{ minHeight: '100vh', background: 'linear-gradient(to right, #2A4D74, #6ED0F6)' }}>
       <Content style={{ padding: '2rem' }}>
         <Row justify="center" align="middle" style={{ minHeight: '100%' }}>
-          <Col xs={24} sm={20} md={16} lg={12} xl={10}>
-            <Card style={{ borderRadius: '1rem', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', padding: '2rem' }}>
-              <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                <Image src="/logos/logo.png" alt="Nexus Financial Services" width={80} height={80} />
-                <Title level={2} style={{ color: '#2A4D74', marginTop: '1rem', fontWeight: 'bold' }}>
-                  Nexus Financial Services
-                </Title>
-                <Paragraph style={{ fontSize: '1rem', color: '#333333' }}>
+          <Col xs={24} sm={20} md={18} lg={16} xl={14}>
+            <Card 
+              style={{ 
+                borderRadius: '1rem', 
+                boxShadow: '0 10px 30px rgba(0,0,0,0.1)', 
+                padding: '2rem',
+              }}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '2rem' }}>
+                <Image src="/logos/logo.png" alt="Nexus Financial Services" width={150} height={150} />
+                <Paragraph style={{ fontSize: '1rem', color: '#333333', marginTop: '1rem', textAlign: 'center' }}>
                   Discover our comprehensive range of financial solutions tailored for your business needs.
                 </Paragraph>
               </div>
