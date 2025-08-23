@@ -3,8 +3,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { App, Tag, Row, Col, Select, DatePicker, Button } from 'antd'
 import { ColumnsType } from 'antd/es/table'
-import CrudTable, { CrudField } from '@/components/admin/CrudTable'
+import CrudTable from '@/components/admin/CrudTable'
+import LeadDetailModal from '@/components/admin/LeadDetailModal'
 import moment from 'moment'
+import { EyeOutlined } from '@ant-design/icons'
 
 const { RangePicker } = DatePicker;
 
@@ -14,7 +16,7 @@ interface Lead {
   phoneNumber: string
   businessSector: { name: string }
   products: Array<{ id: string, name: string }>
-  campaign?: { id: string, campaign_name: string } // Corrected field name
+  campaign?: { id: string, campaign_name: string }
   createdAt: string
 }
 
@@ -28,8 +30,8 @@ export default function LeadsPage() {
   const [data, setData] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
   const [searchText, setSearchText] = useState('')
-  const [isModalVisible, setModalVisible] = useState(false)
-  const [editingRecord, setEditingRecord] = useState<Lead | null>(null)
+  const [isViewModalVisible, setViewModalVisible] = useState(false)
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
   const [filters, setFilters] = useState({
     productId: undefined,
     campaignId: undefined,
@@ -61,7 +63,7 @@ export default function LeadsPage() {
 
       setFilterData({
         products: products.product || [],
-        campaigns: campaigns || [], // Campaigns API returns an array directly
+        campaigns: campaigns || [],
         sectors: sectors.sector || [],
       });
     } catch (error) {
@@ -132,23 +134,10 @@ export default function LeadsPage() {
     setSearchText(value)
   }
 
-  const handleEdit = (record: Lead) => {
-    setEditingRecord(record)
-    setModalVisible(true)
+  const handleView = (record: Lead) => {
+    setSelectedLead(record)
+    setViewModalVisible(true)
   }
-
-  const handleDelete = async (id: string) => {
-    // Implement delete logic here if needed
-  }
-
-  const handleSubmit = async (values: any, record: Lead | null) => {
-    // Implement create/update logic here if needed
-  }
-
-  const fields: CrudField[] = useMemo(() => [
-    { name: 'fullName', label: 'Name', type: 'text', required: true },
-    { name: 'phoneNumber', label: 'Phone', type: 'text', required: true },
-  ], [])
 
   const columns: ColumnsType<Lead> = useMemo(() => [
     { title: 'Name', dataIndex: 'fullName', key: 'fullName' },
@@ -171,6 +160,15 @@ export default function LeadsPage() {
       render: (campaign) => campaign ? <Tag color="blue">{campaign.campaign_name}</Tag> : <Tag>Direct Lead</Tag>
     },
     { title: 'Date', dataIndex: 'createdAt', key: 'createdAt', render: (date) => new Date(date).toLocaleDateString() },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_, record) => (
+        <Button type="link" icon={<EyeOutlined />} onClick={() => handleView(record)}>
+          View
+        </Button>
+      ),
+    },
   ], [])
 
   const filterOptions = (
@@ -221,23 +219,21 @@ export default function LeadsPage() {
   );
 
   return (
-    <CrudTable<Lead>
-      title="Lead Management"
-      columns={columns}
-      fields={fields}
-      dataSource={data}
-      loading={loading}
-      onSearch={handleSearch}
-      onEdit={handleEdit}
-      onDelete={handleDelete}
-      onSubmit={handleSubmit}
-      isModalVisible={isModalVisible}
-      closeModal={() => {
-        setModalVisible(false)
-        setEditingRecord(null)
-      }}
-      editingRecord={editingRecord}
-      customHeader={filterOptions}
-    />
+    <>
+      <CrudTable<Lead>
+        title="Lead Management"
+        columns={columns}
+        dataSource={data}
+        loading={loading}
+        onSearch={handleSearch}
+        customHeader={filterOptions}
+        hideDefaultActions={true}
+      />
+      <LeadDetailModal
+        lead={selectedLead}
+        visible={isViewModalVisible}
+        onClose={() => setViewModalVisible(false)}
+      />
+    </>
   )
 }

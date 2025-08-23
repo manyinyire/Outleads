@@ -1,6 +1,6 @@
 'use client'
 
-import { Form, Input, Select, Button, Card, Typography, message } from 'antd'
+import { Form, Input, Select, Button, Card, Typography, message, Checkbox } from 'antd'
 import { UserOutlined, PhoneOutlined, BankOutlined } from '@ant-design/icons'
 import { useState, useEffect } from 'react'
 
@@ -61,9 +61,11 @@ export default function LeadForm({ campaignId, onNext, initialData }: LeadFormPr
       style={{
         borderRadius: '12px',
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+        border: 'none',
+        backgroundColor: 'rgba(255, 255, 255, 0.8)',
       }}
     >
-      <Title level={3} style={{ textAlign: 'center', marginBottom: '24px', color: '#1f2937' }}>
+      <Title level={3} style={{ textAlign: 'center', marginBottom: '24px', color: '#2A4D74' }}>
         Get Started Today
       </Title>
 
@@ -84,9 +86,10 @@ export default function LeadForm({ campaignId, onNext, initialData }: LeadFormPr
           rules={[{ required: true, message: 'Please enter your full name' }]}
         >
           <Input
-            prefix={<UserOutlined />}
+            prefix={<UserOutlined style={{ color: '#6ED0F6' }} />}
             placeholder="Enter your full name"
             size="large"
+            style={{ borderRadius: '0.5rem' }}
           />
         </Form.Item>
 
@@ -96,9 +99,10 @@ export default function LeadForm({ campaignId, onNext, initialData }: LeadFormPr
           rules={[{ required: true, message: 'Please enter your phone number' }]}
         >
           <Input
-            prefix={<PhoneOutlined />}
+            prefix={<PhoneOutlined style={{ color: '#6ED0F6' }} />}
             placeholder="Enter your phone number"
             size="large"
+            style={{ borderRadius: '0.5rem' }}
           />
         </Form.Item>
 
@@ -111,7 +115,8 @@ export default function LeadForm({ campaignId, onNext, initialData }: LeadFormPr
             placeholder="Select your business sector"
             size="large"
             loading={loadingSectors}
-            suffixIcon={<BankOutlined />}
+            suffixIcon={<BankOutlined style={{ color: '#6ED0F6' }} />}
+            style={{ borderRadius: '0.5rem' }}
           >
             {sectors.map(sector => (
               <Option key={sector.id} value={sector.id}>
@@ -121,6 +126,21 @@ export default function LeadForm({ campaignId, onNext, initialData }: LeadFormPr
           </Select>
         </Form.Item>
 
+        <Form.Item
+          name="consent"
+          valuePropName="checked"
+          rules={[
+            { 
+              validator: (_, value) => 
+                value ? Promise.resolve() : Promise.reject(new Error('You must accept the terms and conditions')) 
+            }
+          ]}
+        >
+          <Checkbox>
+            I agree to be contacted about FBC Holdings products and promotions.
+          </Checkbox>
+        </Form.Item>
+
         <Form.Item>
           <Button
             type="primary"
@@ -128,7 +148,15 @@ export default function LeadForm({ campaignId, onNext, initialData }: LeadFormPr
             size="large"
             block
             loading={submitting}
-            style={{ height: '48px', fontSize: '16px', fontWeight: 'bold' }}
+            style={{ 
+              backgroundColor: '#2A4D74', 
+              borderColor: '#2A4D74', 
+              color: '#FFFFFF', 
+              borderRadius: '0.5rem', 
+              height: '3rem', 
+              fontSize: '1rem', 
+              fontWeight: 'bold' 
+            }}
           >
             Next: Choose Products
           </Button>

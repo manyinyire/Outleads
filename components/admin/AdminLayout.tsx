@@ -135,6 +135,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }
 
   if (status === 'succeeded' && user) {
+    const siderWidth = collapsed ? 80 : 250;
     return (
       <Layout style={{ minHeight: '100vh' }}>
         <Sider
@@ -144,6 +145,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           style={{
             background: '#2A4D74',
             boxShadow: '2px 0 6px rgba(0,21,41,0.35)',
+            position: 'fixed',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            zIndex: 1000,
           }}
           width={250}
         >
@@ -169,7 +175,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           />
         </Sider>
         
-        <Layout style={{ backgroundColor: '#F0F0F0' }}>
+        <Layout style={{ backgroundColor: '#F0F0F0', marginLeft: siderWidth, transition: 'margin-left 0.2s' }}>
           <Header
             style={{
               padding: '0 24px',
@@ -211,6 +217,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               background: '#FFFFFF',
               borderRadius: '1rem',
               boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+              overflow: 'auto',
             }}
           >
             <ErrorBoundary>
