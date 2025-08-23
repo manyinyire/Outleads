@@ -9,6 +9,7 @@ import { RootState } from '@/lib/store'
 import Papa from 'papaparse'
 
 import CrudTable, { CrudField } from '@/components/admin/CrudTable'
+import { useCrud } from '@/hooks/useCrud'
 
 interface Campaign {
   id: string
@@ -22,94 +23,20 @@ interface Campaign {
 }
 
 export default function CampaignsPage() {
-  const [data, setData] = useState<Campaign[]>([])
-  const [loading, setLoading] = useState(true)
-  const [isModalVisible, setModalVisible] = useState(false)
-  const [editingRecord, setEditingRecord] = useState<Campaign | null>(null)
+  const {
+    data,
+    loading,
+    isModalVisible,
+    editingRecord,
+    handleEdit,
+    handleDelete,
+    handleSubmit,
+    closeModal,
+    fetchData,
+  } = useCrud<Campaign>('/api/admin/campaigns', 'campaign')
   
   const { message } = App.useApp()
   const userRole = useSelector((state: RootState) => state.auth.user?.role)
-
-  const fetchData = useCallback(async () => {
-    setLoading(true)
-    try {
-      const token = localStorage.getItem('auth-token')
-      const response = await fetch('/api/admin/campaigns', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-      
-      if (!response.ok) throw new Error(`Failed to fetch: ${response.statusText}`)
-      
-      const result = await response.json()
-      setData(Array.isArray(result) ? result : [])
-      
-    } catch (error) {
-      console.error("Fetch error:", error)
-      message.error('Failed to load campaign data.')
-    } finally {
-      setLoading(false)
-    }
-  }, [message])
-
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
-
-  const handleEdit = (record: Campaign) => {
-    setEditingRecord(record)
-    setModalVisible(true)
-  }
-
-  const handleDelete = async (id: string) => {
-    const token = localStorage.getItem('auth-token');
-    try {
-      const response = await fetch(`/api/admin/campaigns/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      if (response.ok) {
-        message.success('Campaign deleted successfully');
-        fetchData();
-      } else {
-        const error = await response.json();
-        message.error(error.message || 'Failed to delete campaign');
-      }
-    } catch (error) {
-      console.error("Delete error:", error);
-      message.error('An error occurred while deleting the campaign.');
-    }
-  }
-
-  const handleSubmit = async (values: any, record: Campaign | null) => {
-    const token = localStorage.getItem('auth-token');
-    const url = record ? `/api/admin/campaigns/${record.id}` : '/api/admin/campaigns';
-    const method = record ? 'PUT' : 'POST';
-
-    try {
-      const response = await fetch(url, {
-        method,
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(values)
-      });
-
-      if (response.ok) {
-        message.success(`Campaign ${record ? 'updated' : 'created'} successfully`);
-        setModalVisible(false);
-        setEditingRecord(null);
-        fetchData();
-      } else {
-        const error = await response.json();
-        message.error(error.message || `Failed to save campaign`);
-      }
-    } catch (error) {
-      console.error("Submit error:", error);
-      message.error('An error occurred while saving the campaign.');
-    }
-  }
 
   const handleToggleStatus = async (id: string, currentStatus: boolean) => {
     const token = localStorage.getItem('auth-token');
@@ -133,7 +60,6 @@ export default function CampaignsPage() {
   };
 
   const handleExportLeads = async (campaignId: string, campaignName: string) => {
-    setLoading(true);
     try {
       const token = localStorage.getItem('auth-token');
       const response = await fetch(`/api/admin/campaigns/${campaignId}/leads`, {
@@ -144,7 +70,6 @@ export default function CampaignsPage() {
 
       const leads = await response.json();
 
-      // Format the data for CSV export
       const formattedLeads = leads.map((lead: any) => ({
         "Full Name": lead.fullName,
         "Phone Number": lead.phoneNumber,
@@ -170,8 +95,6 @@ export default function CampaignsPage() {
     } catch (error) {
       console.error('Export error:', error);
       message.error('Failed to export leads.');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -246,7 +169,7 @@ export default function CampaignsPage() {
         </Space>
       ),
     },
-  ], [message])
+  ], [message, handleEdit, handleDelete])
 
   const hasAccess = userRole && ['ADMIN', 'TEAMLEADER'].includes(userRole)
   if (!hasAccess) {
@@ -264,17 +187,11 @@ export default function CampaignsPage() {
       onDelete={handleDelete}
       onSubmit={handleSubmit}
       isModalVisible={isModalVisible}
-      closeModal={() => {
-        setModalVisible(false)
-        setEditingRecord(null)
-      }}
+      closeModal={closeModal}
       editingRecord={editingRecord}
-      hideDefaultActions={true} // Hide the default actions column
+      hideDefaultActions={true}
       customActions={
-        <Button icon={<PlusOutlined />} onClick={() => {
-          setEditingRecord(null);
-          setModalVisible(true);
-        }}>
+        <Button icon={<PlusOutlined />} onClick={() => handleEdit(null as any)}>
           Create Campaign
         </Button>
       }

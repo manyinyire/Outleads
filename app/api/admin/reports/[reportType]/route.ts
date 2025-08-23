@@ -1,38 +1,11 @@
 import { NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
-import jwt from 'jsonwebtoken'
+import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth'
 
 const prisma = new PrismaClient()
 
-interface DecodedToken {
-  userId: string;
-  role: string;
-  [key: string]: any;
-}
-
-export async function GET(req: Request, { params }: { params: { reportType: string } }) {
+const getReportData = async (req: AuthenticatedRequest, { params }: { params: { reportType: string } }) => {
   try {
-    const token = req.headers.get('Authorization')?.split(' ')[1]
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const jwtSecret = process.env.JWT_SECRET
-    if (!jwtSecret) {
-      throw new Error('JWT_SECRET is not configured in .env file');
-    }
-
-    let decoded: DecodedToken;
-    try {
-      decoded = jwt.verify(token, jwtSecret) as DecodedToken;
-    } catch (error) {
-      return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 });
-    }
-
-    if (decoded.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
     const { searchParams } = new URL(req.url)
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
@@ -58,6 +31,8 @@ export async function GET(req: Request, { params }: { params: { reportType: stri
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }
+
+export const GET = withAuthAndRole(['ADMIN'], getReportData)
 
 async function getLeadDetails(startDate: string | null, endDate: string | null) {
   const leads = await prisma.lead.findMany({
