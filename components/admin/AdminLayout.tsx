@@ -197,16 +197,19 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               menu={{ items: userMenuItems }}
               placement="bottomRight"
               arrow
+              trigger={['click']}
             >
-              <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#6ED0F6', marginRight: '0.75rem' }} />
-                <div>
-                  <Text strong style={{ color: '#333333' }}>{user.name}</Text>
-                  <Text type="secondary" style={{ display: 'block', lineHeight: 1 }}>
-                    {user.role}
-                  </Text>
+              <Button type="text" style={{ height: 'auto', padding: '0.5rem 1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#6ED0F6', marginRight: '0.75rem' }} />
+                  <div>
+                    <Text strong style={{ color: '#333333', display: 'block' }}>{user.name}</Text>
+                    <Text type="secondary" style={{ display: 'block', lineHeight: 1 }}>
+                      {user.role}
+                    </Text>
+                  </div>
                 </div>
-              </div>
+              </Button>
             </Dropdown>
           </Header>
           
