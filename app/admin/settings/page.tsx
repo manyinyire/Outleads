@@ -1,104 +1,135 @@
 'use client'
 
-import { Card, Typography, Form, Input, Button, Switch, Space, Divider } from 'antd'
-import { SaveOutlined } from '@ant-design/icons'
+import { useState, useEffect } from 'react'
+import { Card, Tabs, Form, Input, Button, message, Spin, Switch } from 'antd'
+import type { TabsProps } from 'antd'
 
-const { Title, Text } = Typography
-const { TextArea } = Input
+const { TabPane } = Tabs
 
-export default function SettingsPage() {
+const SettingsPage = () => {
+  const [loading, setLoading] = useState(true)
+  const [settings, setSettings] = useState<Record<string, string>>({})
   const [form] = Form.useForm()
 
-  const handleSave = (values: any) => {
-    console.log('Settings saved:', values)
+  useEffect(() => {
+    const fetchSettings = async () => {
+      setLoading(true)
+      try {
+        const token = localStorage.getItem('auth-token')
+        const response = await fetch('/api/admin/settings', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        })
+        if (!response.ok) throw new Error('Failed to fetch settings')
+        const data = await response.json()
+        const settingsMap = data.reduce((acc: any, setting: any) => {
+          acc[setting.key] = setting.value
+          return acc
+        }, {})
+        setSettings(settingsMap)
+        form.setFieldsValue(settingsMap)
+      } catch (error) {
+        console.error('Error fetching settings:', error)
+        message.error('Failed to load settings.')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchSettings()
+  }, [form])
+
+  const handleSave = async (values: any) => {
+    try {
+      const token = localStorage.getItem('auth-token')
+      for (const key in values) {
+        await fetch('/api/admin/settings', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ key, value: values[key] }),
+        })
+      }
+      message.success('Settings saved successfully!')
+    } catch (error) {
+      console.error('Error saving settings:', error)
+      message.error('Failed to save settings.')
+    }
   }
 
-  return (
-    <div>
-      <Title level={2} style={{ marginBottom: '24px' }}>
-        System Settings
-      </Title>
-
-      <Card title="General Settings" style={{ marginBottom: '24px' }}>
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSave}
-          initialValues={{
-            companyName: 'Nexus Financial Services',
-            supportEmail: 'support@nexus.com',
-            autoAssignLeads: true,
-            emailNotifications: true,
-          }}
-        >
-          <Form.Item
-            name="companyName"
-            label="Company Name"
-            rules={[{ required: true, message: 'Please enter company name' }]}
-          >
+  const items: TabsProps['items'] = [
+    {
+      key: '1',
+      label: 'General',
+      children: (
+        <Form form={form} layout="vertical" onFinish={handleSave}>
+          <Form.Item name="site_title" label="Site Title">
             <Input />
           </Form.Item>
-
-          <Form.Item
-            name="supportEmail"
-            label="Support Email"
-            rules={[
-              { required: true, message: 'Please enter support email' },
-              { type: 'email', message: 'Please enter a valid email' }
-            ]}
-          >
+          <Form.Item name="site_tagline" label="Site Tagline">
             <Input />
           </Form.Item>
-
-          <Form.Item
-            name="welcomeMessage"
-            label="Welcome Message"
-          >
-            <TextArea rows={4} placeholder="Enter welcome message for new leads" />
-          </Form.Item>
-
-          <Divider />
-
-          <Form.Item
-            name="autoAssignLeads"
-            label="Auto-assign Leads"
-            valuePropName="checked"
-          >
-            <Switch />
-          </Form.Item>
-
-          <Form.Item
-            name="emailNotifications"
-            label="Email Notifications"
-            valuePropName="checked"
-          >
-            <Switch />
-          </Form.Item>
-
           <Form.Item>
-            <Button type="primary" htmlType="submit" icon={<SaveOutlined />}>
-              Save Settings
+            <Button type="primary" htmlType="submit">
+              Save General Settings
             </Button>
           </Form.Item>
         </Form>
-      </Card>
+      ),
+    },
+    {
+      key: '2',
+      label: 'User Management',
+      children: (
+        <Form form={form} layout="vertical" onFinish={handleSave}>
+          <Form.Item name="allow_registration" label="Allow New User Registration" valuePropName="checked">
+            <Switch />
+          </Form.Item>
+          <Form.Item name="default_user_role" label="Default Role for New Users">
+            <Input />
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit">
+              Save User Settings
+            </Button>
+          </Form.Item>
+        </Form>
+      ),
+    },
+    {
+      key: '3',
+      label: 'Notifications',
+      children: (
+        <Form form={form} layout="vertical" onFinish={handleSave}>
+          <Form.Item name="admin_email" label="Admin Email for Notifications">
+            <Input type="email" />
+          </Form.Item>
+          <Form.Item name="send_new_lead_notifications" label="Send Notification for New Leads" valuePropName="checked">
+            <Switch />
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit">
+              Save Notification Settings
+            </Button>
+          </Form.Item>
+        </Form>
+      ),
+    },
+  ];
 
-      <Card title="API Configuration">
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <div>
-            <Text strong>API Endpoint:</Text>
-            <div className="campaign-url-display" style={{ marginTop: '8px' }}>
-              https://api.nexus.com/v1/leads
-            </div>
-          </div>
-          <div>
-            <Text strong>Webhook URL:</Text>
-            <div className="campaign-url-display" style={{ marginTop: '8px' }}>
-              https://api.nexus.com/v1/webhooks/leads
-            </div>
-          </div>
-        </Space>
-      </Card>
-    </div>
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+        <Spin size="large" />
+      </div>
+    )
+  }
+
+  return (
+    <Card title="Application Settings">
+      <Tabs defaultActiveKey="1" items={items} />
+    </Card>
   )
 }
+
+export default SettingsPage
