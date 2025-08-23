@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Layout, Row, Col, Tabs, Typography, Button, Steps, message, Spin } from 'antd'
+import { Layout, Row, Col, Tabs, Typography, Button, Steps, message, Spin, Card } from 'antd'
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import ProductList from '@/components/landing/ProductList'
 import LeadForm from '@/components/landing/LeadForm'
+import Image from 'next/image'
 
 const { Content } = Layout
 const { Title, Paragraph } = Typography
@@ -153,30 +154,30 @@ export default function HomePage() {
 
   if (loading || !categories) {
     return (
-      <Layout style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Layout style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F0F0F0' }}>
         <Spin size="large" />
       </Layout>
     )
   }
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Content style={{ padding: 0 }}>
-        <Row style={{ minHeight: '100vh' }}>
-          {/* Centered Form */}
-          <Col xs={24} md={24} style={{ padding: '24px', backgroundColor: '#f8f9fa', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <div style={{ maxWidth: '600px', width: '100%' }}>
-              <div style={{ marginBottom: '24px' }}>
-                <Title level={2} style={{ color: '#1f2937', marginBottom: '8px', textAlign: 'center' }}>
+    <Layout style={{ minHeight: '100vh', background: 'linear-gradient(to right, #2A4D74, #6ED0F6)' }}>
+      <Content style={{ padding: '2rem' }}>
+        <Row justify="center" align="middle" style={{ minHeight: '100%' }}>
+          <Col xs={24} sm={20} md={16} lg={12} xl={10}>
+            <Card style={{ borderRadius: '1rem', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', padding: '2rem' }}>
+              <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                <Image src="/logos/logo.png" alt="Nexus Financial Services" width={80} height={80} />
+                <Title level={2} style={{ color: '#2A4D74', marginTop: '1rem', fontWeight: 'bold' }}>
                   Nexus Financial Services
                 </Title>
-                <Paragraph style={{ fontSize: '16px', color: '#6b7280', textAlign: 'center' }}>
+                <Paragraph style={{ fontSize: '1rem', color: '#333333' }}>
                   Discover our comprehensive range of financial solutions tailored for your business needs.
                 </Paragraph>
               </div>
 
-              <div style={{ marginBottom: '32px' }}>
-                <Steps current={currentStep} items={steps} size="small" />
+              <div style={{ marginBottom: '2rem' }}>
+                <Steps current={currentStep} items={steps} />
               </div>
 
               {currentStep === 0 && (
@@ -189,32 +190,33 @@ export default function HomePage() {
 
               {currentStep === 1 && (
                 <>
-                  <div style={{ marginBottom: '24px', padding: '16px', backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                  <Card bordered={false} style={{ backgroundColor: '#F0F0F0', borderRadius: '0.5rem', marginBottom: '1.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div>
-                        <Title level={4} style={{ margin: 0, color: '#1f2937' }}>
+                        <Title level={5} style={{ margin: 0, color: '#2A4D74' }}>
                           Contact Information
                         </Title>
-                        <Paragraph style={{ margin: 0, color: '#6b7280', fontSize: '14px' }}>
+                        <Paragraph style={{ margin: 0, color: '#333333' }}>
                           {contactFormData?.fullName} | {contactFormData?.phoneNumber}
                         </Paragraph>
                       </div>
                       <Button 
-                        type="text" 
+                        type="link" 
                         icon={<ArrowLeftOutlined />}
                         onClick={handleBackToContactInfo}
+                        style={{ color: '#2A4D74' }}
                       >
                         Edit
                       </Button>
                     </div>
-                  </div>
+                  </Card>
 
                   <Tabs
                     activeKey={selectedCategoryKey}
                     onChange={handleCategoryChange}
                     items={categories.map(category => ({
                       key: category.id,
-                      label: <span>{category.name}</span>,
+                      label: <span style={{ color: '#2A4D74' }}>{category.name}</span>,
                       children: (
                         <ProductList 
                           products={category.products}
@@ -226,22 +228,22 @@ export default function HomePage() {
                   />
 
                   {selectedProducts.length > 0 && (
-                    <div style={{ marginTop: '24px' }}>
-                      <div style={{ padding: '16px', backgroundColor: '#f0f9ff', borderRadius: '8px', border: '1px solid #3b82f6', marginBottom: '16px' }}>
-                        <Title level={5} style={{ margin: 0, color: '#1f2937' }}>
+                    <div style={{ marginTop: '2rem' }}>
+                      <Card bordered={false} style={{ backgroundColor: '#F0F0F0', borderRadius: '0.5rem', marginBottom: '1.5rem' }}>
+                        <Title level={5} style={{ margin: 0, color: '#2A4D74' }}>
                           Selected Products:
                         </Title>
-                        <ul style={{ paddingLeft: '20px', margin: '8px 0 0' }}>
+                        <ul style={{ paddingLeft: '1.5rem', margin: '0.5rem 0 0', color: '#333333' }}>
                           {selectedProducts.map(p => <li key={p.id}>{p.name}</li>)}
                         </ul>
-                      </div>
+                      </Card>
                       <Button
                         type="primary"
                         size="large"
                         block
                         loading={submitting}
                         onClick={handleFinalSubmit}
-                        style={{ height: '48px', fontSize: '16px', fontWeight: 'bold' }}
+                        style={{ backgroundColor: '#2A4D74', borderColor: '#2A4D74', color: '#FFFFFF', borderRadius: '0.5rem', height: '3rem', fontSize: '1rem', fontWeight: 'bold' }}
                       >
                         Complete Registration
                       </Button>
@@ -249,7 +251,7 @@ export default function HomePage() {
                   )}
                 </>
               )}
-            </div>
+            </Card>
           </Col>
         </Row>
       </Content>

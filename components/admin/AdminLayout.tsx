@@ -22,9 +22,10 @@ import {
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState, AppDispatch } from '@/lib/store'
 import { logout } from '@/lib/store/slices/authSlice'
+import Image from 'next/image'
 
 const { Header, Sider, Content } = Layout
-const { Text } = Typography
+const { Text, Title } = Typography
 
 interface AdminLayoutProps {
   children: React.ReactNode
@@ -32,7 +33,6 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const [collapsed, setCollapsed] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
   const pathname = usePathname()
   const dispatch = useDispatch<AppDispatch>()
@@ -40,7 +40,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const { user, status } = useSelector((state: RootState) => state.auth)
 
   useEffect(() => {
-    // This effect handles redirection based on auth status
     if (status === 'failed') {
       router.push('/auth/login')
     }
@@ -127,16 +126,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     },
   ]
 
-  // Show a full-page loader while the token is being verified
   if (status === 'loading' || status === 'idle') {
     return (
-      <Layout style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Layout style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F0F0F0' }}>
         <Spin size="large" />
       </Layout>
     )
   }
 
-  // If authentication has succeeded and we have a user, render the layout
   if (status === 'succeeded' && user) {
     return (
       <Layout style={{ minHeight: '100vh' }}>
@@ -145,8 +142,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           collapsible
           collapsed={collapsed}
           style={{
-            background: '#001529',
+            background: '#2A4D74',
+            boxShadow: '2px 0 6px rgba(0,21,41,0.35)',
           }}
+          width={250}
         >
           <div
             style={{
@@ -154,18 +153,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              borderBottom: '1px solid #1f1f1f',
+              padding: '0 1rem',
             }}
           >
-            <Text
-              style={{
-                color: '#fff',
-                fontSize: collapsed ? '16px' : '18px',
-                fontWeight: 'bold',
-              }}
-            >
-              {collapsed ? 'N' : 'Nexus'}
-            </Text>
+            <Image src="/logos/logo.png" alt="Nexus Logo" width={40} height={40} />
+            {!collapsed && (
+              <Title level={4} style={{ color: '#FFFFFF', margin: '0 0 0 0.75rem', fontWeight: 'bold' }}>
+                Nexus
+              </Title>
+            )}
           </div>
           
           <Menu
@@ -174,36 +170,38 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             selectedKeys={[pathname]}
             items={menuItems}
             onClick={({ key }) => router.push(key)}
+            style={{ background: '#2A4D74', borderRight: 0 }}
           />
         </Sider>
         
-        <Layout>
+        <Layout style={{ backgroundColor: '#F0F0F0' }}>
           <Header
             style={{
               padding: '0 24px',
-              background: '#fff',
+              background: '#FFFFFF',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              borderBottom: '1px solid #f0f0f0',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
             }}
           >
             <Button
               type="text"
               icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
               onClick={() => setCollapsed(!collapsed)}
-              style={{ fontSize: '16px', width: 64, height: 64 }}
+              style={{ fontSize: '1.25rem', color: '#2A4D74' }}
             />
             
             <Dropdown
               menu={{ items: userMenuItems }}
               placement="bottomRight"
+              arrow
             >
-              <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '8px 12px', borderRadius: '6px', transition: 'background-color 0.2s' }}>
-                <Avatar icon={<UserOutlined />} style={{ marginRight: '12px' }} />
-                <div style={{ display: 'flex', flexDirection: 'column', lineHeight: '1.2' }}>
-                  <Text strong style={{ fontSize: '14px', marginBottom: '2px' }}>{user.name}</Text>
-                  <Text type="secondary" style={{ fontSize: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#6ED0F6', marginRight: '0.75rem' }} />
+                <div>
+                  <Text strong style={{ color: '#333333' }}>{user.name}</Text>
+                  <Text type="secondary" style={{ display: 'block', lineHeight: 1 }}>
                     {user.role}
                   </Text>
                 </div>
@@ -215,9 +213,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             style={{
               margin: '24px',
               padding: '24px',
-              background: '#fff',
-              borderRadius: '8px',
-              minHeight: 'calc(100vh - 112px)',
+              background: '#FFFFFF',
+              borderRadius: '1rem',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
             }}
           >
             <ErrorBoundary>
@@ -229,7 +227,5 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     )
   }
 
-  // If status is 'failed', the useEffect will handle the redirect. 
-  // You can return null or a minimal loader here.
   return null;
 }

@@ -7,6 +7,7 @@ import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState, AppDispatch } from '@/lib/store'
 import { login, clearError } from '@/lib/store/slices/authSlice'
+import Image from 'next/image'
 
 const { Title, Text } = Typography
 const { Content } = Layout
@@ -37,20 +38,23 @@ export default function LoginPage() {
   }
 
   return (
-    <Layout style={{ minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
-      <Content style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+    <Layout style={{ minHeight: '100vh', background: 'linear-gradient(to right, #2A4D74, #6ED0F6)' }}>
+      <Content style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '2rem' }}>
         <Card
           style={{
             width: '100%',
             maxWidth: '400px',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+            borderRadius: '1rem',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+            padding: '2rem',
           }}
         >
-          <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-            <Title level={2} style={{ color: '#1f2937', marginBottom: '8px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <Image src="/logos/logo.png" alt="Nexus Admin" width={60} height={60} />
+            <Title level={2} style={{ color: '#2A4D74', marginTop: '1rem', fontWeight: 'bold' }}>
               Nexus Admin
             </Title>
-            <Text type="secondary">
+            <Text style={{ color: '#333333' }}>
               Sign in to access the admin dashboard
             </Text>
           </div>
@@ -63,46 +67,56 @@ export default function LoginPage() {
           >
             <Form.Item
               name="username"
-              label="Username"
+              label={<Text style={{ color: '#333333' }}>Username</Text>}
               rules={[
                 { required: true, message: 'Please enter your username' }
               ]}
             >
               <Input
-                prefix={<UserOutlined />}
+                prefix={<UserOutlined style={{ color: '#6ED0F6' }} />}
                 placeholder="Enter your username"
                 size="large"
+                style={{ borderRadius: '0.5rem' }}
               />
             </Form.Item>
 
             <Form.Item
               name="password"
-              label="Password"
+              label={<Text style={{ color: '#333333' }}>Password</Text>}
               rules={[{ required: true, message: 'Please enter your password' }]}
             >
               <Input.Password
-                prefix={<LockOutlined />}
+                prefix={<LockOutlined style={{ color: '#6ED0F6' }} />}
                 placeholder="Enter your password"
                 size="large"
+                style={{ borderRadius: '0.5rem' }}
               />
             </Form.Item>
 
-            <Form.Item>
+            <Form.Item style={{ marginTop: '1.5rem' }}>
               <Button
                 type="primary"
                 htmlType="submit"
                 size="large"
                 block
                 loading={loading}
-                style={{ height: '48px', fontSize: '16px' }}
+                style={{ 
+                  backgroundColor: '#2A4D74', 
+                  borderColor: '#2A4D74', 
+                  color: '#FFFFFF', 
+                  borderRadius: '0.5rem', 
+                  height: '3rem', 
+                  fontSize: '1rem', 
+                  fontWeight: 'bold' 
+                }}
               >
                 Sign In
               </Button>
             </Form.Item>
           </Form>
 
-          <div style={{ textAlign: 'center', marginTop: '24px' }}>
-            <Text type="secondary" style={{ fontSize: '12px' }}>
+          <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
+            <Text style={{ fontSize: '0.75rem', color: '#333333' }}>
               Demo credentials:<br />
               Admin: admin@nexus.com / admin123<br />
               User: user@nexus.com / user123
