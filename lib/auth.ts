@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 import { prisma } from './prisma';
 import { cookies } from 'next/headers';
+import { JWT_SECRET } from './config';
 
 export interface AuthenticatedRequest extends NextRequest {
   user?: {
@@ -15,16 +16,18 @@ export interface AuthenticatedRequest extends NextRequest {
   };
 }
 
+interface DecodedToken extends JwtPayload {
+  userId: string;
+}
+
 export async function authenticateToken(req: AuthenticatedRequest): Promise<NextResponse | null> {
   try {
-    // Try to get token from Authorization header first, then from cookie
     const authHeader = req.headers.get('authorization');
-    let token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-    
+    let token = authHeader?.split(' ')[1];
+
     if (!token) {
-      // Try to get token from cookie
       const cookieStore = cookies();
-      token = cookieStore.get('auth-token')?.value || null;
+      token = cookieStore.get('auth-token')?.value;
     }
 
     if (!token) {
@@ -34,23 +37,18 @@ export async function authenticateToken(req: AuthenticatedRequest): Promise<Next
       }, { status: 401 });
     }
 
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      throw new Error('JWT_SECRET is not configured');
-    }
+    const decoded = jwt.verify(token, JWT_SECRET) as DecodedToken;
 
-    const decoded = jwt.verify(token, jwtSecret) as any;
-    
-    // Fetch user from database to ensure they still exist and get current status
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: {
         id: true,
         email: true,
         name: true,
-        role: true
+        role: true,
+        status: true,
       }
-    }) as any;
+    });
 
     if (!user) {
       return NextResponse.json({
@@ -59,8 +57,7 @@ export async function authenticateToken(req: AuthenticatedRequest): Promise<Next
       }, { status: 401 });
     }
 
-    // Check if user account is active
-    if (user?.status && user.status !== 'ACTIVE') {
+    if (user.status !== 'ACTIVE') {
       return NextResponse.json({
         error: 'Account Status Error',
         message: 'Your account is not active. Please contact an administrator.'
@@ -68,7 +65,7 @@ export async function authenticateToken(req: AuthenticatedRequest): Promise<Next
     }
 
     req.user = user;
-    return null; // No error, authentication successful
+    return null;
   } catch (error) {
     console.error('Authentication error:', error);
     return NextResponse.json({

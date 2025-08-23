@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { App } from 'antd'
 
 interface CrudHook<T> {
@@ -27,6 +27,27 @@ export function useCrud<T extends { id: string }>(
   const [editingRecord, setEditingRecord] = useState<T | null>(null)
   
   const { message } = App.useApp()
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    const token = localStorage.getItem('auth-token');
+    try {
+      const response = await fetch(apiPath, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const result = await response.json();
+        setData(result.data);
+      } else {
+        message.error(`Failed to fetch ${entityName}s`);
+      }
+    } catch (error) {
+      console.error(`Fetch error for ${entityName}s:`, error);
+      message.error(`An error occurred while fetching ${entityName}s.`);
+    } finally {
+      setLoading(false);
+    }
+  }, [apiPath, entityName, message]);
 
   useEffect(() => {
     fetchData()
@@ -96,8 +117,20 @@ export function useCrud<T extends { id: string }>(
     }
   }
 
+  const filteredData = useMemo(() => {
+    if (!searchText) {
+      return data;
+    }
+    // Ensure item is an object before using Object.values
+    return data.filter(item =>
+      item && typeof item === 'object' && Object.values(item).some(value =>
+        String(value).toLowerCase().includes(searchText.toLowerCase())
+      )
+    );
+  }, [data, searchText]);
+
   return {
-    data,
+    data: filteredData,
     loading,
     isModalVisible,
     editingRecord,

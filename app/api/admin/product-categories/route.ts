@@ -36,7 +36,7 @@ const getProductCategories = async (req: AuthenticatedRequest) => {
         name: 'asc',
       },
     });
-    return NextResponse.json({ productCategory: productCategories });
+    return NextResponse.json({ data: productCategories });
   } catch (error) {
     console.error('Error fetching product categories:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

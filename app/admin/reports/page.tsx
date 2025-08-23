@@ -81,11 +81,7 @@ export default function ReportsPage() {
             ];
             break;
           default:
-            generatedColumns = Object.keys(result.data[0]).map(key => ({
-              title: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-              dataIndex: key,
-              key: key,
-            }));
+            generatedColumns = []; // Should not happen
         }
         setColumns(generatedColumns);
         setData(result.data);

@@ -79,7 +79,7 @@ export function createGetHandler<T>(config: CrudConfig<T>) {
     const meta = calculatePaginationMeta(total, page || 1, limit || 10);
     
     return successResponse({
-      [config.modelName]: records,
+      data: records,
       meta
     });
   });

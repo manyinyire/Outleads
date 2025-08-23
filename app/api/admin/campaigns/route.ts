@@ -55,7 +55,7 @@ const getCampaigns = async (req: AuthenticatedRequest) => {
       },
     });
 
-    return NextResponse.json(campaigns);
+    return NextResponse.json({ data: campaigns });
   } catch (error) {
     console.error('Error fetching campaigns:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

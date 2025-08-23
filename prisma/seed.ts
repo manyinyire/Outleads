@@ -77,7 +77,7 @@ async function main() {
     const superuserPassword = await hashPassword('superuser123!');
     
     console.log('--- Creating Superuser ---');
-    await prisma.user.create({
+    const superuser = await prisma.user.create({
       data: {
         email: 'superuser@fbc.co.zw',
         username: 'superuser',
@@ -89,6 +89,67 @@ async function main() {
     });
     console.log('Superuser created.');
     console.log('--- Superuser Creation Complete ---');
+
+    // Create a sample campaign
+    console.log('--- Creating Sample Campaign ---');
+    const campaign = await prisma.campaign.create({
+      data: {
+        campaign_name: 'Q3 2025 Marketing Push',
+        organization_name: 'Nexus Financial Services',
+        createdById: superuser.id,
+        uniqueLink: 'q3-2025-promo',
+        click_count: 42,
+        is_active: true,
+      }
+    });
+    console.log('Sample campaign created.');
+    console.log('--- Sample Campaign Creation Complete ---');
+
+    // Create sample leads
+    console.log('--- Creating Sample Leads ---');
+    const techSector = await prisma.sector.findFirst({ where: { name: 'Technology' } });
+    const financeSector = await prisma.sector.findFirst({ where: { name: 'Finance' } });
+    const personalLoanProduct = await prisma.product.findFirst({ where: { name: 'Personal Loan' } });
+    const creditCardProduct = await prisma.product.findFirst({ where: { name: 'Credit Cards' } });
+
+    if (techSector && financeSector && personalLoanProduct && creditCardProduct) {
+      await prisma.lead.createMany({
+        data: [
+          {
+            fullName: 'Alice Johnson',
+            phoneNumber: '123-456-7890',
+            businessSectorId: techSector.id,
+            campaignId: campaign.id,
+            uniqueLinkId: 'q3-2025-promo',
+          },
+          {
+            fullName: 'Bob Williams',
+            phoneNumber: '234-567-8901',
+            businessSectorId: financeSector.id,
+            campaignId: campaign.id,
+            uniqueLinkId: 'q3-2025-promo',
+          }
+        ]
+      });
+      console.log('Created 2 sample leads.');
+
+      // Associate products with leads (example for one lead)
+      const aliceLead = await prisma.lead.findFirst({ where: { fullName: 'Alice Johnson' } });
+      if (aliceLead) {
+        await prisma.lead.update({
+          where: { id: aliceLead.id },
+          data: {
+            products: {
+              connect: [{ id: personalLoanProduct.id }, { id: creditCardProduct.id }]
+            }
+          }
+        });
+        console.log('Associated products with Alice Johnson.');
+      }
+    } else {
+      console.warn('Could not find necessary sectors or products to create full sample leads.');
+    }
+    console.log('--- Sample Lead Creation Complete ---');
 
     console.log('✅ Database seeded successfully!');
     console.log('Superuser Created:');

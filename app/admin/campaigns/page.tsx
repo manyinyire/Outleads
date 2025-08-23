@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useEffect } from 'react'
 import { Tag, Button, Space, App, Tooltip, Switch } from 'antd'
 import { ColumnsType } from 'antd/es/table'
 import { CopyOutlined, PlusOutlined, ExportOutlined } from '@ant-design/icons'
@@ -35,6 +35,10 @@ export default function CampaignsPage() {
     fetchData,
   } = useCrud<Campaign>('/api/admin/campaigns', 'campaign')
   
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
   const { message } = App.useApp()
   const userRole = useSelector((state: RootState) => state.auth.user?.role)
 

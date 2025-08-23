@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth'
-
-const prisma = new PrismaClient()
 
 const getReportData = async (req: AuthenticatedRequest, { params }: { params: { reportType: string } }) => {
   try {
@@ -35,13 +33,16 @@ const getReportData = async (req: AuthenticatedRequest, { params }: { params: { 
 export const GET = withAuthAndRole(['ADMIN'], getReportData)
 
 async function getLeadDetails(startDate: string | null, endDate: string | null) {
+  const where: any = {};
+  if (startDate || endDate) {
+    where.createdAt = {
+      gte: startDate ? new Date(startDate) : undefined,
+      lte: endDate ? new Date(endDate) : undefined,
+    };
+  }
+
   const leads = await prisma.lead.findMany({
-    where: {
-      createdAt: {
-        gte: startDate ? new Date(startDate) : undefined,
-        lte: endDate ? new Date(endDate) : undefined,
-      },
-    },
+    where,
     select: {
       id: true,
       fullName: true,
@@ -71,13 +72,16 @@ async function getLeadDetails(startDate: string | null, endDate: string | null) 
 }
 
 async function getCampaignPerformance(startDate: string | null, endDate: string | null) {
+  const where: any = {};
+  if (startDate || endDate) {
+    where.createdAt = {
+      gte: startDate ? new Date(startDate) : undefined,
+      lte: endDate ? new Date(endDate) : undefined,
+    };
+  }
+
   const campaigns = await prisma.campaign.findMany({
-    where: {
-      createdAt: {
-        gte: startDate ? new Date(startDate) : undefined,
-        lte: endDate ? new Date(endDate) : undefined,
-      },
-    },
+    where,
     select: {
       id: true,
       campaign_name: true,
@@ -101,13 +105,16 @@ async function getCampaignPerformance(startDate: string | null, endDate: string 
 }
 
 async function getUserActivity(startDate: string | null, endDate: string | null) {
+  const where: any = {};
+  if (startDate || endDate) {
+    where.createdAt = {
+      gte: startDate ? new Date(startDate) : undefined,
+      lte: endDate ? new Date(endDate) : undefined,
+    };
+  }
+
   const users = await prisma.user.findMany({
-    where: {
-      createdAt: {
-        gte: startDate ? new Date(startDate) : undefined,
-        lte: endDate ? new Date(endDate) : undefined,
-      },
-    },
+    where,
     select: {
       id: true,
       name: true,

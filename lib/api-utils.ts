@@ -32,6 +32,9 @@ export function errorResponse(
 ): NextResponse<ApiError> {
   const errorType = error || getErrorTypeFromStatus(status);
   
+  // In a production environment, you would use a dedicated logging service
+  // For example: import { logger } from './logger';
+  // logger.error(`[API Error] ${errorType}: ${message}`, details);
   console.error(`[API Error] ${errorType}: ${message}`, details);
   
   return NextResponse.json(

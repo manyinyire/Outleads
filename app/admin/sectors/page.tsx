@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useEffect } from 'react'
 import { ColumnsType } from 'antd/es/table'
 import CrudTable, { CrudField } from '@/components/admin/CrudTable'
 import { useCrud } from '@/hooks/useCrud'
@@ -21,7 +21,12 @@ export default function SectorsPage() {
     handleDelete,
     handleSubmit,
     closeModal,
+    fetchData,
   } = useCrud<Sector>('/api/admin/sectors', 'sector')
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   const fields: CrudField[] = useMemo(() => [
     { name: 'name', label: 'Sector Name', type: 'text', required: true },

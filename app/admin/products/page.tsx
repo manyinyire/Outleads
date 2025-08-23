@@ -33,7 +33,12 @@ export default function ProductsPage() {
     handleDelete,
     handleSubmit,
     closeModal,
+    fetchData,
   } = useCrud<Product>('/api/admin/products', 'product')
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   const fetchCategories = useCallback(async () => {
     try {

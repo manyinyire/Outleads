@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useEffect } from 'react'
 import { Tag } from 'antd'
 import { ColumnsType } from 'antd/es/table'
 import CrudTable, { CrudField } from '@/components/admin/CrudTable'
@@ -26,7 +26,12 @@ export default function ProductCategoriesPage() {
     handleDelete,
     handleSubmit,
     closeModal,
+    fetchData,
   } = useCrud<ProductCategory>('/api/admin/product-categories', 'productCategory')
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   const fields: CrudField[] = useMemo(() => [
     { name: 'name', label: 'Category Name', type: 'text', required: true },
