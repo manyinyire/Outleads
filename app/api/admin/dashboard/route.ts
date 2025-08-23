@@ -1,0 +1,86 @@
+import { NextResponse } from 'next/server'
+import { PrismaClient } from '@prisma/client'
+import jwt from 'jsonwebtoken'
+
+const prisma = new PrismaClient()
+
+interface DecodedToken {
+  userId: string;
+  role: string;
+  [key: string]: any;
+}
+
+export async function GET(req: Request) {
+  try {
+    const token = req.headers.get('Authorization')?.split(' ')[1]
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const jwtSecret = process.env.JWT_SECRET
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET is not configured in .env file');
+    }
+
+    let decoded: DecodedToken;
+    try {
+      decoded = jwt.verify(token, jwtSecret) as DecodedToken;
+    } catch (error) {
+      return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 });
+    }
+
+    if (!decoded || (decoded.role !== 'ADMIN' && decoded.role !== 'TEAMLEADER')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const leads = await prisma.lead.findMany({
+      select: {
+        createdAt: true,
+        campaignId: true,
+        campaign: {
+          select: {
+            campaign_name: true,
+          },
+        },
+      },
+    })
+
+    // Process data for charts
+    const leadsPerDay = leads.reduce((acc, lead) => {
+      const date = new Date(lead.createdAt).toISOString().split('T')[0]
+      acc[date] = (acc[date] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+
+    const leadsPerMonth = leads.reduce((acc, lead) => {
+      const month = new Date(lead.createdAt).toISOString().slice(0, 7)
+      acc[month] = (acc[month] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+
+    const campaignPerformance = leads.reduce((acc, lead) => {
+      if (lead.campaign) {
+        const name = lead.campaign.campaign_name
+        acc[name] = (acc[name] || 0) + 1
+      }
+      return acc
+    }, {} as Record<string, number>)
+
+    const activeCampaigns = await prisma.campaign.count({
+      where: { is_active: true },
+    })
+
+    const totalLeads = leads.length
+
+    return NextResponse.json({
+      totalLeads,
+      activeCampaigns,
+      leadsPerDay: Object.entries(leadsPerDay).map(([name, value]) => ({ name, value })),
+      leadsPerMonth: Object.entries(leadsPerMonth).map(([name, value]) => ({ name, value })),
+      campaignPerformance: Object.entries(campaignPerformance).map(([name, value]) => ({ name, value })),
+    })
+  } catch (error) {
+    console.error('Error fetching dashboard data:', error)
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+  }
+}
