@@ -1,9 +1,9 @@
 'use client'
 
-import { useMemo, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { App } from 'antd'
 import { ColumnsType } from 'antd/es/table'
 import CrudTable, { CrudField } from '@/components/admin/CrudTable'
-import { useCrud } from '@/hooks/useCrud'
 
 interface Sector {
   id: string
@@ -11,22 +11,109 @@ interface Sector {
 }
 
 export default function SectorsPage() {
-  const {
-    data,
-    loading,
-    isModalVisible,
-    editingRecord,
-    handleSearch,
-    handleEdit,
-    handleDelete,
-    handleSubmit,
-    closeModal,
-    fetchData,
-  } = useCrud<Sector>('/api/admin/sectors', 'sector')
+  const [data, setData] = useState<Sector[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchText, setSearchText] = useState('')
+  const [isModalVisible, setModalVisible] = useState(false)
+  const [editingRecord, setEditingRecord] = useState<Sector | null>(null)
+  
+  const { message } = App.useApp()
+
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    const token = localStorage.getItem('auth-token')
+    if (!token) {
+      message.error("Authentication token not found. Please log in again.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const url = new URL('/api/admin/sectors', window.location.origin)
+      if (searchText) {
+        url.searchParams.set('search', searchText)
+      }
+      
+      const response = await fetch(url.toString(), {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (!response.ok) throw new Error(`Failed to fetch: ${response.statusText}`)
+      
+      const result = await response.json()
+      setData(result.sector || [])
+      
+    } catch (error) {
+      console.error("Fetch error:", error)
+      message.error('Failed to load sectors.')
+    } finally {
+      setLoading(false)
+    }
+  }, [searchText, message])
 
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  const handleSearch = (value: string) => {
+    setSearchText(value)
+  }
+
+  const handleEdit = (record: Sector) => {
+    setEditingRecord(record)
+    setModalVisible(true)
+  }
+
+  const handleDelete = async (id: string) => {
+    const token = localStorage.getItem('auth-token');
+    try {
+      const response = await fetch(`/api/admin/sectors/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        message.success('Sector deleted successfully');
+        fetchData();
+      } else {
+        const error = await response.json();
+        message.error(error.message || 'Failed to delete sector');
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+      message.error('An error occurred while deleting the sector.');
+    }
+  }
+
+  const handleSubmit = async (values: any, record: Sector | null) => {
+    const token = localStorage.getItem('auth-token');
+    const url = record ? `/api/admin/sectors/${record.id}` : '/api/admin/sectors';
+    const method = record ? 'PUT' : 'POST';
+
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(values)
+      });
+
+      if (response.ok) {
+        message.success(`Sector ${record ? 'updated' : 'created'} successfully`);
+        setModalVisible(false);
+        setEditingRecord(null);
+        fetchData();
+      } else {
+        const error = await response.json();
+        message.error(error.message || `Failed to save sector`);
+      }
+    } catch (error) {
+      console.error("Submit error:", error);
+      message.error('An error occurred while saving the sector.');
+    }
+  }
 
   const fields: CrudField[] = useMemo(() => [
     { name: 'name', label: 'Sector Name', type: 'text', required: true },
@@ -48,7 +135,10 @@ export default function SectorsPage() {
       onDelete={handleDelete}
       onSubmit={handleSubmit}
       isModalVisible={isModalVisible}
-      closeModal={closeModal}
+      closeModal={() => {
+        setModalVisible(false)
+        setEditingRecord(null)
+      }}
       editingRecord={editingRecord}
     />
   )

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Tag, Button, Space, App } from 'antd'
 import { ColumnsType } from 'antd/es/table'
 import { DownloadOutlined, DeleteOutlined, UserAddOutlined } from '@ant-design/icons'
@@ -11,7 +11,6 @@ import Papa from 'papaparse'
 
 import CrudTable, { CrudField } from '@/components/admin/CrudTable'
 import AddUser from '@/components/admin/AddUser'
-import { useCrud } from '@/hooks/useCrud'
 
 // --- TYPE DEFINITIONS ---
 interface User {
@@ -27,31 +26,110 @@ interface User {
 // --- COMPONENT ---
 export default function UsersPage() {
   // --- STATE MANAGEMENT ---
+  const [data, setData] = useState<User[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchText, setSearchText] = useState('')
   const [isAddUserModalVisible, setAddUserModalVisible] = useState(false)
+  const [isEditModalVisible, setEditModalVisible] = useState(false)
+  const [editingRecord, setEditingRecord] = useState<User | null>(null)
   
   // --- HOOKS ---
   const router = useRouter()
   const { message } = App.useApp()
   const userRole = useSelector((state: RootState) => state.auth.user?.role)
 
-  const {
-    data,
-    loading,
-    isModalVisible: isEditModalVisible,
-    editingRecord,
-    handleSearch,
-    handleEdit,
-    handleDelete,
-    handleSubmit,
-    closeModal: closeEditModal,
-    fetchData,
-  } = useCrud<User>('/api/admin/users', 'user')
+  // --- DATA FETCHING ---
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    try {
+      const url = new URL('/api/admin/users', window.location.origin)
+      if (searchText) {
+        url.searchParams.set('search', searchText)
+      }
+      
+      const token = localStorage.getItem('auth-token')
+      const response = await fetch(url.toString(), {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (!response.ok) throw new Error(`Failed to fetch: ${response.statusText}`)
+      
+      const result = await response.json()
+      setData(Array.isArray(result) ? result : result.user || [])
+      
+    } catch (error) {
+      console.error("Fetch error:", error)
+      message.error('Failed to load user data.')
+    } finally {
+      setLoading(false)
+    }
+  }, [searchText, message])
 
   useEffect(() => {
     fetchData()
   }, [fetchData])
 
   // --- EVENT HANDLERS ---
+  const handleSearch = (value: string) => {
+    setSearchText(value)
+  }
+
+  const handleEdit = (record: User) => {
+    setEditingRecord(record)
+    setEditModalVisible(true)
+  }
+
+  const handleDelete = async (id: string) => {
+    const token = localStorage.getItem('auth-token');
+    try {
+      const response = await fetch(`/api/admin/users/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        message.success('User deleted successfully');
+        fetchData(); // Refresh data
+      } else {
+        const error = await response.json();
+        message.error(error.message || 'Failed to delete user');
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+      message.error('An error occurred while deleting the user.');
+    }
+  }
+
+  const handleSubmit = async (values: any, record: User | null) => {
+    const token = localStorage.getItem('auth-token');
+    const url = record ? `/api/admin/users/${record.id}` : '/api/admin/users';
+    const method = record ? 'PUT' : 'POST';
+
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(values)
+      });
+
+      if (response.ok) {
+        message.success(`User ${record ? 'updated' : 'created'} successfully`);
+        setEditModalVisible(false);
+        setEditingRecord(null);
+        fetchData(); // Refresh data
+      } else {
+        const error = await response.json();
+        message.error(error.message || `Failed to save user`);
+      }
+    } catch (error) {
+      console.error("Submit error:", error);
+      message.error('An error occurred while saving the user.');
+    }
+  }
+
   const handleExport = () => {
     const csv = Papa.unparse(data)
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -124,7 +202,7 @@ export default function UsersPage() {
         onDelete={handleDelete}
         onSubmit={handleSubmit}
         isModalVisible={isEditModalVisible}
-        closeModal={closeEditModal}
+        closeModal={() => setEditModalVisible(false)}
         editingRecord={editingRecord}
         customActions={
           <Space>

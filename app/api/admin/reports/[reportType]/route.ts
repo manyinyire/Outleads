@@ -1,9 +1,38 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth'
+import { PrismaClient } from '@prisma/client'
+import jwt from 'jsonwebtoken'
 
-const getReportData = async (req: AuthenticatedRequest, { params }: { params: { reportType: string } }) => {
+const prisma = new PrismaClient()
+
+interface DecodedToken {
+  userId: string;
+  role: string;
+  [key: string]: any;
+}
+
+export async function GET(req: Request, { params }: { params: { reportType: string } }) {
   try {
+    const token = req.headers.get('Authorization')?.split(' ')[1]
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const jwtSecret = process.env.JWT_SECRET
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET is not configured in .env file');
+    }
+
+    let decoded: DecodedToken;
+    try {
+      decoded = jwt.verify(token, jwtSecret) as DecodedToken;
+    } catch (error) {
+      return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 });
+    }
+
+    if (decoded.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const { searchParams } = new URL(req.url)
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
@@ -30,19 +59,14 @@ const getReportData = async (req: AuthenticatedRequest, { params }: { params: { 
   }
 }
 
-export const GET = withAuthAndRole(['ADMIN'], getReportData)
-
 async function getLeadDetails(startDate: string | null, endDate: string | null) {
-  const where: any = {};
-  if (startDate || endDate) {
-    where.createdAt = {
-      gte: startDate ? new Date(startDate) : undefined,
-      lte: endDate ? new Date(endDate) : undefined,
-    };
-  }
-
   const leads = await prisma.lead.findMany({
-    where,
+    where: {
+      createdAt: {
+        gte: startDate ? new Date(startDate) : undefined,
+        lte: endDate ? new Date(endDate) : undefined,
+      },
+    },
     select: {
       id: true,
       fullName: true,
@@ -72,16 +96,13 @@ async function getLeadDetails(startDate: string | null, endDate: string | null) 
 }
 
 async function getCampaignPerformance(startDate: string | null, endDate: string | null) {
-  const where: any = {};
-  if (startDate || endDate) {
-    where.createdAt = {
-      gte: startDate ? new Date(startDate) : undefined,
-      lte: endDate ? new Date(endDate) : undefined,
-    };
-  }
-
   const campaigns = await prisma.campaign.findMany({
-    where,
+    where: {
+      createdAt: {
+        gte: startDate ? new Date(startDate) : undefined,
+        lte: endDate ? new Date(endDate) : undefined,
+      },
+    },
     select: {
       id: true,
       campaign_name: true,
@@ -105,16 +126,13 @@ async function getCampaignPerformance(startDate: string | null, endDate: string 
 }
 
 async function getUserActivity(startDate: string | null, endDate: string | null) {
-  const where: any = {};
-  if (startDate || endDate) {
-    where.createdAt = {
-      gte: startDate ? new Date(startDate) : undefined,
-      lte: endDate ? new Date(endDate) : undefined,
-    };
-  }
-
   const users = await prisma.user.findMany({
-    where,
+    where: {
+      createdAt: {
+        gte: startDate ? new Date(startDate) : undefined,
+        lte: endDate ? new Date(endDate) : undefined,
+      },
+    },
     select: {
       id: true,
       name: true,

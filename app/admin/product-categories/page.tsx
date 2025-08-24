@@ -1,10 +1,9 @@
 'use client'
 
-import { useMemo, useEffect } from 'react'
-import { Tag } from 'antd'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { App, Tag } from 'antd'
 import { ColumnsType } from 'antd/es/table'
 import CrudTable, { CrudField } from '@/components/admin/CrudTable'
-import { useCrud } from '@/hooks/useCrud'
 
 interface ProductCategory {
   id: string
@@ -16,22 +15,109 @@ interface ProductCategory {
 }
 
 export default function ProductCategoriesPage() {
-  const {
-    data,
-    loading,
-    isModalVisible,
-    editingRecord,
-    handleSearch,
-    handleEdit,
-    handleDelete,
-    handleSubmit,
-    closeModal,
-    fetchData,
-  } = useCrud<ProductCategory>('/api/admin/product-categories', 'productCategory')
+  const [data, setData] = useState<ProductCategory[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchText, setSearchText] = useState('')
+  const [isModalVisible, setModalVisible] = useState(false)
+  const [editingRecord, setEditingRecord] = useState<ProductCategory | null>(null)
+  
+  const { message } = App.useApp()
+
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    try {
+      const token = localStorage.getItem('auth-token')
+      if (!token) {
+        message.error("Authentication token not found. Please log in again.");
+        setLoading(false);
+        return;
+      }
+
+      const url = new URL('/api/admin/product-categories', window.location.origin)
+      if (searchText) {
+        url.searchParams.set('search', searchText)
+      }
+      
+      const response = await fetch(url.toString(), {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (!response.ok) throw new Error(`Failed to fetch: ${response.statusText}`)
+      
+      const result = await response.json()
+      setData(result.productCategory || [])
+      
+    } catch (error) {
+      console.error("Fetch error:", error)
+      message.error('Failed to load product categories.')
+    } finally {
+      setLoading(false)
+    }
+  }, [searchText, message])
 
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  const handleSearch = (value: string) => {
+    setSearchText(value)
+  }
+
+  const handleEdit = (record: ProductCategory) => {
+    setEditingRecord(record)
+    setModalVisible(true)
+  }
+
+  const handleDelete = async (id: string) => {
+    const token = localStorage.getItem('auth-token');
+    try {
+      const response = await fetch(`/api/admin/product-categories/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        message.success('Category deleted successfully');
+        fetchData();
+      } else {
+        const error = await response.json();
+        message.error(error.message || 'Failed to delete category');
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+      message.error('An error occurred while deleting the category.');
+    }
+  }
+
+  const handleSubmit = async (values: any, record: ProductCategory | null) => {
+    const token = localStorage.getItem('auth-token');
+    const url = record ? `/api/admin/product-categories/${record.id}` : '/api/admin/product-categories';
+    const method = record ? 'PUT' : 'POST';
+
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(values)
+      });
+
+      if (response.ok) {
+        message.success(`Category ${record ? 'updated' : 'created'} successfully`);
+        setModalVisible(false);
+        setEditingRecord(null);
+        fetchData();
+      } else {
+        const error = await response.json();
+        message.error(error.message || `Failed to save category`);
+      }
+    } catch (error) {
+      console.error("Submit error:", error);
+      message.error('An error occurred while saving the category.');
+    }
+  }
 
   const fields: CrudField[] = useMemo(() => [
     { name: 'name', label: 'Category Name', type: 'text', required: true },
@@ -61,7 +147,10 @@ export default function ProductCategoriesPage() {
       onDelete={handleDelete}
       onSubmit={handleSubmit}
       isModalVisible={isModalVisible}
-      closeModal={closeModal}
+      closeModal={() => {
+        setModalVisible(false)
+        setEditingRecord(null)
+      }}
       editingRecord={editingRecord}
     />
   )
