@@ -155,7 +155,9 @@ export default function UsersPage() {
         { label: 'BSS', value: 'BSS' },
         { label: 'InfoSec', value: 'INFOSEC' },
         { label: 'Agent', value: 'AGENT' },
-        { label: 'Teamleader', value: 'TEAMLEADER' },
+        { label: 'Supervisor', value: 'SUPERVISOR' },
+        { label: 'Employee', value: 'EMPLOYEE' },
+        { label: 'Manager', value: 'MANAGER' },
       ]
     }
   ], [])
@@ -182,12 +184,6 @@ export default function UsersPage() {
       render: (date: string) => date ? new Date(date).toLocaleDateString() : '-'
     },
   ], [])
-
-  // --- RENDER LOGIC ---
-  const hasAccess = userRole && ['ADMIN', 'BSS', 'INFOSEC'].includes(userRole)
-  if (!hasAccess) {
-    return <p>Access Denied</p> // Or a more sophisticated component
-  }
 
   return (
     <>

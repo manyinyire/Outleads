@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 const completeRegistrationSchema = z.object({
   userId: z.string(),
-  role: z.enum(['EMPLOYEE', 'MANAGER', 'ADMIN', 'BSS', 'INFOSEC', 'AGENT', 'SUPERVISOR', 'TEAMLEADER']),
+  role: z.enum(['ADMIN', 'BSS', 'INFOSEC', 'AGENT', 'SUPERVISOR']),
 });
 
 export async function POST(req: Request) {

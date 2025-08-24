@@ -40,7 +40,7 @@ export default function FirstLoginDialog({ visible, user, onFinish, onCancel }: 
             <Option value="INFOSEC">InfoSec</Option>
             <Option value="AGENT">Agent</Option>
             <Option value="SUPERVISOR">Supervisor</Option>
-            <Option value="TEAMLEADER">Team Leader</Option>
+            <Option value="SUPERVISOR">Supervisor</Option>
             <Option value="EMPLOYEE">Employee</Option>
             <Option value="MANAGER">Manager</Option>
           </Select>

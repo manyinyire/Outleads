@@ -44,7 +44,10 @@ export default function LoginPage() {
         setNewUser(response.data.user);
         setIsFirstLogin(true);
       } else {
-        dispatch(login(values));
+        // Dispatch login to set user in redux state
+        dispatch(login.fulfilled(response.data.user, '', { username: values.username, password: values.password }));
+        localStorage.setItem('auth-token', response.data.token);
+        router.push('/admin');
       }
     } catch (error: any) {
       message.error(error.response?.data?.message || 'An unknown error occurred.');

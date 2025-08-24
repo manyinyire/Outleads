@@ -15,7 +15,7 @@ model User {
   id        String     @id @default(cuid())
   email     String     @unique
   username  String     @unique // To store the HRMS id_ field
-  password  String     // Optional as we use external auth
+  password  String?    // Optional as we use external auth
   name      String
   sbu       String?    // SBU selected during onboarding
   role      Role       @default(AGENT)
@@ -119,9 +119,6 @@ enum Role {
   INFOSEC
   AGENT
   SUPERVISOR
-  TEAMLEADER
-  EMPLOYEE
-  MANAGER
 }
 
 // User status for account management
@@ -131,4 +128,26 @@ enum Status {
   REJECTED
   ACTIVE
   INACTIVE
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  name        String   @unique // e.g., "manage_users", "view_reports"
+  description String?
+  roles       RolePermission[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  role         Role
+  permission   Permission @relation(fields: [permissionId], references: [id])
+  permissionId String
+  createdAt    DateTime   @default(now())
+
+  @@unique([role, permissionId])
+  @@map("role_permissions")
 }

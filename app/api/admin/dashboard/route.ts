@@ -29,7 +29,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 });
     }
 
-    if (!decoded || (decoded.role !== 'ADMIN' && decoded.role !== 'TEAMLEADER')) {
+    if (!decoded || (decoded.role !== 'ADMIN' && decoded.role !== 'SUPERVISOR')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

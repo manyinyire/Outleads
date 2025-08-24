@@ -55,24 +55,25 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       key: '/admin',
       icon: <DashboardOutlined />,
       label: 'Dashboard',
+      hidden: !user || !['ADMIN', 'SUPERVISOR'].includes(user.role),
     },
     {
       key: '/admin/leads',
       icon: <UserOutlined />,
       label: 'Leads',
-      hidden: !user || !['ADMIN', 'AGENT', 'TEAMLEADER'].includes(user.role),
+      hidden: !user || !['ADMIN', 'AGENT', 'SUPERVISOR'].includes(user.role),
     },
     {
       key: '/admin/campaigns',
       icon: <BulbOutlined />,
       label: 'Campaigns',
-      hidden: !user || !['ADMIN', 'TEAMLEADER'].includes(user.role),
+      hidden: !user || !['ADMIN', 'SUPERVISOR'].includes(user.role),
     },
     {
       key: '/admin/reports',
       icon: <BarChartOutlined />,
       label: 'Reports',
-      hidden: !user || user.role !== 'ADMIN',
+      hidden: !user || !['ADMIN', 'SUPERVISOR'].includes(user.role),
     },
     {
       key: '/admin/users',
