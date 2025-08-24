@@ -99,6 +99,7 @@ export default function UsersPage() {
     const token = localStorage.getItem('auth-token');
     const url = record ? `/api/admin/users/${record.id}` : '/api/admin/users';
     const method = record ? 'PUT' : 'POST';
+    const payload = record ? { role: values.role } : values;
 
     try {
       const response = await fetch(url, {
@@ -107,7 +108,7 @@ export default function UsersPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(values)
+        body: JSON.stringify(payload)
       });
 
       if (response.ok) {
