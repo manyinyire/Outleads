@@ -3,6 +3,7 @@ import jwt, { JwtPayload } from 'jsonwebtoken';
 import { prisma } from './prisma';
 import { cookies } from 'next/headers';
 import { JWT_SECRET } from './config';
+import { logger } from './logger';
 
 export interface AuthenticatedRequest extends NextRequest {
   user?: {
@@ -12,7 +13,7 @@ export interface AuthenticatedRequest extends NextRequest {
     name: string;
     role: string;
     status: string;
-    sbu?: string;
+    sbu?: string | null;
   };
 }
 
@@ -31,6 +32,10 @@ export async function authenticateToken(req: AuthenticatedRequest): Promise<Next
     }
 
     if (!token) {
+      logger.warn('Authentication failed: No token provided', { 
+        userAgent: req.headers.get('user-agent'),
+        ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip')
+      });
       return NextResponse.json({
         error: 'Authentication Error',
         message: 'Access token is required'
@@ -44,13 +49,19 @@ export async function authenticateToken(req: AuthenticatedRequest): Promise<Next
       select: {
         id: true,
         email: true,
+        username: true,
         name: true,
         role: true,
         status: true,
+        sbu: true,
       }
     });
 
     if (!user) {
+      logger.warn('Authentication failed: User not found', { 
+        userId: decoded.userId,
+        ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip')
+      });
       return NextResponse.json({
         error: 'Authentication Error',
         message: 'User not found'
@@ -58,6 +69,11 @@ export async function authenticateToken(req: AuthenticatedRequest): Promise<Next
     }
 
     if (user.status !== 'ACTIVE') {
+      logger.warn('Authentication failed: User account not active', { 
+        userId: user.id,
+        status: user.status,
+        email: user.email
+      });
       return NextResponse.json({
         error: 'Account Status Error',
         message: 'Your account is not active. Please contact an administrator.'
@@ -67,7 +83,10 @@ export async function authenticateToken(req: AuthenticatedRequest): Promise<Next
     req.user = user;
     return null;
   } catch (error) {
-    console.error('Authentication error:', error);
+    logger.error('Authentication error occurred', error as Error, {
+      ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip'),
+      userAgent: req.headers.get('user-agent')
+    });
     return NextResponse.json({
       error: 'Authentication Error',
       message: 'Invalid or expired token'

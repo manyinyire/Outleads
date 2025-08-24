@@ -113,39 +113,34 @@ async function main() {
     const creditCardProduct = await prisma.product.findFirst({ where: { name: 'Credit Cards' } });
 
     if (techSector && financeSector && personalLoanProduct && creditCardProduct) {
-      await prisma.lead.createMany({
-        data: [
-          {
-            fullName: 'Alice Johnson',
-            phoneNumber: '123-456-7890',
-            businessSectorId: techSector.id,
-            campaignId: campaign.id,
-            uniqueLinkId: 'q3-2025-promo',
-          },
-          {
-            fullName: 'Bob Williams',
-            phoneNumber: '234-567-8901',
-            businessSectorId: financeSector.id,
-            campaignId: campaign.id,
-            uniqueLinkId: 'q3-2025-promo',
-          }
-        ]
+      const lead1 = await prisma.lead.create({
+        data: {
+          fullName: 'Alice Johnson',
+          phoneNumber: '123-456-7890',
+          sectorId: techSector.id,
+          campaignId: campaign.id,
+        }
+      });
+      const lead2 = await prisma.lead.create({
+        data: {
+          fullName: 'Bob Williams',
+          phoneNumber: '234-567-8901',
+          sectorId: financeSector.id,
+          campaignId: campaign.id,
+        }
       });
       console.log('Created 2 sample leads.');
 
-      // Associate products with leads (example for one lead)
-      const aliceLead = await prisma.lead.findFirst({ where: { fullName: 'Alice Johnson' } });
-      if (aliceLead) {
-        await prisma.lead.update({
-          where: { id: aliceLead.id },
-          data: {
-            products: {
-              connect: [{ id: personalLoanProduct.id }, { id: creditCardProduct.id }]
-            }
+      // Associate products with leads
+      await prisma.lead.update({
+        where: { id: lead1.id },
+        data: {
+          products: {
+            connect: [{ id: personalLoanProduct.id }, { id: creditCardProduct.id }]
           }
-        });
-        console.log('Associated products with Alice Johnson.');
-      }
+        }
+      });
+      console.log('Associated products with Alice Johnson.');
     } else {
       console.warn('Could not find necessary sectors or products to create full sample leads.');
     }

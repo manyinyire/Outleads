@@ -1,11 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Adding a comment to trigger a server restart and clear cache
+  // Enable error checking in production builds
   eslint: {
-    ignoreDuringBuilds: true,
+    // Only ignore during development if needed
+    ignoreDuringBuilds: process.env.NODE_ENV === 'development',
   },
   typescript: {
-    ignoreBuildErrors: true,
+    // Only ignore during development if needed
+    ignoreBuildErrors: process.env.NODE_ENV === 'development',
   },
   images: {
     unoptimized: true,

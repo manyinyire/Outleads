@@ -77,42 +77,50 @@ export default function LeadsPage() {
     }
   }, [message]);
 
+  import api from '@/lib/api';
+
+// ...
+
+  const fetchFilterData = useCallback(async () => {
+    try {
+      const [productsRes, campaignsRes, sectorsRes] = await Promise.all([
+        api.get('/admin/products'),
+        api.get('/admin/campaigns'),
+        api.get('/admin/sectors'),
+      ]);
+
+      setFilterData({
+        products: productsRes.data.data || [],
+        campaigns: campaignsRes.data.data || [],
+        sectors: sectorsRes.data.data || [],
+      });
+    } catch (error) {
+      console.error("Failed to fetch filter data:", error);
+      message.error('Failed to load filter options.');
+    }
+  }, [message]);
+
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const token = localStorage.getItem('auth-token')
-    if (!token) {
-      message.error("Authentication token not found.");
-      setLoading(false);
-      return;
-    }
-
     try {
-      const url = new URL('/api/admin/leads', window.location.origin)
-      if (searchText) url.searchParams.set('search', searchText)
-      if (filters.productId) url.searchParams.set('productId', filters.productId)
-      if (filters.campaignId) url.searchParams.set('campaignId', filters.campaignId)
-      if (filters.sectorId) url.searchParams.set('sectorId', filters.sectorId)
-      if (filters.dateRange?.[0] && filters.dateRange?.[1]) {
-        url.searchParams.set('startDate', moment(filters.dateRange[0]).toISOString())
-        url.searchParams.set('endDate', moment(filters.dateRange[1]).toISOString())
-      }
-      
-      const response = await fetch(url.toString(), {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-      
-      if (!response.ok) throw new Error(`Failed to fetch: ${response.statusText}`)
-      
-      const result = await response.json()
-      setData(result.lead || [])
-      
+      const { data } = await api.get('/admin/leads', {
+        params: {
+          search: searchText,
+          productId: filters.productId,
+          campaignId: filters.campaignId,
+          sectorId: filters.sectorId,
+          startDate: filters.dateRange?.[0]?.toISOString(),
+          endDate: filters.dateRange?.[1]?.toISOString(),
+        }
+      });
+      setData(data.data || []);
     } catch (error) {
       console.error("Fetch error:", error)
       message.error('Failed to load leads.')
     } finally {
       setLoading(false)
     }
-  }, [searchText, message, filters])
+  }, [searchText, message, filters]);
 
   useEffect(() => {
     fetchFilterData();

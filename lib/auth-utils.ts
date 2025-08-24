@@ -2,8 +2,14 @@ import { prisma } from './prisma';
 import { Role } from '@prisma/client';
 import { headers } from 'next/headers';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 
-// ... (keep existing functions: hashPassword, comparePassword, generateToken, etc.)
+export async function hashPassword(password: string): Promise<string> {
+  const salt = await bcrypt.genSalt(10);
+  return bcrypt.hash(password, salt);
+}
+
+// ... (keep existing functions: comparePassword, generateToken, etc.)
 
 // Verify JWT token and get user ID
 export const getUserIdFromToken = (token: string): string | null => {

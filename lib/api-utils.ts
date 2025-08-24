@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { ZodError, ZodSchema } from 'zod';
 import { withAuth, AuthenticatedRequest } from './auth';
+import { logger } from './logger';
 
 /**
  * Standard API error response format
@@ -32,10 +33,7 @@ export function errorResponse(
 ): NextResponse<ApiError> {
   const errorType = error || getErrorTypeFromStatus(status);
   
-  // In a production environment, you would use a dedicated logging service
-  // For example: import { logger } from './logger';
-  // logger.error(`[API Error] ${errorType}: ${message}`, details);
-  console.error(`[API Error] ${errorType}: ${message}`, details);
+  logger.error(`[API Error] ${errorType}: ${message}`, undefined, { details, status });
   
   return NextResponse.json(
     {
@@ -83,7 +81,7 @@ export function withErrorHandler<T extends (...args: any[]) => Promise<NextRespo
     try {
       return await handler(...args);
     } catch (error: any) {
-      console.error('Handler error:', error);
+      logger.error('Handler error occurred', error);
       
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         return handlePrismaError(error);
@@ -186,7 +184,7 @@ export async function performCrudOperation<T>(
     }
     
     const message = errorMessage || 'Operation failed';
-    console.error(`CRUD operation error: ${message}`, error);
+    logger.error(`CRUD operation error: ${message}`, error);
     return errorResponse(message);
   }
 }
@@ -226,7 +224,7 @@ export async function checkRecordExists<T>(
     
     return { success: true, record };
   } catch (error: any) {
-    console.error(`Error checking for ${entityName}:`, error);
+    logger.error(`Error checking for ${entityName}`, error);
     return {
       success: false,
       error: errorResponse(`Failed to check ${entityName.toLowerCase()} existence`, 500)

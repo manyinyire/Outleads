@@ -7,6 +7,7 @@ import { DownloadOutlined, DeleteOutlined, UserAddOutlined } from '@ant-design/i
 import { useRouter } from 'next/navigation'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/lib/store'
+// @ts-ignore - papaparse types not available
 import Papa from 'papaparse'
 
 import CrudTable, { CrudField } from '@/components/admin/CrudTable'
@@ -30,8 +31,6 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true)
   const [searchText, setSearchText] = useState('')
   const [isAddUserModalVisible, setAddUserModalVisible] = useState(false)
-  const [isEditModalVisible, setEditModalVisible] = useState(false)
-  const [editingRecord, setEditingRecord] = useState<User | null>(null)
   
   // --- HOOKS ---
   const router = useRouter()
@@ -74,10 +73,6 @@ export default function UsersPage() {
     setSearchText(value)
   }
 
-  const handleEdit = (record: User) => {
-    setEditingRecord(record)
-    setEditModalVisible(true)
-  }
 
   const handleDelete = async (id: string) => {
     const token = localStorage.getItem('auth-token');
@@ -117,8 +112,6 @@ export default function UsersPage() {
 
       if (response.ok) {
         message.success(`User ${record ? 'updated' : 'created'} successfully`);
-        setEditModalVisible(false);
-        setEditingRecord(null);
         fetchData(); // Refresh data
       } else {
         const error = await response.json();
@@ -143,8 +136,8 @@ export default function UsersPage() {
 
   // --- MEMOIZED PROPS ---
   const fields: CrudField[] = useMemo(() => [
-    { name: 'name', label: 'Name', type: 'text', required: true },
-    { name: 'email', label: 'Email', type: 'email', required: true },
+    { name: 'name', label: 'Name', type: 'text', required: true, readOnly: true },
+    { name: 'email', label: 'Email', type: 'email', required: true, readOnly: true },
     { 
       name: 'role', 
       label: 'Role', 
@@ -194,12 +187,8 @@ export default function UsersPage() {
         dataSource={data}
         loading={loading}
         onSearch={handleSearch}
-        onEdit={handleEdit}
         onDelete={handleDelete}
         onSubmit={handleSubmit}
-        isModalVisible={isEditModalVisible}
-        closeModal={() => setEditModalVisible(false)}
-        editingRecord={editingRecord}
         customActions={
           <Space>
             <Button icon={<UserAddOutlined />} onClick={() => setAddUserModalVisible(true)}>

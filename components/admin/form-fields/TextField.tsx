@@ -30,6 +30,7 @@ export default function TextField({ field, disabled }: TextFieldProps) {
       <InputComponent
         placeholder={field.placeholder || `Enter ${field.label}`}
         disabled={disabled}
+        readOnly={field.readOnly}
         type={field.type === 'number' ? 'number' : undefined}
       />
     </Form.Item>
