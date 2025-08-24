@@ -105,9 +105,7 @@ export default function LeadForm({ campaignId, onNext, initialData }: LeadFormPr
         </Form.Item>
 
         <Form.Item
-          name="sectorId"
           label="Business Sector"
-          rules={[{ required: true, message: 'Please select your business sector' }]}
         >
           <div style={{
             display: 'flex',
@@ -118,19 +116,25 @@ export default function LeadForm({ campaignId, onNext, initialData }: LeadFormPr
             backgroundColor: 'white',
           }}>
             <BankOutlined style={{ color: '#6ED0F6', margin: '0 11px' }} />
-            <Select
-              placeholder="Select your business sector"
-              size="large"
-              loading={loadingSectors}
-              bordered={false}
-              style={{ width: '100%' }}
+            <Form.Item
+              name="sectorId"
+              noStyle
+              rules={[{ required: true, message: 'Please select your business sector' }]}
             >
-              {sectors.map(sector => (
-                <Option key={sector.id} value={sector.id}>
-                  {sector.name}
-                </Option>
-              ))}
-            </Select>
+              <Select
+                placeholder="Select your business sector"
+                size="large"
+                loading={loadingSectors}
+                bordered={false}
+                style={{ width: '100%' }}
+              >
+                {sectors.map(sector => (
+                  <Option key={sector.id} value={sector.id}>
+                    {sector.name}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
           </div>
         </Form.Item>
 
