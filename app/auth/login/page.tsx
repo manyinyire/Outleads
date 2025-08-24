@@ -6,6 +6,7 @@ import { Form, Input, Button, Card, Typography, App, Layout } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState, AppDispatch } from '@/lib/store'
+import { getDashboardRouteForRole } from '@/lib/auth-utils';
 import { login, clearError } from '@/lib/store/slices/authSlice'
 import Image from 'next/image'
 import FirstLoginDialog from '@/components/auth/FirstLoginDialog'
@@ -20,15 +21,16 @@ export default function LoginPage() {
   const dispatch = useDispatch<AppDispatch>()
   const { message } = App.useApp()
   
-  const { loading, error, isAuthenticated } = useSelector((state: RootState) => state.auth)
+  const { loading, error, isAuthenticated, user } = useSelector((state: RootState) => state.auth)
   const [isFirstLogin, setIsFirstLogin] = useState(false)
   const [newUser, setNewUser] = useState(null)
 
   useEffect(() => {
-    if (isAuthenticated) {
-      router.push('/admin')
+    if (isAuthenticated && user) {
+      const redirectUrl = getDashboardRouteForRole(user.role);
+      router.push(redirectUrl);
     }
-  }, [isAuthenticated, router])
+  }, [isAuthenticated, user, router])
 
   useEffect(() => {
     if (error) {
@@ -45,9 +47,11 @@ export default function LoginPage() {
         setIsFirstLogin(true);
       } else {
         // Dispatch login to set user in redux state
-        dispatch(login.fulfilled(response.data.user, '', { username: values.username, password: values.password }));
+        const loggedInUser = response.data.user;
+        dispatch(login.fulfilled(loggedInUser, '', { username: values.username, password: values.password }));
         localStorage.setItem('auth-token', response.data.token);
-        router.push('/admin');
+        const redirectUrl = getDashboardRouteForRole(loggedInUser.role);
+        router.push(redirectUrl);
       }
     } catch (error: any) {
       message.error(error.response?.data?.message || 'An unknown error occurred.');

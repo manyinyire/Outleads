@@ -1,6 +1,5 @@
 import { prisma } from './prisma';
 import { Role } from '@prisma/client';
-import { headers } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 
@@ -9,7 +8,22 @@ export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, salt);
 }
 
-// ... (keep existing functions: comparePassword, generateToken, etc.)
+// Gets the default dashboard route based on user role
+export const getDashboardRouteForRole = (role: Role): string => {
+  switch (role) {
+    case 'ADMIN':
+    case 'SUPERVISOR':
+      return '/admin';
+    case 'BSS':
+    case 'INFOSEC':
+      return '/admin/users';
+    case 'AGENT':
+      return '/admin/leads';
+    default:
+      return '/auth/login'; // Fallback to login
+  }
+};
+
 
 // Verify JWT token and get user ID
 export const getUserIdFromToken = (token: string): string | null => {
@@ -26,30 +40,4 @@ export const getUserIdFromToken = (token: string): string | null => {
     console.error('Invalid token:', error);
     return null;
   }
-};
-
-// Check user role
-export const checkUserRole = async (allowedRoles: Role[]): Promise<boolean> => {
-  const authorization = headers().get('authorization');
-  if (!authorization || !authorization.startsWith('Bearer ')) {
-    return false;
-  }
-
-  const token = authorization?.split(' ')[1];
-  const userId = getUserIdFromToken(token);
-
-  if (!userId) {
-    return false;
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { role: true },
-  });
-
-  if (!user) {
-    return false;
-  }
-
-  return allowedRoles.includes(user.role);
 };
