@@ -7,6 +7,7 @@ import CrudTable from '@/components/admin/CrudTable'
 import LeadDetailModal from '@/components/admin/LeadDetailModal'
 import moment from 'moment'
 import { EyeOutlined } from '@ant-design/icons'
+import api from '@/lib/api';
 
 const { RangePicker } = DatePicker;
 
@@ -50,36 +51,6 @@ export default function LeadsPage() {
   })
 
   const { message } = App.useApp()
-
-  const fetchFilterData = useCallback(async () => {
-    const token = localStorage.getItem('auth-token')
-    if (!token) return;
-
-    try {
-      const [productsRes, campaignsRes, sectorsRes] = await Promise.all([
-        fetch('/api/admin/products', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch('/api/admin/campaigns', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch('/api/admin/sectors', { headers: { 'Authorization': `Bearer ${token}` } }),
-      ]);
-
-      const products = await productsRes.json();
-      const campaigns = await campaignsRes.json();
-      const sectors = await sectorsRes.json();
-
-      setFilterData({
-        products: products.product || [],
-        campaigns: Array.isArray(campaigns.data) ? campaigns.data : [],
-        sectors: sectors.sector || [],
-      });
-    } catch (error) {
-      console.error("Failed to fetch filter data:", error);
-      message.error('Failed to load filter options.');
-    }
-  }, [message]);
-
-  import api from '@/lib/api';
-
-// ...
 
   const fetchFilterData = useCallback(async () => {
     try {

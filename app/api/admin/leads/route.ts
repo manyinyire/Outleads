@@ -88,4 +88,4 @@ const handlers = createCrudHandlers({
   searchFields: ['fullName', 'phoneNumber'],
 });
 
-export const GET = withAuthAndRole(['ADMIN', 'AGENT', 'TEAMLEADER'], customGetHandler);
+export const GET = withAuthAndRole(['ADMIN', 'AGENT', 'SUPERVISOR'], customGetHandler);

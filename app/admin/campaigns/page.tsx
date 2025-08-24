@@ -3,7 +3,7 @@
 import { useMemo, useEffect, useState, useCallback } from 'react'
 import { Tag, Button, Space, App, Tooltip, Switch } from 'antd'
 import { ColumnsType } from 'antd/es/table'
-import { CopyOutlined, PlusOutlined, ExportOutlined } from '@ant-design/icons'
+import { CopyOutlined, ExportOutlined } from '@ant-design/icons'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/lib/store'
 import Papa from 'papaparse'
@@ -24,8 +24,6 @@ interface Campaign {
 export default function CampaignsPage() {
   const [data, setData] = useState<Campaign[]>([])
   const [loading, setLoading] = useState(true)
-  const [isModalVisible, setModalVisible] = useState(false)
-  const [editingRecord, setEditingRecord] = useState<Campaign | null>(null)
 
   const { message } = App.useApp()
   const userRole = useSelector((state: RootState) => state.auth.user?.role)
@@ -54,11 +52,6 @@ export default function CampaignsPage() {
   useEffect(() => {
     fetchData()
   }, [fetchData])
-
-  const handleEdit = (record: Campaign) => {
-    setEditingRecord(record)
-    setModalVisible(true)
-  }
 
   const handleDelete = async (id: string) => {
     const token = localStorage.getItem('auth-token');
@@ -98,8 +91,6 @@ export default function CampaignsPage() {
 
       if (response.ok) {
         message.success(`Campaign ${record ? 'updated' : 'created'} successfully`);
-        setModalVisible(false);
-        setEditingRecord(null);
         fetchData();
       } else {
         const error = await response.json();
@@ -238,8 +229,6 @@ export default function CampaignsPage() {
       key: 'actions',
       render: (_, record) => (
         <Space>
-          <Button onClick={() => handleEdit(record)}>Edit</Button>
-          <Button danger onClick={() => handleDelete(record.id)}>Delete</Button>
           <Button icon={<ExportOutlined />} onClick={() => handleExportLeads(record.id, record.campaign_name)}>
             Export Leads
           </Button>
@@ -248,7 +237,7 @@ export default function CampaignsPage() {
     },
   ], [message])
 
-  const hasAccess = userRole && ['ADMIN', 'TEAMLEADER'].includes(userRole)
+  const hasAccess = userRole && ['ADMIN', 'SUPERVISOR'].includes(userRole)
   if (!hasAccess) {
     return <p>Access Denied</p>
   }
@@ -260,24 +249,8 @@ export default function CampaignsPage() {
       fields={fields}
       dataSource={data}
       loading={loading}
-      onEdit={handleEdit}
       onDelete={handleDelete}
       onSubmit={handleSubmit}
-      isModalVisible={isModalVisible}
-      closeModal={() => {
-        setModalVisible(false)
-        setEditingRecord(null)
-      }}
-      editingRecord={editingRecord}
-      hideDefaultActions={true} // Hide the default actions column
-      customActions={
-        <Button icon={<PlusOutlined />} onClick={() => {
-          setEditingRecord(null);
-          setModalVisible(true);
-        }}>
-          Create Campaign
-        </Button>
-      }
     />
   )
 }

@@ -62,5 +62,5 @@ const getCampaigns = async (req: AuthenticatedRequest) => {
   }
 }
 
-export const POST = withAuthAndRole(['ADMIN', 'TEAMLEADER'], postCampaigns);
-export const GET = withAuthAndRole(['ADMIN', 'TEAMLEADER'], getCampaigns);
+export const POST = withAuthAndRole(['ADMIN', 'SUPERVISOR'], postCampaigns);
+export const GET = withAuthAndRole(['ADMIN', 'SUPERVISOR', 'AGENT'], getCampaigns);

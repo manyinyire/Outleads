@@ -62,6 +62,11 @@ export default function CrudTable<T extends { id: string }>({
     setModalVisible(true);
   };
 
+  const handleCreate = () => {
+    setEditingRecord(null);
+    setModalVisible(true);
+  };
+
   const handleCloseModal = () => {
     setEditingRecord(null);
     setModalVisible(false);
@@ -112,7 +117,11 @@ export default function CrudTable<T extends { id: string }>({
               style={{ width: 200 }}
             />
           )}
-          {customActions}
+          {customActions || (
+            <Button type="primary" onClick={handleCreate}>
+              Create
+            </Button>
+          )}
         </Space>
       </div>
 

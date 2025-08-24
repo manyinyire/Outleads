@@ -35,7 +35,13 @@ export default function UsersPage() {
   // --- HOOKS ---
   const router = useRouter()
   const { message } = App.useApp()
-  const userRole = useSelector((state: RootState) => state.auth.user?.role)
+  const userRole = useSelector((state: RootState) => state.auth.user?.role);
+
+  useEffect(() => {
+    if (userRole && !['ADMIN', 'BSS', 'INFOSEC'].includes(userRole)) {
+      router.push('/admin'); // Redirect to a safe page
+    }
+  }, [userRole, router]);
 
   // --- DATA FETCHING ---
   const fetchData = useCallback(async () => {
@@ -192,15 +198,19 @@ export default function UsersPage() {
         onSubmit={handleSubmit}
         customActions={
           <Space>
-            <Button icon={<UserAddOutlined />} onClick={() => setAddUserModalVisible(true)}>
-              Add User
-            </Button>
+            {['ADMIN', 'BSS'].includes(userRole) && (
+              <Button icon={<UserAddOutlined />} onClick={() => setAddUserModalVisible(true)}>
+                Add User
+              </Button>
+            )}
             <Button icon={<DownloadOutlined />} onClick={handleExport}>
               Export to CSV
             </Button>
-            <Button icon={<DeleteOutlined />} onClick={() => router.push('/admin/users/deleted')}>
-              View Deleted Users
-            </Button>
+            {userRole === 'ADMIN' && (
+              <Button icon={<DeleteOutlined />} onClick={() => router.push('/admin/users/deleted')}>
+                View Deleted Users
+              </Button>
+            )}
           </Space>
         }
       />

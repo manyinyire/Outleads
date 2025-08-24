@@ -1,22 +1,16 @@
 import { NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
-
 import { prisma } from '@/lib/prisma';
-import { checkUserRole } from '@/lib/auth-utils';
+import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth';
 
 const campaignUpdateSchema = z.object({
   campaign_name: z.string().min(1, 'Campaign name is required'),
   organization_name: z.string().min(1, 'Organization name is required'),
 });
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+async function getCampaign(req: AuthenticatedRequest, { params }: { params: { id: string } }) {
   try {
-    const hasAccess = await checkUserRole(['ADMIN', 'TEAMLEADER']);
-    if (!hasAccess) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
     const campaign = await prisma.campaign.findUnique({
       where: { id: params.id },
       include: { leads: true },
@@ -33,13 +27,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+async function updateCampaign(req: AuthenticatedRequest, { params }: { params: { id: string } }) {
   try {
-    const hasAccess = await checkUserRole(['ADMIN', 'TEAMLEADER']);
-    if (!hasAccess) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
     const body = await req.json();
     const validation = campaignUpdateSchema.safeParse(body);
 
@@ -67,13 +56,8 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+async function deleteCampaign(req: AuthenticatedRequest, { params }: { params: { id: string } }) {
   try {
-    const hasAccess = await checkUserRole(['ADMIN', 'TEAMLEADER']);
-    if (!hasAccess) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
     await prisma.campaign.delete({
       where: { id: params.id },
     });
@@ -87,3 +71,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
+
+export const GET = withAuthAndRole(['ADMIN', 'SUPERVISOR'], getCampaign);
+export const PUT = withAuthAndRole(['ADMIN', 'SUPERVISOR'], updateCampaign);
+export const DELETE = withAuthAndRole(['ADMIN', 'SUPERVISOR'], deleteCampaign);
