@@ -35,7 +35,7 @@ export default function ProductsPage() {
       })
       if (!response.ok) throw new Error('Failed to fetch categories')
       const result = await response.json()
-      setCategories(result.productCategory || [])
+      setCategories(Array.isArray(result.data) ? result.data : [])
     } catch (error) {
       console.error("Category fetch error:", error)
       message.error('Failed to load product categories for the form.')
