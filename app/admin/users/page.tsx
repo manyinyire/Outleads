@@ -55,7 +55,7 @@ export default function UsersPage() {
       if (!response.ok) throw new Error(`Failed to fetch: ${response.statusText}`)
       
       const result = await response.json()
-      setData(Array.isArray(result) ? result : result.user || [])
+      setData(Array.isArray(result.data) ? result.data : [])
       
     } catch (error) {
       console.error("Fetch error:", error)

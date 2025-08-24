@@ -41,7 +41,7 @@ export default function SectorsPage() {
       if (!response.ok) throw new Error(`Failed to fetch: ${response.statusText}`)
       
       const result = await response.json()
-      setData(result.sector || [])
+      setData(Array.isArray(result.data) ? result.data : [])
       
     } catch (error) {
       console.error("Fetch error:", error)

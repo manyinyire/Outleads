@@ -67,7 +67,7 @@ export default function ProductsPage() {
       if (!response.ok) throw new Error(`Failed to fetch: ${response.statusText}`)
       
       const result = await response.json()
-      setData(result.product || [])
+      setData(Array.isArray(result.data) ? result.data : [])
       
     } catch (error) {
       console.error("Fetch error:", error)

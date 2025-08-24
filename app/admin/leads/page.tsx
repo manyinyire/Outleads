@@ -68,7 +68,7 @@ export default function LeadsPage() {
 
       setFilterData({
         products: products.product || [],
-        campaigns: campaigns || [],
+        campaigns: Array.isArray(campaigns.data) ? campaigns.data : [],
         sectors: sectors.sector || [],
       });
     } catch (error) {
