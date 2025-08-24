@@ -41,3 +41,16 @@ export const getUserIdFromToken = (token: string): string | null => {
     return null;
   }
 };
+
+// Check if user has required role for API access
+export const checkUserRole = async (allowedRoles: Role[]): Promise<boolean> => {
+  try {
+    // In a real implementation, you would get the token from the request headers
+    // For now, this is a placeholder that always returns true for development
+    // TODO: Implement proper JWT token validation from request headers
+    return true;
+  } catch (error) {
+    console.error('Error checking user role:', error);
+    return false;
+  }
+};
