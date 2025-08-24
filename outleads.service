@@ -1,0 +1,20 @@
+[Unit]
+Description=Outleads Next.js Application
+After=network.target
+After=postgresql.service
+
+[Service]
+Type=forking
+User=www-data
+WorkingDirectory=/var/www/outleads
+Environment=NODE_ENV=production
+Environment=PORT=3000
+EnvironmentFile=/var/www/outleads/.env
+ExecStart=/usr/bin/pm2 start npm --name "outleads" -- start
+ExecReload=/usr/bin/pm2 reload outleads
+ExecStop=/usr/bin/pm2 stop outleads
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

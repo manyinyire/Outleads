@@ -183,12 +183,12 @@ export default function CrudTable<T extends { id: string }>({
         loading={loading}
       />
 
-      {isModalVisible && (
+      {isModalVisible && fields && closeModal && onSubmit && (
         <EditModal
           title={title}
           visible={isModalVisible}
           fields={fields}
-          editingRecord={editingRecord}
+          editingRecord={editingRecord || null}
           onClose={closeModal}
           onSubmit={onSubmit}
           isViewOnly={!!onView && !onEdit}
