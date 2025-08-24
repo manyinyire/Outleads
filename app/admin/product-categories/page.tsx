@@ -18,8 +18,6 @@ export default function ProductCategoriesPage() {
   const [data, setData] = useState<ProductCategory[]>([])
   const [loading, setLoading] = useState(true)
   const [searchText, setSearchText] = useState('')
-  const [isModalVisible, setModalVisible] = useState(false)
-  const [editingRecord, setEditingRecord] = useState<ProductCategory | null>(null)
   
   const { message } = App.useApp()
 
@@ -63,10 +61,6 @@ export default function ProductCategoriesPage() {
     setSearchText(value)
   }
 
-  const handleEdit = (record: ProductCategory) => {
-    setEditingRecord(record)
-    setModalVisible(true)
-  }
 
   const handleDelete = async (id: string) => {
     const token = localStorage.getItem('auth-token');
@@ -106,8 +100,6 @@ export default function ProductCategoriesPage() {
 
       if (response.ok) {
         message.success(`Category ${record ? 'updated' : 'created'} successfully`);
-        setModalVisible(false);
-        setEditingRecord(null);
         fetchData();
       } else {
         const error = await response.json();
@@ -143,15 +135,8 @@ export default function ProductCategoriesPage() {
       dataSource={data}
       loading={loading}
       onSearch={handleSearch}
-      onEdit={handleEdit}
       onDelete={handleDelete}
       onSubmit={handleSubmit}
-      isModalVisible={isModalVisible}
-      closeModal={() => {
-        setModalVisible(false)
-        setEditingRecord(null)
-      }}
-      editingRecord={editingRecord}
     />
   )
 }
