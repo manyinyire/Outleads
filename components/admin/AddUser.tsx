@@ -37,6 +37,7 @@ export default function AddUser({ visible, onClose, onUserAdded }: AddUserProps)
           })
 
           if (response.ok) {
+            const data = await response.json()
             const validUsers = data?.filter((user: any) => user?.id && user?.name && user?.email)
             setAllUsersCache(validUsers || [])
           } else {
@@ -110,7 +111,7 @@ export default function AddUser({ visible, onClose, onUserAdded }: AddUserProps)
             placeholder="Search by name or email..."
             loading={loading}
             filterOption={(input, option) =>
-              (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+              String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
             }
           >
             {allUsersCache.map(user => (
@@ -131,7 +132,7 @@ export default function AddUser({ visible, onClose, onUserAdded }: AddUserProps)
             <Option value="BSS">BSS</Option>
             <Option value="INFOSEC">InfoSec</Option>
             <Option value="AGENT">Agent</Option>
-            <Option value="TEAMLEADER">Teamleader</Option>
+            <Option value="SUPERVISOR">Supervisor</Option>
           </Select>
         </Form.Item>
 

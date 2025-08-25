@@ -18,7 +18,7 @@ interface User {
   id: string
   name: string
   email: string
-  role: 'ADMIN' | 'BSS' | 'INFOSEC' | 'AGENT' | 'TEAMLEADER'
+  role: 'ADMIN' | 'BSS' | 'INFOSEC' | 'AGENT' | 'SUPERVISOR'
   createdAt: string
   updatedAt?: string
   lastLogin?: string

@@ -4,7 +4,7 @@ import { checkUserRole } from '@/lib/auth-utils';
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
-    const hasAccess = await checkUserRole(['ADMIN', 'TEAMLEADER']);
+    const hasAccess = await checkUserRole(['ADMIN', 'SUPERVISOR']);
     if (!hasAccess) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }

@@ -12,4 +12,4 @@ const handlers = {
   }),
 };
 
-export const GET = withAuthAndRole(['ADMIN', 'AGENT', 'TEAMLEADER'], handlers.GET);
+export const GET = withAuthAndRole(['ADMIN', 'AGENT', 'SUPERVISOR'], handlers.GET);

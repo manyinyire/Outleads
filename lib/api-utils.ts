@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { ZodError, ZodSchema } from 'zod';
 import { withAuth, AuthenticatedRequest } from './auth';
 import { logger } from './logger';
@@ -83,7 +84,7 @@ export function withErrorHandler<T extends (...args: any[]) => Promise<NextRespo
     } catch (error: any) {
       logger.error('Handler error occurred', error);
       
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error instanceof PrismaClientKnownRequestError) {
         return handlePrismaError(error);
       }
       
@@ -107,7 +108,7 @@ export function withErrorHandler<T extends (...args: any[]) => Promise<NextRespo
 /**
  * Handle Prisma-specific errors with appropriate messages
  */
-export function handlePrismaError(error: Prisma.PrismaClientKnownRequestError): NextResponse {
+export function handlePrismaError(error: PrismaClientKnownRequestError): NextResponse {
   switch (error.code) {
     case 'P2002': {
       const field = (error.meta?.target as string[])?.join(', ') || 'field';
@@ -179,7 +180,7 @@ export async function performCrudOperation<T>(
     
     return successResponse(result);
   } catch (error: any) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    if (error instanceof PrismaClientKnownRequestError) {
       return handlePrismaError(error);
     }
     

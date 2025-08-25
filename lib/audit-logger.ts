@@ -148,7 +148,7 @@ export class AuditLogger {
       });
 
       const auditLogs = settings
-        .map(setting => {
+        .map((setting: any) => {
           try {
             return JSON.parse(setting.value) as AuditLogEntry & { timestamp: string };
           } catch {
@@ -156,7 +156,7 @@ export class AuditLogger {
           }
         })
         .filter((log): log is AuditLogEntry & { timestamp: string } => log !== null)
-        .filter(log => {
+        .filter((log: AuditLogEntry & { timestamp: string }) => {
           if (filters?.userId && log.userId !== filters.userId) return false;
           if (filters?.resource && log.resource !== filters.resource) return false;
           if (filters?.action && log.action !== filters.action) return false;
