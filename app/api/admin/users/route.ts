@@ -76,22 +76,22 @@ const handlers = createCrudHandlers({
 const customGetHandler = async (req: NextRequest) => {
   const url = new URL(req.url);
   const status = url.searchParams.get('status');
+  const role = url.searchParams.get('role');
   
+  const where: any = {};
   if (status) {
-    const statuses = status.split(',');
-    (req as any).query = {
-      where: {
-        status: {
-          in: statuses
-        }
-      }
-    };
+    where.status = { in: status.split(',') };
   }
+  if (role) {
+    where.role = role;
+  }
+  
+  (req as any).query = { where };
   
   return handlers.GET(req as any);
 };
 
-export const GET = withAuthAndRole(['ADMIN', 'BSS', 'INFOSEC'], customGetHandler);
+export const GET = withAuthAndRole(['ADMIN', 'BSS', 'INFOSEC', 'SUPERVISOR', 'AGENT'], customGetHandler);
 export const POST = withAuthAndRole(['ADMIN', 'BSS'], handlers.POST);
 
 // Helper function to send activation email

@@ -19,14 +19,38 @@ interface Campaign {
   click_count: number
   is_active: boolean
   createdAt: string
+  assignedTo: {
+    name: string
+  }
+}
+
+interface Agent {
+  id: string
+  name: string
 }
 
 export default function CampaignsPage() {
   const [data, setData] = useState<Campaign[]>([])
+  const [agents, setAgents] = useState<Agent[]>([])
   const [loading, setLoading] = useState(true)
 
   const { message } = App.useApp()
   const userRole = useSelector((state: RootState) => state.auth.user?.role)
+
+  const fetchAgents = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('auth-token')
+      const response = await fetch('/api/admin/users?role=AGENT', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (!response.ok) throw new Error('Failed to fetch agents')
+      const result = await response.json()
+      setAgents(Array.isArray(result.data) ? result.data : [])
+    } catch (error) {
+      console.error("Fetch error:", error)
+      message.error('Failed to load agents.')
+    }
+  }, [message])
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -51,7 +75,8 @@ export default function CampaignsPage() {
   
   useEffect(() => {
     fetchData()
-  }, [fetchData])
+    fetchAgents()
+  }, [fetchData, fetchAgents])
 
   const handleDelete = async (id: string) => {
     const token = localStorage.getItem('auth-token');
@@ -169,11 +194,19 @@ export default function CampaignsPage() {
   const fields: CrudField[] = useMemo(() => [
     { name: 'campaign_name', label: 'Campaign Name', type: 'text', required: true },
     { name: 'organization_name', label: 'Organization Name', type: 'text', required: true },
-  ], [])
+    {
+      name: 'assignedToId',
+      label: 'Assign to Agent',
+      type: 'select',
+      required: true,
+      options: agents.map(agent => ({ label: agent.name, value: agent.id })),
+    },
+  ], [agents])
 
   const columns: ColumnsType<Campaign> = useMemo(() => [
     { title: 'Campaign Name', dataIndex: 'campaign_name', key: 'campaign_name' },
     { title: 'Organization', dataIndex: 'organization_name', key: 'organization_name' },
+    { title: 'Assigned Agent', dataIndex: ['assignedTo', 'name'], key: 'assignedTo' },
     {
       title: 'Unique Link',
       dataIndex: 'uniqueLink',
@@ -235,12 +268,14 @@ export default function CampaignsPage() {
         </Space>
       ),
     },
-  ], [message])
+  ], [message, agents])
 
-  const hasAccess = userRole && ['ADMIN', 'SUPERVISOR'].includes(userRole)
+  const hasAccess = userRole && ['ADMIN', 'SUPERVISOR', 'AGENT'].includes(userRole)
   if (!hasAccess) {
     return <p>Access Denied</p>
   }
+
+  const isAgent = userRole === 'AGENT';
 
   return (
     <CrudTable<Campaign>
@@ -249,8 +284,10 @@ export default function CampaignsPage() {
       fields={fields}
       dataSource={data}
       loading={loading}
-      onDelete={handleDelete}
-      onSubmit={handleSubmit}
+      onDelete={isAgent ? undefined : handleDelete}
+      onSubmit={isAgent ? undefined : handleSubmit}
+      hideDefaultActions={isAgent}
+      customActions={isAgent ? <div /> : undefined}
     />
   )
 }

@@ -1,12 +1,12 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { App, Tag, Row, Col, Select, DatePicker, Button, TablePaginationConfig } from 'antd'
+import { App, Tag, Row, Col, Select, DatePicker, Button, TablePaginationConfig, Modal } from 'antd'
 import { ColumnsType } from 'antd/es/table'
 import CrudTable from '@/components/admin/CrudTable'
 import LeadDetailModal from '@/components/admin/LeadDetailModal'
 import moment from 'moment'
-import { EyeOutlined } from '@ant-design/icons'
+import { EyeOutlined, UserSwitchOutlined } from '@ant-design/icons'
 import api from '@/lib/api';
 
 const { RangePicker } = DatePicker;
@@ -18,6 +18,7 @@ interface Lead {
   businessSector: { name: string }
   products: Array<{ id: string, name: string }>
   campaign?: { id: string, campaign_name: string }
+  assignedTo?: { name: string }
   createdAt: string
 }
 
@@ -25,6 +26,7 @@ interface FilterData {
   products: Array<{ id: string, name: string }>
   campaigns: Array<{ id: string, campaign_name: string }>
   sectors: Array<{ id: string, name: string }>
+  agents: Array<{ id: string, name: string }>
 }
 
 export default function LeadsPage() {
@@ -32,7 +34,10 @@ export default function LeadsPage() {
   const [loading, setLoading] = useState(true)
   const [searchText, setSearchText] = useState('')
   const [isViewModalVisible, setViewModalVisible] = useState(false)
+  const [isAssignModalVisible, setAssignModalVisible] = useState(false)
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
+  const [selectedLeads, setSelectedLeads] = useState<React.Key[]>([])
+  const [selectedAgent, setSelectedAgent] = useState<string | undefined>(undefined)
   const [pagination, setPagination] = useState<TablePaginationConfig>({
     current: 1,
     pageSize: 10,
@@ -53,22 +58,25 @@ export default function LeadsPage() {
     products: [],
     campaigns: [],
     sectors: [],
+    agents: [],
   })
 
   const { message } = App.useApp()
 
   const fetchFilterData = useCallback(async () => {
     try {
-      const [productsRes, campaignsRes, sectorsRes] = await Promise.all([
+      const [productsRes, campaignsRes, sectorsRes, agentsRes] = await Promise.all([
         api.get('/admin/products'),
         api.get('/admin/campaigns'),
         api.get('/admin/sectors'),
+        api.get('/admin/users?role=AGENT'),
       ]);
 
       setFilterData({
         products: productsRes.data.data || [],
         campaigns: campaignsRes.data.data || [],
         sectors: sectorsRes.data.data || [],
+        agents: agentsRes.data.data || [],
       });
     } catch (error) {
       console.error("Failed to fetch filter data:", error);
@@ -135,6 +143,26 @@ export default function LeadsPage() {
     setViewModalVisible(true)
   }
 
+  const handleAssign = async () => {
+    if (!selectedAgent) {
+      message.error('Please select an agent.');
+      return;
+    }
+    try {
+      await api.post('/admin/leads/assign', {
+        leadIds: selectedLeads,
+        agentId: selectedAgent,
+      });
+      message.success('Leads assigned successfully.');
+      setAssignModalVisible(false);
+      setSelectedLeads([]);
+      fetchData();
+    } catch (error) {
+      console.error("Assign error:", error);
+      message.error('Failed to assign leads.');
+    }
+  };
+
   const columns: ColumnsType<Lead> = useMemo(() => [
     { title: 'Name', dataIndex: 'fullName', key: 'fullName' },
     { title: 'Phone', dataIndex: 'phoneNumber', key: 'phoneNumber' },
@@ -155,6 +183,7 @@ export default function LeadsPage() {
       key: 'campaign',
       render: (campaign) => campaign ? <Tag color="blue">{campaign.campaign_name}</Tag> : <Tag>Direct Lead</Tag>
     },
+    { title: 'Assigned Agent', dataIndex: ['assignedTo', 'name'], key: 'assignedTo' },
     { title: 'Date', dataIndex: 'createdAt', key: 'createdAt', render: (date) => new Date(date).toLocaleDateString() },
     {
       title: 'Actions',
@@ -214,6 +243,12 @@ export default function LeadsPage() {
     </Row>
   );
 
+  const rowSelection = {
+    onChange: (selectedRowKeys: React.Key[]) => {
+      setSelectedLeads(selectedRowKeys);
+    },
+  };
+
   return (
     <>
       <CrudTable<Lead>
@@ -224,14 +259,48 @@ export default function LeadsPage() {
         pagination={pagination}
         onTableChange={handleTableChange}
         onSearch={handleSearch}
-        customHeader={filterOptions}
+        customHeader={
+          <>
+            {filterOptions}
+            {selectedLeads.length > 0 && (
+              <Button
+                type="primary"
+                icon={<UserSwitchOutlined />}
+                onClick={() => setAssignModalVisible(true)}
+                style={{ marginBottom: 16 }}
+              >
+                Assign to Agent
+              </Button>
+            )}
+          </>
+        }
         hideDefaultActions={true}
+        rowSelection={rowSelection}
       />
       <LeadDetailModal
         lead={selectedLead}
         visible={isViewModalVisible}
         onClose={() => setViewModalVisible(false)}
       />
+      <Modal
+        title="Assign Leads to Agent"
+        open={isAssignModalVisible}
+        onOk={handleAssign}
+        onCancel={() => setAssignModalVisible(false)}
+      >
+        <Select
+          placeholder="Select an agent"
+          style={{ width: '100%' }}
+          onChange={(value) => setSelectedAgent(value)}
+          value={selectedAgent}
+        >
+          {filterData.agents.map(agent => (
+            <Select.Option key={agent.id} value={agent.id}>
+              {agent.name}
+            </Select.Option>
+          ))}
+        </Select>
+      </Modal>
     </>
   )
 }

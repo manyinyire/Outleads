@@ -63,6 +63,7 @@ export async function POST(req: Request) {
         }
 
         leadData.campaign = { connect: { id: campaignId } };
+        leadData.assignedTo = { connect: { id: campaign.assignedToId } };
 
         const newLead = await prisma.$transaction(async (tx: any) => {
           const createdLead = await tx.lead.create({ data: leadData });

@@ -22,8 +22,13 @@ const customGetHandler = withErrorHandler(async (req: AuthenticatedRequest) => {
   const startDate = reqUrl.searchParams.get('startDate');
   const endDate = reqUrl.searchParams.get('endDate');
 
+  const user = req.user;
   const queryConditions: any = { AND: [] };
   
+  if (user?.role === 'AGENT') {
+    queryConditions.AND.push({ assignedToId: user.id });
+  }
+
   if (searchQuery) {
     queryConditions.OR = ['fullName', 'phoneNumber'].map(field => ({
       [field]: {
@@ -64,7 +69,12 @@ const customGetHandler = withErrorHandler(async (req: AuthenticatedRequest) => {
       include: {
         businessSector: true,
         products: true,
-        campaign: true, // This was the missing piece
+        campaign: true,
+        assignedTo: {
+          select: {
+            name: true,
+          },
+        },
       },
     }),
     prisma.lead.count({ where: queryConditions })

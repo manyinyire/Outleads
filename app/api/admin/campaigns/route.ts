@@ -9,6 +9,7 @@ import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth';
 const campaignCreateSchema = z.object({
   campaign_name: z.string().min(1, 'Campaign name is required'),
   organization_name: z.string().min(1, 'Organization name is required'),
+  assignedToId: z.string().min(1, 'Agent is required'),
 });
 
 const postCampaigns = async (req: AuthenticatedRequest) => {
@@ -25,7 +26,7 @@ const postCampaigns = async (req: AuthenticatedRequest) => {
       return NextResponse.json({ error: validation.error.format() }, { status: 400 });
     }
 
-    const { campaign_name, organization_name } = validation.data;
+    const { campaign_name, organization_name, assignedToId } = validation.data;
     const unique_link = nanoid(10);
 
     const newCampaign = await prisma.campaign.create({
@@ -34,6 +35,7 @@ const postCampaigns = async (req: AuthenticatedRequest) => {
         organization_name,
         uniqueLink: unique_link,
         createdById: userId,
+        assignedToId,
       },
     });
 
@@ -49,9 +51,24 @@ const postCampaigns = async (req: AuthenticatedRequest) => {
 
 const getCampaigns = async (req: AuthenticatedRequest) => {
   try {
+    const user = req.user;
+    const whereClause: any = {};
+
+    if (user?.role === 'AGENT') {
+      whereClause.assignedToId = user.id;
+    }
+
     const campaigns = await prisma.campaign.findMany({
+      where: whereClause,
       orderBy: {
         createdAt: 'desc',
+      },
+      include: {
+        assignedTo: {
+          select: {
+            name: true,
+          },
+        },
       },
     });
 

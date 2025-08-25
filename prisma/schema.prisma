@@ -20,7 +20,9 @@ model User {
   sbu       String?    @db.VarChar(100) // SBU selected during onboarding
   role      Role       @default(AGENT)
   status    Status     @default(PENDING)
-  campaigns Campaign[]
+  campaigns Campaign[] @relation("CreatedCampaigns")
+  assignedLeads Lead[] @relation("AssignedLeads")
+  assignedCampaigns Campaign[] @relation("AssignedCampaigns")
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   lastLogin DateTime?
@@ -43,8 +45,10 @@ model Campaign {
   click_count       Int      @default(0) @db.Integer
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
-  createdBy         User     @relation(fields: [createdById], references: [id])
+  createdBy         User     @relation("CreatedCampaigns", fields: [createdById], references: [id])
   createdById       String
+  assignedTo        User?    @relation("AssignedCampaigns", fields: [assignedToId], references: [id])
+  assignedToId      String?
 
   @@index([createdById])
   @@index([is_active])
@@ -62,6 +66,8 @@ model Lead {
   products       Product[]
   campaign       Campaign?      @relation(fields: [campaignId], references: [id])
   campaignId     String?
+  assignedTo     User?          @relation("AssignedLeads", fields: [assignedToId], references: [id])
+  assignedToId   String?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 

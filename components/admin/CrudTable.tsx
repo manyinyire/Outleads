@@ -39,6 +39,7 @@ export interface CrudTableProps<T extends { id: string }> {
   readonly deleteConfirmMessage?: (record: T) => string;
   readonly hideDefaultActions?: boolean;
   readonly customRowActions?: (record: T, handleEdit: (record: T) => void) => React.ReactNode;
+  readonly rowSelection?: any;
 }
 
 // --- MAIN COMPONENT ---
@@ -59,6 +60,7 @@ export default function CrudTable<T extends { id: string }>({
   deleteConfirmMessage,
   hideDefaultActions,
   customRowActions,
+  rowSelection,
 }: CrudTableProps<T>) {
   const [isModalVisible, setModalVisible] = useState(false);
   const [editingRecord, setEditingRecord] = useState<T | null>(null);
@@ -144,6 +146,7 @@ export default function CrudTable<T extends { id: string }>({
         loading={loading}
         pagination={pagination}
         onChange={onTableChange}
+        rowSelection={rowSelection}
       />
 
       {isModalVisible && fields && onSubmit && (

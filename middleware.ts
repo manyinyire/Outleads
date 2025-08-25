@@ -32,6 +32,7 @@ export function middleware(request: NextRequest) {
             '127.0.0.1';
   
   // Apply rate limiting to API routes
+  /*
   if (request.nextUrl.pathname.startsWith('/api/')) {
     // More restrictive rate limiting for auth endpoints
     const isAuthEndpoint = request.nextUrl.pathname.startsWith('/api/auth/');
@@ -53,6 +54,7 @@ export function middleware(request: NextRequest) {
       );
     }
   }
+  */
   
   // Add security headers
   response.headers.set('X-Content-Type-Options', 'nosniff');

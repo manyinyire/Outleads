@@ -157,7 +157,7 @@ export const authRateLimiter = createRateLimiter({
 
 export const apiRateLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  maxRequests: 100, // 100 requests per 15 minutes
+  maxRequests: 200, // 200 requests per 15 minutes
   message: 'Too many API requests. Please try again later.',
 });
 

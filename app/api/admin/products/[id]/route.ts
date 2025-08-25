@@ -4,17 +4,15 @@ import { z } from 'zod';
 
 const productSchema = z.object({
   name: z.string().min(1, 'Product name is required'),
-  description: z.string().nullable().transform(val => val ?? undefined).optional(),
-  categoryId: z.string().cuid('Invalid category ID'),
+  description: z.string().optional(),
+  categoryId: z.string().min(1, 'Category is required'),
 });
 
 const handlers = createCrudHandlers({
   modelName: 'product',
   entityName: 'Product',
-  createSchema: productSchema,
-  updateSchema: productSchema.partial(),
+  updateSchema: productSchema,
 });
 
-export const GET = withAuthAndRole(['ADMIN'], handlers.GET_BY_ID);
 export const PUT = withAuthAndRole(['ADMIN'], handlers.PUT);
 export const DELETE = withAuthAndRole(['ADMIN'], handlers.DELETE);

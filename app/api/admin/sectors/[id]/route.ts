@@ -9,10 +9,8 @@ const sectorSchema = z.object({
 const handlers = createCrudHandlers({
   modelName: 'sector',
   entityName: 'Sector',
-  createSchema: sectorSchema,
-  updateSchema: sectorSchema.partial(),
+  updateSchema: sectorSchema,
 });
 
-export const GET = withAuthAndRole(['ADMIN'], handlers.GET_BY_ID);
 export const PUT = withAuthAndRole(['ADMIN'], handlers.PUT);
 export const DELETE = withAuthAndRole(['ADMIN'], handlers.DELETE);
