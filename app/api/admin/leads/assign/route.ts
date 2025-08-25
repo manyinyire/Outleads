@@ -12,7 +12,7 @@ const postHandler = withErrorHandler(async (req: AuthenticatedRequest) => {
   const parseResult = assignLeadsSchema.safeParse(await req.json());
 
   if (!parseResult.success) {
-    return errorResponse(400, 'Invalid request body.');
+    return errorResponse('Invalid request body.', 400);
   }
 
   const { leadIds, agentId } = parseResult.data;
@@ -31,7 +31,7 @@ const postHandler = withErrorHandler(async (req: AuthenticatedRequest) => {
     return successResponse({ message: 'Leads assigned successfully' });
   } catch (error) {
     console.error('Error assigning leads:', error);
-    return errorResponse(500, 'Failed to assign leads.');
+    return errorResponse('Failed to assign leads.', 500);
   }
 });
 

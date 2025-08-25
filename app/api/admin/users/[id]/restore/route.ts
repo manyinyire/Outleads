@@ -13,7 +13,7 @@ const putHandler = withErrorHandler(async (req: AuthenticatedRequest, { params }
     return successResponse(updatedUser);
   } catch (error) {
     console.error('Error restoring user:', error);
-    return errorResponse(500, 'Failed to restore user.');
+    return errorResponse('Failed to restore user.', 500);
   }
 });
 

@@ -15,7 +15,7 @@ const getHandler = withErrorHandler(async () => {
     return successResponse(deletedUsers);
   } catch (error) {
     console.error('Error fetching deleted users:', error);
-    return errorResponse(500, 'Failed to fetch deleted users.');
+    return errorResponse('Failed to fetch deleted users.', 500);
   }
 });
 

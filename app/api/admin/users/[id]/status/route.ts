@@ -12,7 +12,7 @@ const putHandler = withErrorHandler(async (req: AuthenticatedRequest, { params }
   const parseResult = updateStatusSchema.safeParse(await req.json());
 
   if (!parseResult.success) {
-    return errorResponse(400, 'Invalid status provided.');
+    return errorResponse('Invalid status provided.', 400);
   }
 
   const { status } = parseResult.data;
@@ -25,7 +25,7 @@ const putHandler = withErrorHandler(async (req: AuthenticatedRequest, { params }
     return successResponse(updatedUser);
   } catch (error) {
     console.error('Error updating user status:', error);
-    return errorResponse(500, 'Failed to update user status.');
+    return errorResponse('Failed to update user status.', 500);
   }
 });
 
