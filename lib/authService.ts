@@ -10,7 +10,9 @@ if (!apiBaseUrl) {
 
 export async function authenticateDomainUser(username: string, password: string) {
   try {
+    console.log('Attempting authentication with:', { username, apiBaseUrl });
     const response = await axios.post(apiBaseUrl!, { username, password });
+    console.log('Authentication response:', response.data);
     return {
       access: response.data.access,
       refresh: response.data.refresh,
@@ -25,6 +27,11 @@ export async function authenticateDomainUser(username: string, password: string)
       }
     };
   } catch (error) {
+    console.error('Authentication error:', error);
+    if (axios.isAxiosError(error)) {
+      console.error('Response data:', error.response?.data);
+      console.error('Response status:', error.response?.status);
+    }
     throw new ApiError('Invalid credentials.', 401);
   }
 }
