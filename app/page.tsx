@@ -2,10 +2,11 @@
 
 import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Layout, Row, Col, Tabs, Typography, Button, Steps, message, Spin, Card } from 'antd'
+import { Layout, Row, Col, Tabs, Typography, Button, Steps, message, Spin, Card, Select } from 'antd'
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import ProductList from '@/components/landing/ProductList'
 import LeadForm from '@/components/landing/LeadForm'
+import { useIsMobile } from '@/hooks/use-mobile'
 import Image from 'next/image'
 
 const { Content } = Layout
@@ -39,6 +40,7 @@ function HomePageContent() {
 
   const campaignIdFromUrl = searchParams.get('campaignId');
   const [campaignId, setCampaignId] = useState<string | null>(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (campaignIdFromUrl) {
@@ -162,14 +164,14 @@ function HomePageContent() {
 
   return (
     <Layout style={{ minHeight: '100vh', background: 'linear-gradient(to right, #2A4D74, #6ED0F6)' }}>
-      <Content style={{ padding: '2rem' }}>
+      <Content style={{ padding: isMobile ? '1rem' : '2rem' }}>
         <Row justify="center" align="middle" style={{ minHeight: '100%' }}>
           <Col xs={24} sm={20} md={18} lg={16} xl={14}>
             <Card 
               style={{ 
                 borderRadius: '1rem', 
                 boxShadow: '0 10px 30px rgba(0,0,0,0.1)', 
-                padding: '2rem',
+                padding: isMobile ? '1rem' : '2rem',
               }}
             >
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '2rem' }}>
@@ -180,7 +182,11 @@ function HomePageContent() {
               </div>
 
               <div style={{ marginBottom: '2rem' }}>
-                <Steps current={currentStep} items={steps} />
+                <Steps 
+                  current={currentStep} 
+                  items={steps} 
+                  direction={isMobile ? 'vertical' : 'horizontal'}
+                />
               </div>
 
               {currentStep === 0 && (
@@ -214,21 +220,42 @@ function HomePageContent() {
                     </div>
                   </Card>
 
-                  <Tabs
-                    activeKey={selectedCategoryKey}
-                    onChange={handleCategoryChange}
-                    items={categories.map(category => ({
-                      key: category.id,
-                      label: <span style={{ color: '#2A4D74' }}>{category.name}</span>,
-                      children: (
-                        <ProductList 
-                          products={category.products}
-                          selectedProductIds={selectedProducts.map(p => p.id)}
-                          onProductSelect={handleProductSelect} 
-                        />
-                      )
-                    }))}
-                  />
+                  {isMobile && categories ? (
+                    <>
+                      <Select
+                        value={selectedCategoryKey}
+                        onChange={handleCategoryChange}
+                        style={{ width: '100%', marginBottom: '1rem' }}
+                      >
+                        {categories.map(category => (
+                          <Select.Option key={category.id} value={category.id}>
+                            {category.name}
+                          </Select.Option>
+                        ))}
+                      </Select>
+                      <ProductList
+                        products={categories.find(c => c.id === selectedCategoryKey)?.products || []}
+                        selectedProductIds={selectedProducts.map(p => p.id)}
+                        onProductSelect={handleProductSelect}
+                      />
+                    </>
+                  ) : (
+                    <Tabs
+                      activeKey={selectedCategoryKey}
+                      onChange={handleCategoryChange}
+                      items={categories.map(category => ({
+                        key: category.id,
+                        label: <span style={{ color: '#2A4D74' }}>{category.name}</span>,
+                        children: (
+                          <ProductList
+                            products={category.products}
+                            selectedProductIds={selectedProducts.map(p => p.id)}
+                            onProductSelect={handleProductSelect}
+                          />
+                        )
+                      }))}
+                    />
+                  )}
 
                   {selectedProducts.length > 0 && (
                     <div style={{ marginTop: '2rem' }}>
