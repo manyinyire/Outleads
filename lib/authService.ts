@@ -8,7 +8,7 @@ if (!apiBaseUrl) {
   throw new Error('API_BASE_URL is not configured in environment variables.');
 }
 
-export async function authenticateDomainUser(username, password) {
+export async function authenticateDomainUser(username: string, password: string) {
   try {
     const response = await axios.post(`${apiBaseUrl}/auth/service/token/`, { username, password });
     return response.data.token;
@@ -17,7 +17,7 @@ export async function authenticateDomainUser(username, password) {
   }
 }
 
-export async function getUserInfo(username, token) {
+export async function getUserInfo(username: string, token: string) {
   try {
     const response = await axios.get(`${apiBaseUrl}/api/getuser/${username}`, {
       headers: { Authorization: `Bearer ${token}` }
@@ -28,7 +28,7 @@ export async function getUserInfo(username, token) {
   }
 }
 
-export async function manageUser(userInfo) {
+export async function manageUser(userInfo: any) {
   const { userDetails } = userInfo;
   const { first_: firstName, last_: surname, email_: email } = userDetails;
 
