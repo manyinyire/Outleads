@@ -73,7 +73,7 @@ const customGetHandler = withErrorHandler(async (req: AuthenticatedRequest) => {
   const meta = calculatePaginationMeta(total, page || 1, limit || 10);
   
   return successResponse({
-    lead: records,
+    data: records,
     meta
   });
 });
