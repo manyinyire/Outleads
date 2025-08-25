@@ -142,6 +142,7 @@ enum Status {
   REJECTED
   ACTIVE
   INACTIVE
+  DELETED
 }
 
 model Permission {

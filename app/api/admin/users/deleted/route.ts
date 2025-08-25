@@ -1,17 +1,22 @@
-import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { withAuthAndRole } from '@/lib/auth'
+import { withAuthAndRole } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { successResponse, errorResponse, withErrorHandler } from '@/lib/api-utils';
 
-async function handler() {
+const getHandler = withErrorHandler(async () => {
   try {
-    // Since there's no deletedAt field in the User model, return empty array
-    // or implement soft delete by adding deletedAt field to schema
-    const deletedUsers: any[] = []
-    return NextResponse.json(deletedUsers)
+    const deletedUsers = await prisma.user.findMany({
+      where: {
+        status: 'DELETED',
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    });
+    return successResponse(deletedUsers);
   } catch (error) {
-    console.error('Error fetching deleted users:', error)
-    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
+    console.error('Error fetching deleted users:', error);
+    return errorResponse(500, 'Failed to fetch deleted users.');
   }
-}
+});
 
-export const GET = withAuthAndRole(['ADMIN', 'BSS'], handler)
+export const GET = withAuthAndRole(['ADMIN'], getHandler);

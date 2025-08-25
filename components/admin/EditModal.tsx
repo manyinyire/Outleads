@@ -38,7 +38,7 @@ export default function EditModal<T>({ title, visible, fields, editingRecord, on
       <Form form={form} layout="vertical" onFinish={(values) => onSubmit(values, editingRecord)}>
         {fields.map(field => {
           const isReadOnly = !!editingRecord && (field.name === 'name' || field.name === 'email');
-          const fieldProps = { ...field, readOnly: isViewOnly || isReadOnly || field.readOnly };
+          const fieldProps = { ...field, readOnly: isViewOnly || isReadOnly || field.readOnly, disabled: isViewOnly || isReadOnly || field.readOnly };
 
           return field.type === 'select' ?
             <SelectField key={field.name} field={fieldProps} /> :

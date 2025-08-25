@@ -38,6 +38,7 @@ export interface CrudTableProps<T extends { id: string }> {
   readonly customHeader?: React.ReactNode;
   readonly deleteConfirmMessage?: (record: T) => string;
   readonly hideDefaultActions?: boolean;
+  readonly customRowActions?: (record: T, handleEdit: (record: T) => void) => React.ReactNode;
 }
 
 // --- MAIN COMPONENT ---
@@ -57,6 +58,7 @@ export default function CrudTable<T extends { id: string }>({
   customHeader,
   deleteConfirmMessage,
   hideDefaultActions,
+  customRowActions,
 }: CrudTableProps<T>) {
   const [isModalVisible, setModalVisible] = useState(false);
   const [editingRecord, setEditingRecord] = useState<T | null>(null);
@@ -84,24 +86,28 @@ export default function CrudTable<T extends { id: string }>({
       key: 'actions',
       render: (_, record) => (
         <Space>
-          <Button type="link" icon={<EyeOutlined />} onClick={() => handleEdit(record)}>
-            View
-          </Button>
-          <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
-            Edit
-          </Button>
-          {onDelete && (
-            <Popconfirm
-              title="Are you sure?"
-              description={deleteConfirmMessage ? deleteConfirmMessage(record) : 'This action cannot be undone.'}
-              onConfirm={() => onDelete(record.id)}
-              okText="Yes"
-              cancelText="No"
-            >
-              <Button type="link" danger icon={<DeleteOutlined />}>
-                Delete
+          {customRowActions ? customRowActions(record, handleEdit) : (
+            <>
+              <Button type="link" icon={<EyeOutlined />} onClick={() => handleEdit(record)}>
+                View
               </Button>
-            </Popconfirm>
+              <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
+                Edit
+              </Button>
+              {onDelete && (
+                <Popconfirm
+                  title="Are you sure?"
+                  description={deleteConfirmMessage ? deleteConfirmMessage(record) : 'This action cannot be undone.'}
+                  onConfirm={() => onDelete(record.id)}
+                  okText="Yes"
+                  cancelText="No"
+                >
+                  <Button type="link" danger icon={<DeleteOutlined />}>
+                    Delete
+                  </Button>
+                </Popconfirm>
+              )}
+            </>
           )}
         </Space>
       ),

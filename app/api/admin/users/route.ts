@@ -1,7 +1,8 @@
-import { withAuthAndRole } from '@/lib/auth';
+import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth';
 import { z } from 'zod';
 import { createCrudHandlers } from '@/lib/crud-factory';
 import nodemailer from 'nodemailer';
+import { NextRequest } from 'next/server';
 
 const createUserSchema = z.object({
   username: z.string().min(1, 'Username is required'),
@@ -9,7 +10,7 @@ const createUserSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   sbu: z.string().optional(),
   role: z.enum(['ADMIN', 'BSS', 'INFOSEC', 'AGENT', 'SUPERVISOR']).default('AGENT'),
-  status: z.enum(['PENDING', 'ACTIVE', 'INACTIVE']).default('ACTIVE')
+  status: z.enum(['PENDING', 'ACTIVE', 'INACTIVE', 'DELETED']).default('ACTIVE')
 });
 
 const updateUserSchema = z.object({
@@ -18,7 +19,7 @@ const updateUserSchema = z.object({
   name: z.string().min(1).optional(),
   sbu: z.string().optional(),
   role: z.enum(['ADMIN', 'BSS', 'INFOSEC', 'AGENT', 'SUPERVISOR']).optional(),
-  status: z.enum(['PENDING', 'ACTIVE', 'INACTIVE']).optional()
+  status: z.enum(['PENDING', 'ACTIVE', 'INACTIVE', 'DELETED']).optional()
 });
 
 const handlers = createCrudHandlers({
@@ -72,7 +73,25 @@ const handlers = createCrudHandlers({
   }
 });
 
-export const GET = withAuthAndRole(['ADMIN', 'BSS', 'INFOSEC'], handlers.GET);
+const customGetHandler = async (req: NextRequest) => {
+  const url = new URL(req.url);
+  const status = url.searchParams.get('status');
+  
+  if (status) {
+    const statuses = status.split(',');
+    (req as any).query = {
+      where: {
+        status: {
+          in: statuses
+        }
+      }
+    };
+  }
+  
+  return handlers.GET(req as any);
+};
+
+export const GET = withAuthAndRole(['ADMIN', 'BSS', 'INFOSEC'], customGetHandler);
 export const POST = withAuthAndRole(['ADMIN', 'BSS'], handlers.POST);
 
 // Helper function to send activation email

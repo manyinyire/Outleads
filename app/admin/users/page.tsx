@@ -19,6 +19,7 @@ interface User {
   name: string
   email: string
   role: 'ADMIN' | 'BSS' | 'INFOSEC' | 'AGENT' | 'SUPERVISOR'
+  status: 'PENDING' | 'ACTIVE' | 'REJECTED' | 'INACTIVE' | 'DELETED'
   createdAt: string
   updatedAt?: string
   lastLogin?: string
@@ -51,6 +52,7 @@ export default function UsersPage() {
       if (searchText) {
         url.searchParams.set('search', searchText)
       }
+      url.searchParams.set('status', 'ACTIVE,PENDING,REJECTED,INACTIVE');
       
       const token = localStorage.getItem('auth-token')
       const response = await fetch(url.toString(), {
@@ -130,6 +132,31 @@ export default function UsersPage() {
     }
   }
 
+  const handleUpdateStatus = async (id: string, status: 'ACTIVE' | 'REJECTED') => {
+    const token = localStorage.getItem('auth-token');
+    try {
+      const response = await fetch(`/api/admin/users/${id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status })
+      });
+
+      if (response.ok) {
+        message.success(`User status updated to ${status}`);
+        fetchData(); // Refresh data
+      } else {
+        const error = await response.json();
+        message.error(error.message || 'Failed to update user status');
+      }
+    } catch (error) {
+      console.error("Update status error:", error);
+      message.error('An error occurred while updating the user status.');
+    }
+  }
+
   const handleExport = () => {
     const csv = Papa.unparse(data)
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -156,8 +183,6 @@ export default function UsersPage() {
         { label: 'InfoSec', value: 'INFOSEC' },
         { label: 'Agent', value: 'AGENT' },
         { label: 'Supervisor', value: 'SUPERVISOR' },
-        { label: 'Employee', value: 'EMPLOYEE' },
-        { label: 'Manager', value: 'MANAGER' },
       ]
     }
   ], [])
@@ -170,6 +195,18 @@ export default function UsersPage() {
       dataIndex: 'role', 
       key: 'role',
       render: (role: string) => <Tag>{role.toUpperCase()}</Tag>
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string) => {
+        let color = 'default';
+        if (status === 'ACTIVE') color = 'green';
+        if (status === 'PENDING') color = 'orange';
+        if (status === 'REJECTED') color = 'red';
+        return <Tag color={color}>{status.toUpperCase()}</Tag>;
+      }
     },
     { 
       title: 'Created Date', 
@@ -196,6 +233,33 @@ export default function UsersPage() {
         onSearch={handleSearch}
         onDelete={handleDelete}
         onSubmit={handleSubmit}
+        customRowActions={(record, handleEdit) => {
+          if (record.status === 'PENDING') {
+            return (
+              <Space>
+                <Button type="primary" onClick={() => handleUpdateStatus(record.id, 'ACTIVE')}>
+                  Accept
+                </Button>
+                <Button danger onClick={() => handleUpdateStatus(record.id, 'REJECTED')}>
+                  Reject
+                </Button>
+              </Space>
+            );
+          }
+          if (record.status === 'ACTIVE') {
+            return (
+              <Space>
+                <Button type="link" onClick={() => handleEdit(record)}>
+                  Edit
+                </Button>
+                <Button type="link" danger onClick={() => handleDelete(record.id)}>
+                  Delete
+                </Button>
+              </Space>
+            );
+          }
+          return null;
+        }}
         customActions={
           <Space>
             {userRole && ['ADMIN', 'BSS'].includes(userRole) && (

@@ -10,22 +10,40 @@ if (!apiBaseUrl) {
 
 export async function authenticateDomainUser(username: string, password: string) {
   try {
-    const response = await axios.post(`${apiBaseUrl}/auth/service/token/`, { username, password });
-    return response.data.token;
+    const response = await axios.post(apiBaseUrl!, { username, password });
+    return {
+      access: response.data.access,
+      refresh: response.data.refresh,
+      user: {
+        first_name: response.data.first_name,
+        last_name: response.data.last_name,
+        username: response.data.username,
+        user_id: response.data.user_id,
+        groups: response.data.groups,
+        department: response.data.department,
+        title: response.data.title
+      }
+    };
   } catch (error) {
     throw new ApiError('Invalid credentials.', 401);
   }
 }
 
-export async function getUserInfo(username: string, token: string) {
-  try {
-    const response = await axios.get(`${apiBaseUrl}/api/getuser/${username}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return response.data;
-  } catch (error) {
-    throw new ApiError('Failed to fetch user info.', 500);
-  }
+export async function getUserInfo(userInfo: any) {
+  // Since the new API returns all user info in the login response,
+  // we just need to format it for our system
+  return {
+    userDetails: {
+      first_: userInfo.first_name,
+      last_: userInfo.last_name,
+      email_: `${userInfo.first_name.toLowerCase()}.${userInfo.last_name.toLowerCase()}@fbc.co.zw`, // Construct email from first and last name
+      username: userInfo.username,
+      user_id: userInfo.user_id,
+      groups: userInfo.groups,
+      department: userInfo.department,
+      title: userInfo.title
+    }
+  };
 }
 
 export async function manageUser(userInfo: any) {

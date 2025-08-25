@@ -9,7 +9,7 @@ const updateUserSchema = z.object({
   email: z.string().email().optional(),
   sbu: z.string().optional(),
   role: z.enum(['ADMIN', 'BSS', 'INFOSEC', 'AGENT', 'SUPERVISOR']).optional(),
-  status: z.enum(['PENDING', 'ACTIVE', 'INACTIVE']).optional()
+  status: z.enum(['PENDING', 'ACTIVE', 'INACTIVE', 'DELETED']).optional()
 });
 
 // PUT /api/admin/users/[id] - Update user (BSS and Admin only)
@@ -99,10 +99,10 @@ export async function DELETE(
     const { id } = params;
     
     try {
-      // Update user status to INACTIVE instead of deleting
+      // Update user status to DELETED instead of deleting
       const updatedUser = await prisma.user.update({
         where: { id },
-        data: { status: 'INACTIVE' } as any,
+        data: { status: 'DELETED' } as any,
         select: {
           id: true,
           name: true,
@@ -112,7 +112,7 @@ export async function DELETE(
       }) as any;
 
       return NextResponse.json({
-        message: 'User deactivated successfully',
+        message: 'User deleted successfully',
         user: updatedUser
       });
     } catch (error) {

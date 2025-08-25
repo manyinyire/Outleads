@@ -14,8 +14,8 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { username, password } = loginSchema.parse(body);
 
-    const apiToken = await authenticateDomainUser(username, password);
-    const userInfo = await getUserInfo(username, apiToken);
+    const authResult = await authenticateDomainUser(username, password);
+    const userInfo = await getUserInfo(authResult.user);
     const { newUser, user } = await manageUser(userInfo);
 
     if (newUser) {
