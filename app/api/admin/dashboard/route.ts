@@ -10,6 +10,8 @@ interface DecodedToken {
   [key: string]: any;
 }
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: Request) {
   try {
     const token = req.headers.get('Authorization')?.split(' ')[1]
@@ -46,19 +48,19 @@ export async function GET(req: Request) {
     })
 
     // Process data for charts
-    const leadsPerDay = leads.reduce((acc: Record<string, number>, lead) => {
+    const leadsPerDay = leads.reduce((acc: Record<string, number>, lead: any) => {
       const date = new Date(lead.createdAt).toISOString().split('T')[0]
       acc[date] = (acc[date] || 0) + 1
       return acc
     }, {})
 
-    const leadsPerMonth = leads.reduce((acc, lead) => {
+    const leadsPerMonth = leads.reduce((acc: Record<string, number>, lead: any) => {
       const month = new Date(lead.createdAt).toISOString().slice(0, 7)
       acc[month] = (acc[month] || 0) + 1
       return acc
     }, {} as Record<string, number>)
 
-    const campaignPerformance = leads.reduce((acc, lead) => {
+    const campaignPerformance = leads.reduce((acc: Record<string, number>, lead: any) => {
       if (lead.campaign) {
         const name = lead.campaign.campaign_name
         acc[name] = (acc[name] || 0) + 1

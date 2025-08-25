@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Layout, Row, Col, Tabs, Typography, Button, Steps, message, Spin, Card } from 'antd'
 import { ArrowLeftOutlined } from '@ant-design/icons'
@@ -26,7 +26,7 @@ interface ProductCategory {
 }
 
 // --- COMPONENT ---
-export default function HomePage() {
+function HomePageContent() {
   const searchParams = useSearchParams()
   const [currentStep, setCurrentStep] = useState(0)
   const [selectedProducts, setSelectedProducts] = useState<Product[]>([])
@@ -259,5 +259,17 @@ export default function HomePage() {
         </Row>
       </Content>
     </Layout>
+  )
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={
+      <Layout style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F0F0F0' }}>
+        <Spin size="large" />
+      </Layout>
+    }>
+      <HomePageContent />
+    </Suspense>
   )
 }
