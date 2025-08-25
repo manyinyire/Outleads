@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { App, Tag, Row, Col, Select, DatePicker, Button } from 'antd'
+import { App, Tag, Row, Col, Select, DatePicker, Button, TablePaginationConfig } from 'antd'
 import { ColumnsType } from 'antd/es/table'
 import CrudTable from '@/components/admin/CrudTable'
 import LeadDetailModal from '@/components/admin/LeadDetailModal'
@@ -33,6 +33,11 @@ export default function LeadsPage() {
   const [searchText, setSearchText] = useState('')
   const [isViewModalVisible, setViewModalVisible] = useState(false)
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
+  const [pagination, setPagination] = useState<TablePaginationConfig>({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
   const [filters, setFilters] = useState<{
     productId: string | undefined;
     campaignId: string | undefined;
@@ -76,6 +81,8 @@ export default function LeadsPage() {
     try {
       const { data } = await api.get('/admin/leads', {
         params: {
+          page: pagination.current,
+          limit: pagination.pageSize,
           search: searchText,
           productId: filters.productId,
           campaignId: filters.campaignId,
@@ -85,13 +92,14 @@ export default function LeadsPage() {
         }
       });
       setData(data.data || []);
+      setPagination(prev => ({ ...prev, total: data.meta.total }));
     } catch (error) {
       console.error("Fetch error:", error)
       message.error('Failed to load leads.')
     } finally {
       setLoading(false)
     }
-  }, [searchText, message, filters]);
+  }, [searchText, message, filters, pagination.current, pagination.pageSize]);
 
   useEffect(() => {
     fetchFilterData();
@@ -100,6 +108,10 @@ export default function LeadsPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData, filters])
+
+  const handleTableChange = (pagination: TablePaginationConfig) => {
+    setPagination(pagination);
+  };
 
   const handleFilterChange = (key: string, value: any) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -209,6 +221,8 @@ export default function LeadsPage() {
         columns={columns}
         dataSource={data}
         loading={loading}
+        pagination={pagination}
+        onTableChange={handleTableChange}
         onSearch={handleSearch}
         customHeader={filterOptions}
         hideDefaultActions={true}

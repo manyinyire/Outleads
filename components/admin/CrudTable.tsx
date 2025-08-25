@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Table, Input, Space, Typography, Button, Popconfirm } from 'antd';
+import { Table, Input, Space, Typography, Button, Popconfirm, TablePaginationConfig } from 'antd';
 import { EditOutlined, DeleteOutlined, SearchOutlined, EyeOutlined } from '@ant-design/icons';
 import { ColumnsType } from 'antd/es/table';
 import EditModal from './EditModal';
@@ -24,6 +24,8 @@ export interface CrudTableProps<T extends { id: string }> {
   readonly fields?: CrudField[];
   readonly dataSource: T[];
   readonly loading: boolean;
+  readonly pagination?: TablePaginationConfig;
+  readonly onTableChange?: (pagination: TablePaginationConfig, filters: any, sorter: any) => void;
 
   // Event Handlers
   readonly onSearch?: (value: string) => void;
@@ -45,6 +47,8 @@ export default function CrudTable<T extends { id: string }>({
   fields,
   dataSource,
   loading,
+  pagination,
+  onTableChange,
   onSearch,
   onDelete,
   onSubmit,
@@ -132,6 +136,8 @@ export default function CrudTable<T extends { id: string }>({
         dataSource={dataSource}
         rowKey="id"
         loading={loading}
+        pagination={pagination}
+        onChange={onTableChange}
       />
 
       {isModalVisible && fields && onSubmit && (
