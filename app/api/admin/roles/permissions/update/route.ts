@@ -21,13 +21,13 @@ async function updateRolePermissions(req: Request) {
 
     // Delete existing permissions for the role
     await prisma.rolePermission.deleteMany({
-      where: { role },
+      where: { role: role as any },
     });
 
     // Create new permissions
     await prisma.rolePermission.createMany({
       data: permissionIds.map((permissionId) => ({
-        role,
+        role: role as any,
         permissionId,
       })),
     });

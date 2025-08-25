@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { z } from 'zod';
 
 import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth';
@@ -19,8 +19,8 @@ const getProductCategories = async (req: AuthenticatedRequest) => {
     const where = search
       ? {
           OR: [
-            { name: { contains: search, mode: 'insensitive' } },
-            { description: { contains: search, mode: 'insensitive' } },
+            { name: { contains: search, mode: 'insensitive' as const } },
+            { description: { contains: search, mode: 'insensitive' as const } },
           ],
         }
       : {};

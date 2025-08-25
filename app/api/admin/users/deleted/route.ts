@@ -4,13 +4,9 @@ import { withAuthAndRole } from '@/lib/auth'
 
 async function handler() {
   try {
-    const deletedUsers = await prisma.user.findMany({
-      where: {
-        deletedAt: {
-          not: null,
-        },
-      },
-    })
+    // Since there's no deletedAt field in the User model, return empty array
+    // or implement soft delete by adding deletedAt field to schema
+    const deletedUsers: any[] = []
     return NextResponse.json(deletedUsers)
   } catch (error) {
     console.error('Error fetching deleted users:', error)

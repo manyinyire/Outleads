@@ -21,9 +21,9 @@ export default function LoginPage() {
   const dispatch = useDispatch<AppDispatch>()
   const { message } = App.useApp()
   
-  const { loading, error, isAuthenticated, user } = useSelector((state: RootState) => state.auth)
+  const { status, error, isAuthenticated, user } = useSelector((state: RootState) => state.auth)
   const [isFirstLogin, setIsFirstLogin] = useState(false)
-  const [newUser, setNewUser] = useState(null)
+  const [newUser, setNewUser] = useState<any>(null)
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -59,6 +59,8 @@ export default function LoginPage() {
   }
 
   const handleRoleSelection = async (values: { role: string }) => {
+    if (!newUser) return;
+    
     try {
       await axios.post('/api/auth/complete-registration', { userId: newUser.id, role: values.role });
       setIsFirstLogin(false);
@@ -125,7 +127,7 @@ export default function LoginPage() {
                   htmlType="submit"
                   size="large"
                   block
-                  loading={loading}
+                  loading={status === 'loading'}
                   style={{ 
                     backgroundColor: '#2A4D74', 
                     borderColor: '#2A4D74', 

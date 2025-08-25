@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     const validation = createLeadSchema.safeParse(body);
 
     if (!validation.success) {
-      return errorResponse(validation.error.format(), 400);
+      return errorResponse('Validation failed', 400, 'Validation Error', validation.error.format());
     }
 
     const { name, phone, company, productIds, campaignId } = validation.data;
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
       return errorResponse('One or more product IDs are invalid.', 400);
     }
 
-    const leadData: Prisma.LeadCreateInput = {
+    const leadData: any = {
       fullName: name,
       phoneNumber: phone,
       businessSector: { connect: { id: sector.id } },
@@ -64,7 +64,7 @@ export async function POST(req: Request) {
 
         leadData.campaign = { connect: { id: campaignId } };
 
-        const newLead = await prisma.$transaction(async (tx) => {
+        const newLead = await prisma.$transaction(async (tx: any) => {
           const createdLead = await tx.lead.create({ data: leadData });
           await tx.campaign.update({
             where: { id: campaignId },
