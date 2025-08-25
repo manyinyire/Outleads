@@ -14,8 +14,6 @@ export default function SectorsPage() {
   const [data, setData] = useState<Sector[]>([])
   const [loading, setLoading] = useState(true)
   const [searchText, setSearchText] = useState('')
-  const [isModalVisible, setModalVisible] = useState(false)
-  const [editingRecord, setEditingRecord] = useState<Sector | null>(null)
   
   const { message } = App.useApp()
 
@@ -59,11 +57,6 @@ export default function SectorsPage() {
     setSearchText(value)
   }
 
-  const handleEdit = (record: Sector) => {
-    setEditingRecord(record)
-    setModalVisible(true)
-  }
-
   const handleDelete = async (id: string) => {
     const token = localStorage.getItem('auth-token');
     try {
@@ -102,8 +95,6 @@ export default function SectorsPage() {
 
       if (response.ok) {
         message.success(`Sector ${record ? 'updated' : 'created'} successfully`);
-        setModalVisible(false);
-        setEditingRecord(null);
         fetchData();
       } else {
         const error = await response.json();
@@ -131,15 +122,8 @@ export default function SectorsPage() {
       dataSource={data}
       loading={loading}
       onSearch={handleSearch}
-      onEdit={handleEdit}
       onDelete={handleDelete}
       onSubmit={handleSubmit}
-      isModalVisible={isModalVisible}
-      closeModal={() => {
-        setModalVisible(false)
-        setEditingRecord(null)
-      }}
-      editingRecord={editingRecord}
     />
   )
 }

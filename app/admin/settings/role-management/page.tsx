@@ -26,7 +26,7 @@ export default function RoleManagementPage() {
     const fetchRolePermissions = async () => {
       try {
         const response = await axios.get('/api/admin/roles/permissions')
-        const data = response.data.reduce((acc, rp) => {
+        const data = response.data.reduce((acc: Record<string, string[]>, rp: any) => {
           if (!acc[rp.role]) {
             acc[rp.role] = []
           }
@@ -73,7 +73,7 @@ export default function RoleManagementPage() {
     ...roles.map((role) => ({
       title: role,
       key: role,
-      render: (_, record) => (
+      render: (_: any, record: { id: string; name: string }) => (
         <Checkbox
           checked={rolePermissions[role]?.includes(record.name)}
           onChange={(e) => handlePermissionChange(role, record.name, e.target.checked)}

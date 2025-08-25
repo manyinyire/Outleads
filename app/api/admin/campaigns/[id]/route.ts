@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { Prisma } from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth';
@@ -49,7 +49,7 @@ async function updateCampaign(req: AuthenticatedRequest, { params }: { params: {
     return NextResponse.json(updatedCampaign);
   } catch (error) {
     console.error(`Error updating campaign ${params.id}:`, error);
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+    if (error instanceof PrismaClientKnownRequestError && error.code === 'P2025') {
       return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
     }
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
@@ -65,7 +65,7 @@ async function deleteCampaign(req: AuthenticatedRequest, { params }: { params: {
     return new NextResponse(null, { status: 204 });
   } catch (error) {
     console.error(`Error deleting campaign ${params.id}:`, error);
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+    if (error instanceof PrismaClientKnownRequestError && error.code === 'P2025') {
       return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
     }
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Card, Select, DatePicker, Button, Table, Row, Col, Typography, message, Spin } from 'antd'
+import { ColumnsType } from 'antd/es/table'
 import { DownloadOutlined } from '@ant-design/icons'
 import moment from 'moment'
 import Papa from 'papaparse'
@@ -49,7 +50,7 @@ export default function ReportsPage() {
 
       const result = await response.json()
       if (result.data && result.data.length > 0) {
-        let generatedColumns;
+        let generatedColumns: ColumnsType<any>;
         switch (reportType) {
           case 'lead-details':
             generatedColumns = [

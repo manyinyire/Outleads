@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { Prisma } from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { z } from 'zod';
 import { nanoid } from 'nanoid';
 
@@ -40,7 +40,7 @@ const postCampaigns = async (req: AuthenticatedRequest) => {
     return NextResponse.json(newCampaign, { status: 201 });
   } catch (error) {
     console.error('Error creating campaign:', error);
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+    if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
       return NextResponse.json({ error: 'A campaign with this name already exists.' }, { status: 409 });
     }
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

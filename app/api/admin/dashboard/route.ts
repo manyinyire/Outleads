@@ -46,11 +46,11 @@ export async function GET(req: Request) {
     })
 
     // Process data for charts
-    const leadsPerDay = leads.reduce((acc, lead) => {
+    const leadsPerDay = leads.reduce((acc: Record<string, number>, lead) => {
       const date = new Date(lead.createdAt).toISOString().split('T')[0]
       acc[date] = (acc[date] || 0) + 1
       return acc
-    }, {} as Record<string, number>)
+    }, {})
 
     const leadsPerMonth = leads.reduce((acc, lead) => {
       const month = new Date(lead.createdAt).toISOString().slice(0, 7)

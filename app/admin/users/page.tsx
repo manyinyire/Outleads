@@ -198,7 +198,7 @@ export default function UsersPage() {
         onSubmit={handleSubmit}
         customActions={
           <Space>
-            {['ADMIN', 'BSS'].includes(userRole) && (
+            {userRole && ['ADMIN', 'BSS'].includes(userRole) && (
               <Button icon={<UserAddOutlined />} onClick={() => setAddUserModalVisible(true)}>
                 Add User
               </Button>
