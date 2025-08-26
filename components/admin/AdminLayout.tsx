@@ -41,9 +41,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   useEffect(() => {
     if (status === 'failed') {
-      router.push('/auth/login')
+      router.replace('/auth/login')
+      return
     }
-  }, [status, router])
+    if (status === 'succeeded' && !user) {
+      router.replace('/auth/login')
+    }
+  }, [status, user, router])
 
   const handleLogout = async () => {
     try {
@@ -54,7 +58,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }
 
   const hasAnyRole = (u: { role: string } | null, roles: string[]) =>
-    !!u && roles.includes(u.role)
+    !!u && roles.map(r => r.toUpperCase()).includes(String(u.role).toUpperCase())
 
   function getSelectedKey(path: string, items: { key: string }[]) {
     const keys = items.map(i => i.key)
@@ -183,8 +187,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             <Image
               src="/logos/logo.png"
               alt="Nexus Logo"
-              width={collapsed ? 40 : 150}
-              height={collapsed ? 40 : 150}
+              width={150}
+              height={40}
+              style={{ objectFit: 'contain' }}
               priority
             />
           </div>
@@ -192,7 +197,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <Menu
             theme="dark"
             mode="inline"
-            selectedKeys={[getSelectedKey(pathname, menuItems as any)]}
+            selectedKeys={[menuItems.find(item => typeof item.key === 'string' && pathname.startsWith(item.key as string))?.key ?? '/admin']}
             items={menuItems}
             onClick={({ key }) => router.push(key)}
             style={{ background: '#2A4D74', borderRight: 0 }}
