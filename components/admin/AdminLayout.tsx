@@ -163,7 +163,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               padding: '0 1rem',
             }}
           >
-            <Image src="/logos/logo.png" alt="Nexus Logo" width={50} height={50} />
+            <Image src="/logos/logo.png" alt="Nexus Logo" width={150} height={150} />
           </div>
           
           <Menu
