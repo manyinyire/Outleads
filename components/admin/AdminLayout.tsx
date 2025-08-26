@@ -50,66 +50,69 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     router.push('/auth/login')
   }
 
+  const hasAnyRole = (u: { role: string } | null, roles: string[]) =>
+    !!u && roles.includes(u.role)
+
   const menuItems = [
     {
       key: '/admin',
       icon: <DashboardOutlined />,
       label: 'Dashboard',
-      hidden: !user || !['ADMIN', 'SUPERVISOR'].includes(user.role),
+      hidden: !hasAnyRole(user, ['ADMIN', 'SUPERVISOR']),
     },
     {
       key: '/admin/leads',
       icon: <UserOutlined />,
       label: 'Leads',
-      hidden: !user || !['ADMIN', 'AGENT', 'SUPERVISOR'].includes(user.role),
+      hidden: !hasAnyRole(user, ['ADMIN', 'AGENT', 'SUPERVISOR']),
     },
     {
       key: '/admin/campaigns',
       icon: <BulbOutlined />,
       label: 'Campaigns',
-      hidden: !user || !['ADMIN', 'SUPERVISOR', 'AGENT'].includes(user.role),
+      hidden: !hasAnyRole(user, ['ADMIN', 'SUPERVISOR', 'AGENT']),
     },
     {
       key: '/admin/reports',
       icon: <BarChartOutlined />,
       label: 'Reports',
-      hidden: !user || !['ADMIN', 'SUPERVISOR'].includes(user.role),
+      hidden: !hasAnyRole(user, ['ADMIN', 'SUPERVISOR']),
     },
     {
       key: '/admin/users',
       icon: <TeamOutlined />,
       label: 'Users',
-      hidden: !user || !['ADMIN', 'BSS', 'INFOSEC'].includes(user.role),
+      hidden: !hasAnyRole(user, ['ADMIN', 'BSS', 'INFOSEC']),
     },
     {
       key: '/admin/products',
       icon: <ShoppingOutlined />,
       label: 'Products',
-      hidden: !user || user.role !== 'ADMIN',
+      hidden: !hasAnyRole(user, ['ADMIN']),
     },
     {
       key: '/admin/product-categories',
       icon: <AppstoreOutlined />,
       label: 'Categories',
-      hidden: !user || user.role !== 'ADMIN',
+      hidden: !hasAnyRole(user, ['ADMIN']),
     },
     {
       key: '/admin/sectors',
       icon: <AppstoreOutlined />,
       label: 'Sectors',
-      hidden: !user || user.role !== 'ADMIN',
+      hidden: !hasAnyRole(user, ['ADMIN']),
     },
     {
       key: '/admin/sbus',
       icon: <BankOutlined />,
       label: 'SBUs',
-      hidden: !user || user.role !== 'ADMIN',
+      hidden: !hasAnyRole(user, ['ADMIN']),
     },
     {
       key: '/admin/settings',
       icon: <SettingOutlined />,
       label: 'Settings',
-      hidden: !user || user.role !== 'ADMIN',
+      hidden: !hasAnyRole(user, ['ADMIN']),
     },
   ].filter(item => !item.hidden)
 
