@@ -94,12 +94,23 @@ export default function LeadForm({ campaignId, onNext, initialData }: LeadFormPr
         <Form.Item
           name="phoneNumber"
           label="Phone Number"
-          rules={[{ required: true, message: 'Please enter your phone number' }]}
+          rules={[
+            { required: true, message: 'Please enter your phone number' },
+            { 
+              pattern: /^0\d{9}$/, 
+              message: 'Phone number must be 10 digits starting with 0 (e.g., 0777111222)' 
+            },
+            {
+              len: 10,
+              message: 'Phone number must be exactly 10 digits'
+            }
+          ]}
         >
           <Input
             prefix={<PhoneOutlined style={{ color: '#6ED0F6' }} />}
-            placeholder="Enter your phone number"
+            placeholder="0777111222"
             size="large"
+            maxLength={10}
             style={{ borderRadius: '0.5rem' }}
           />
         </Form.Item>
