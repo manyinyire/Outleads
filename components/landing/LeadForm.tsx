@@ -111,11 +111,17 @@ export default function LeadForm({ campaignId, onNext, initialData }: LeadFormPr
             display: 'flex',
             alignItems: 'center',
             width: '100%',
+            minWidth: 0, // Allows flex items to shrink below their content size
             border: '1px solid #d9d9d9',
             borderRadius: '0.5rem',
             backgroundColor: 'white',
+            overflow: 'hidden', // Prevents content from overflowing
           }}>
-            <BankOutlined style={{ color: '#6ED0F6', margin: '0 11px' }} />
+            <BankOutlined style={{ 
+              color: '#6ED0F6', 
+              margin: '0 8px', 
+              flexShrink: 0 // Prevents icon from shrinking on mobile
+            }} />
             <Form.Item
               name="sectorId"
               noStyle
@@ -125,8 +131,12 @@ export default function LeadForm({ campaignId, onNext, initialData }: LeadFormPr
                 placeholder="Select your business sector"
                 size="large"
                 loading={loadingSectors}
-                bordered={false}
-                style={{ width: '100%' }}
+                variant="borderless"
+                style={{ 
+                  width: '100%',
+                  minWidth: 0, // Allows select to shrink on mobile
+                  flex: 1 // Takes remaining space in flex container
+                }}
               >
                 {sectors.map(sector => (
                   <Option key={sector.id} value={sector.id}>

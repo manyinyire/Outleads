@@ -199,7 +199,7 @@ function HomePageContent() {
 
               {currentStep === 1 && (
                 <>
-                  <Card bordered={false} style={{ backgroundColor: '#F0F0F0', borderRadius: '0.5rem', marginBottom: '1.5rem' }}>
+                  <Card variant="borderless" style={{ backgroundColor: '#F0F0F0', borderRadius: '0.5rem', marginBottom: '1.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div>
                         <Title level={5} style={{ margin: 0, color: '#2A4D74' }}>
@@ -259,7 +259,7 @@ function HomePageContent() {
 
                   {selectedProducts.length > 0 && (
                     <div style={{ marginTop: '2rem' }}>
-                      <Card bordered={false} style={{ backgroundColor: '#F0F0F0', borderRadius: '0.5rem', marginBottom: '1.5rem' }}>
+                      <Card variant="borderless" style={{ backgroundColor: '#F0F0F0', borderRadius: '0.5rem', marginBottom: '1.5rem' }}>
                         <Title level={5} style={{ margin: 0, color: '#2A4D74' }}>
                           Selected Products:
                         </Title>

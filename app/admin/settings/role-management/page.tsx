@@ -92,7 +92,7 @@ export default function RoleManagementPage() {
         dataSource={permissions}
         columns={columns}
         pagination={false}
-        bordered
+        bordered={true}
       />
       <div style={{ marginTop: 16 }}>
         {roles.map((role) => (
