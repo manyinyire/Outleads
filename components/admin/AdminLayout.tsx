@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { Layout, Menu, Button, Dropdown, Avatar, Typography, Spin } from 'antd'
 import ErrorBoundary from './ErrorBoundary'
@@ -45,15 +45,26 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     }
   }, [status, router])
 
-  const handleLogout = () => {
-    dispatch(logout())
-    router.push('/auth/login')
+  const handleLogout = async () => {
+    try {
+      await dispatch(logout() as any)
+    } finally {
+      router.replace('/auth/login')
+    }
   }
 
   const hasAnyRole = (u: { role: string } | null, roles: string[]) =>
     !!u && roles.includes(u.role)
 
-  const menuItems = [
+  function getSelectedKey(path: string, items: { key: string }[]) {
+    const keys = items.map(i => i.key)
+    const match = keys
+      .filter(k => path === k || path.startsWith(k + '/'))
+      .sort((a, b) => b.length - a.length)[0]
+    return match ?? keys[0]
+  }
+
+  const menuItems = useMemo(() => [
     {
       key: '/admin',
       icon: <DashboardOutlined />,
@@ -102,6 +113,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       label: 'Sectors',
       hidden: !hasAnyRole(user, ['ADMIN']),
     },
+    
     {
       key: '/admin/sbus',
       icon: <BankOutlined />,
@@ -114,7 +126,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       label: 'Settings',
       hidden: !hasAnyRole(user, ['ADMIN']),
     },
-  ].filter(item => !item.hidden)
+  ].filter(item => !item.hidden), [user])
 
   const userMenuItems = [
     {
@@ -133,7 +145,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   if (status === 'loading' || status === 'idle') {
     return (
       <Layout style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F0F0F0' }}>
-        <Spin size="large" />
+        <Spin size="large" tip="Loading admin…" />
       </Layout>
     )
   }
@@ -146,6 +158,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           trigger={null}
           collapsible
           collapsed={collapsed}
+          collapsedWidth={80}
+          breakpoint="lg"
           style={{
             background: '#2A4D74',
             boxShadow: '2px 0 6px rgba(0,21,41,0.35)',
@@ -166,13 +180,19 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               padding: '0 1rem',
             }}
           >
-            <Image src="/logos/logo.png" alt="Nexus Logo" width={150} height={150} />
+            <Image
+              src="/logos/logo.png"
+              alt="Nexus Logo"
+              width={collapsed ? 40 : 150}
+              height={collapsed ? 40 : 150}
+              priority
+            />
           </div>
           
           <Menu
             theme="dark"
             mode="inline"
-            selectedKeys={[pathname]}
+            selectedKeys={[getSelectedKey(pathname, menuItems as any)]}
             items={menuItems}
             onClick={({ key }) => router.push(key)}
             style={{ background: '#2A4D74', borderRight: 0 }}
@@ -191,6 +211,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             }}
           >
             <Button
+              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              aria-pressed={collapsed}
               type="text"
               icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
               onClick={() => setCollapsed(!collapsed)}
@@ -198,7 +220,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             />
             
             <Dropdown
-              menu={{ items: userMenuItems }}
+              menu={{
+                items: userMenuItems,
+                onClick: ({ key }) => {
+                  if (key === 'logout') return handleLogout()
+                  if (key === 'profile') return router.push('/admin/profile')
+                },
+              }}
               placement="bottomRight"
               arrow
               trigger={['click']}
@@ -236,5 +264,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     )
   }
 
-  return null;
+  return (
+    <Layout style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F0F0F0' }}>
+      <Spin size="large" tip="Redirecting…" />
+    </Layout>
+  )
 }
