@@ -1,4 +1,4 @@
-name: Node.js CI
+name: CI/CD Pipeline
 
 on:
   push:
@@ -9,11 +9,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
         node-version: [18.x]
-
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
@@ -32,8 +30,39 @@ jobs:
     - name: Run linter
       run: pnpm lint
 
-    - name: Run build
-      run: pnpm build
+    - name: Run unit and integration tests
+      run: pnpm test -- --coverage
 
-    - name: Run tests
-      run: pnpm test --ci --json --outputFile=test-results.json
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v2
+      with:
+        name: coverage-report
+        path: coverage
+
+    - name: Install Playwright browsers
+      run: pnpm playwright install --with-deps
+
+    - name: Run e2e tests
+      run: pnpm playwright test
+
+    - name: Upload E2E test report
+      if: always()
+      uses: actions/upload-artifact@v2
+      with:
+        name: playwright-report
+        path: playwright-report/
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Deploy to server
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          cd /var/www/outleads
+          ./deploy.sh

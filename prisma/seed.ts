@@ -90,6 +90,22 @@ async function main() {
     console.log('Superuser created.');
     console.log('--- Superuser Creation Complete ---');
 
+    // Create a test user
+    const testUserPassword = await hashPassword('testpassword');
+    console.log('--- Creating Test User ---');
+    await prisma.user.create({
+      data: {
+        email: 'testuser@fbc.co.zw',
+        username: 'testuser',
+        password: testUserPassword,
+        name: 'Test User',
+        role: 'AGENT' as const,
+        status: 'ACTIVE' as const
+      }
+    });
+    console.log('Test user created.');
+    console.log('--- Test User Creation Complete ---');
+
     // Create a sample campaign
     console.log('--- Creating Sample Campaign ---');
     const campaign = await prisma.campaign.create({
