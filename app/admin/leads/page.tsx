@@ -1,15 +1,15 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
-import { App, Tag, Row, Col, Select, DatePicker, Button, TablePaginationConfig, Modal } from 'antd'
+import { useState, useMemo } from 'react'
+import { App, Tag, Row, Col, Select, DatePicker, Button, Modal } from 'antd'
 import { ColumnsType } from 'antd/es/table'
 import CrudTable from '@/components/admin/CrudTable'
 import LeadDetailModal from '@/components/admin/LeadDetailModal'
-import moment from 'moment'
 import { EyeOutlined, UserSwitchOutlined } from '@ant-design/icons'
-import api from '@/lib/api';
+import api from '@/lib/api'
+import { useLeads } from '@/hooks/useLeads'
 
-const { RangePicker } = DatePicker;
+const { RangePicker } = DatePicker
 
 interface Lead {
   id: string
@@ -22,121 +22,26 @@ interface Lead {
   createdAt: string
 }
 
-interface FilterData {
-  products: Array<{ id: string, name: string }>
-  campaigns: Array<{ id: string, campaign_name: string }>
-  sectors: Array<{ id: string, name: string }>
-  agents: Array<{ id: string, name: string }>
-}
-
 export default function LeadsPage() {
-  const [data, setData] = useState<Lead[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchText, setSearchText] = useState('')
+  const {
+    data,
+    loading,
+    pagination,
+    filters,
+    filterData,
+    fetchData,
+    handleTableChange,
+    handleFilterChange,
+    clearFilters,
+    handleSearch,
+  } = useLeads()
+
   const [isViewModalVisible, setViewModalVisible] = useState(false)
   const [isAssignModalVisible, setAssignModalVisible] = useState(false)
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
   const [selectedLeads, setSelectedLeads] = useState<React.Key[]>([])
   const [selectedAgent, setSelectedAgent] = useState<string | undefined>(undefined)
-  const [pagination, setPagination] = useState<TablePaginationConfig>({
-    current: 1,
-    pageSize: 10,
-    total: 0,
-  });
-  const [filters, setFilters] = useState<{
-    productId: string | undefined;
-    campaignId: string | undefined;
-    sectorId: string | undefined;
-    dateRange: [moment.Moment, moment.Moment] | undefined;
-  }>({
-    productId: undefined,
-    campaignId: undefined,
-    sectorId: undefined,
-    dateRange: undefined,
-  });
-  const [filterData, setFilterData] = useState<FilterData>({
-    products: [],
-    campaigns: [],
-    sectors: [],
-    agents: [],
-  })
-
   const { message } = App.useApp()
-
-  const fetchFilterData = useCallback(async () => {
-    try {
-      const [productsRes, campaignsRes, sectorsRes, agentsRes] = await Promise.all([
-        api.get('/admin/products'),
-        api.get('/admin/campaigns'),
-        api.get('/admin/sectors'),
-        api.get('/admin/users?role=AGENT'),
-      ]);
-
-      setFilterData({
-        products: productsRes.data.data || [],
-        campaigns: campaignsRes.data.data || [],
-        sectors: sectorsRes.data.data || [],
-        agents: agentsRes.data.data || [],
-      });
-    } catch (error) {
-      console.error("Failed to fetch filter data:", error);
-      message.error('Failed to load filter options.');
-    }
-  }, [message]);
-
-  const fetchData = useCallback(async () => {
-    setLoading(true)
-    try {
-      const { data } = await api.get('/admin/leads', {
-        params: {
-          page: pagination.current,
-          limit: pagination.pageSize,
-          search: searchText,
-          productId: filters.productId,
-          campaignId: filters.campaignId,
-          sectorId: filters.sectorId,
-          startDate: filters.dateRange?.[0]?.toISOString(),
-          endDate: filters.dateRange?.[1]?.toISOString(),
-        }
-      });
-      setData(data.data || []);
-      setPagination(prev => ({ ...prev, total: data.meta.total }));
-    } catch (error) {
-      console.error("Fetch error:", error)
-      message.error('Failed to load leads.')
-    } finally {
-      setLoading(false)
-    }
-  }, [searchText, message, filters, pagination]);
-
-  useEffect(() => {
-    fetchFilterData();
-  }, [fetchFilterData])
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData, filters])
-
-  const handleTableChange = (pagination: TablePaginationConfig) => {
-    setPagination(pagination);
-  };
-
-  const handleFilterChange = (key: string, value: any) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-  };
-
-  const clearFilters = () => {
-    setFilters({
-      productId: undefined,
-      campaignId: undefined,
-      sectorId: undefined,
-      dateRange: undefined,
-    });
-  };
-
-  const handleSearch = (value: string) => {
-    setSearchText(value)
-  }
 
   const handleView = (record: Lead) => {
     setSelectedLead(record)
@@ -145,23 +50,23 @@ export default function LeadsPage() {
 
   const handleAssign = async () => {
     if (!selectedAgent) {
-      message.error('Please select an agent.');
-      return;
+      message.error('Please select an agent.')
+      return
     }
     try {
       await api.post('/admin/leads/assign', {
         leadIds: selectedLeads,
         agentId: selectedAgent,
-      });
-      message.success('Leads assigned successfully.');
-      setAssignModalVisible(false);
-      setSelectedLeads([]);
-      fetchData();
+      })
+      message.success('Leads assigned successfully.')
+      setAssignModalVisible(false)
+      setSelectedLeads([])
+      fetchData() // Refetch data after assignment
     } catch (error) {
-      console.error("Assign error:", error);
-      message.error('Failed to assign leads.');
+      console.error("Assign error:", error)
+      message.error('Failed to assign leads.')
     }
-  };
+  }
 
   const columns: ColumnsType<Lead> = useMemo(() => [
     { title: 'Name', dataIndex: 'fullName', key: 'fullName' },
@@ -241,13 +146,13 @@ export default function LeadsPage() {
         <Button onClick={clearFilters}>Clear Filters</Button>
       </Col>
     </Row>
-  );
+  )
 
   const rowSelection = {
     onChange: (selectedRowKeys: React.Key[]) => {
-      setSelectedLeads(selectedRowKeys);
+      setSelectedLeads(selectedRowKeys)
     },
-  };
+  }
 
   return (
     <>
