@@ -107,7 +107,7 @@ export default function LeadsPage() {
     } finally {
       setLoading(false)
     }
-  }, [searchText, message, filters]);
+  }, [searchText, message, filters, pagination]);
 
   useEffect(() => {
     fetchFilterData();

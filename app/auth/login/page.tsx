@@ -37,7 +37,7 @@ export default function LoginPage() {
       message.error(error)
       dispatch(clearError())
     }
-  }, [error, dispatch])
+  }, [error, dispatch, message])
 
   const handleSubmit = async (values: { username: string; password: string }) => {
     try {

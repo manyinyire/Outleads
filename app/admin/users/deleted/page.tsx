@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Table, Button, Typography, App } from 'antd'
 import { DownloadOutlined, UndoOutlined } from '@ant-design/icons'
 import { ColumnsType } from 'antd/es/table'
@@ -22,7 +22,7 @@ export default function DeletedUsersPage() {
   const [loading, setLoading] = useState(false)
   const { message } = App.useApp()
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true)
     try {
       const token = localStorage.getItem('auth-token');
@@ -41,7 +41,7 @@ export default function DeletedUsersPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [message])
 
   useEffect(() => {
     fetchData()

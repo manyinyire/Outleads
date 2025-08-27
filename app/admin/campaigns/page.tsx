@@ -268,6 +268,7 @@ export default function CampaignsPage() {
         </Space>
       ),
     },
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [message, agents, handleExportLeads, handleToggleStatus])
 
   const hasAccess = userRole && ['ADMIN', 'SUPERVISOR', 'AGENT'].includes(userRole)
