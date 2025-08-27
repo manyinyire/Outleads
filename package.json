@@ -21,9 +21,8 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:seed": "ts-node --project tsconfig.seed.json prisma/seed.ts",
-    "db:reset": "prisma migrate reset",
-    "precommit": "npm run lint && npm run type-check",
-    "prepare": "husky install || true"
+    "db:reset": "prisma migrate reset"
+    
   },
   "dependencies": {
     "@ant-design/icons": "^5.3.7",

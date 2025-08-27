@@ -12,9 +12,9 @@ export async function GET() {
     
     // Get a sample user if any exist
     const sampleUser = await prisma.user.findFirst({
-      include: {
-        sbu: true
-      }
+      // include: {
+      //   sbu: true
+      // }
     });
     
     return NextResponse.json({
@@ -29,7 +29,7 @@ export async function GET() {
         name: sampleUser.name,
         role: sampleUser.role,
         status: sampleUser.status,
-        sbu: sampleUser.sbu?.name || null,
+        sbu: sampleUser.sbu || null,
       } : null,
       env: {
         devBypass: process.env.DEV_BYPASS_AUTH === 'true',

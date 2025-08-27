@@ -11,7 +11,8 @@ const { Title, Text } = Typography
 
 export default function DevLoginPage() {
   const dispatch = useDispatch<AppDispatch>()
-  const { loading, error, isAuthenticated, user } = useSelector((state: RootState) => state.auth)
+  const { status, error, isAuthenticated, user } = useSelector((state: RootState) => state.auth)
+  const loading = status === 'loading'
   const [form] = Form.useForm()
 
   const onFinish = async (values: { username: string; password: string }) => {

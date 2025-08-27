@@ -35,18 +35,15 @@ async function createAdminUser() {
         email: 'admin@example.com',
         role: 'ADMIN',
         status: 'ACTIVE',
-        sbuId: sbu.id,
+        sbu: sbu.name,
       },
-      include: {
-        sbu: true
-      }
     });
     
     console.log('Admin user created successfully:');
     console.log(`- Username: ${admin.username}`);
     console.log(`- Name: ${admin.name}`);
     console.log(`- Role: ${admin.role}`);
-    console.log(`- SBU: ${admin.sbu?.name}`);
+    console.log(`- SBU: ${admin.sbu}`);
     
   } catch (error) {
     console.error('Error creating admin user:', error);

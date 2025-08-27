@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useDispatch } from 'react-redux'
 import { AppDispatch } from '@/lib/store'
-import { hydrateFromLocalStorage as hydrateAuth, checkAuthStatus } from '@/lib/store/slices/authSlice'
+import { checkAuthStatus } from '@/lib/store/slices/authSlice'
 import { hydrateFromLocalStorage as hydrateLanding } from '@/lib/store/slices/landingSlice'
 
 export function HydrationProvider({ children }: { children: React.ReactNode }) {

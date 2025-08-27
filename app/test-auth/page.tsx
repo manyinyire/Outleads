@@ -10,7 +10,8 @@ const { Title, Text } = Typography
 
 export default function TestAuthPage() {
   const dispatch = useDispatch<AppDispatch>()
-  const { user, isAuthenticated, loading, error } = useSelector((state: RootState) => state.auth)
+  const { user, isAuthenticated, status, error } = useSelector((state: RootState) => state.auth)
+  const loading = status === 'loading'
   const [testResult, setTestResult] = useState<string | null>(null)
 
   const testLeadsAPI = async () => {

@@ -61,17 +61,17 @@ async function addInterestedLeads() {
     }
     
     // Show final counts by status
-    const statusCounts = await prisma.lead.groupBy({
-      by: ['status'],
-      _count: {
-        status: true,
-      },
-    });
+    // const statusCounts = await prisma.lead.groupBy({
+    //   by: ['status'],
+    //   _count: {
+    //     status: true,
+    //   },
+    // });
     
-    console.log('Lead counts by status:');
-    statusCounts.forEach(({ status, _count }) => {
-      console.log(`  ${status}: ${_count.status}`);
-    });
+    // console.log('Lead counts by status:');
+    // statusCounts.forEach(({ status, _count }) => {
+    //   console.log(`  ${status}: ${_count.status}`);
+    // });
     
   } catch (error) {
     console.error('Error adding interested leads:', error);
