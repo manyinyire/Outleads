@@ -1,5 +1,5 @@
-import { withAuth, AuthenticatedRequest } from '@/lib/auth';
-import { successResponse, errorResponse } from '@/lib/api-utils';
+import { withAuth, AuthenticatedRequest } from '@/lib/auth/auth';
+import { successResponse, errorResponse } from '@/lib/api/api-utils';
 
 // This handler is protected by the withAuth middleware.
 // If the token is valid, the middleware attaches the user object to the request.

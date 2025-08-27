@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db/prisma';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
-import { generateToken } from '@/lib/auth-utils';
+import { generateToken } from '@/lib/auth/auth-utils';
 
 const devLoginSchema = z.object({
   username: z.string().min(1, 'Username is required'),

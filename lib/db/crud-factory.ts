@@ -1,5 +1,5 @@
-import { prisma } from '@/lib/prisma';
-import { AuthenticatedRequest } from '@/lib/auth';
+import { prisma } from '@/lib/db/prisma';
+import { AuthenticatedRequest } from '@/lib/auth/auth';
 import { z } from 'zod';
 import {
   errorResponse,
@@ -9,7 +9,7 @@ import {
   extractId,
   extractPaginationParams,
   calculatePaginationMeta
-} from './api-utils';
+} from '@/lib/api/api-utils';
 
 /**
  * Configuration for CRUD operations

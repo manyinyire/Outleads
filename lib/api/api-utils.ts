@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { ZodError, ZodSchema } from 'zod';
-import { withAuth, AuthenticatedRequest } from './auth';
-import { logger } from './logger';
+import { withAuth, AuthenticatedRequest } from '@/lib/auth/auth';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * Standard API error response format

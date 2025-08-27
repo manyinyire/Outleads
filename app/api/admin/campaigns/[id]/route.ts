@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { z } from 'zod';
-import { prisma } from '@/lib/prisma';
-import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth';
+import { prisma } from '@/lib/db/prisma';
+import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth/auth';
 
 const campaignUpdateSchema = z.object({
   campaign_name: z.string().min(1, 'Campaign name is required'),

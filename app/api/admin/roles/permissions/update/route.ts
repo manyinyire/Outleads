@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db/prisma';
 import { z } from 'zod';
-import { withAuthAndRole } from '@/lib/auth';
+import { withAuthAndRole } from '@/lib/auth/auth';
 
 const updateRolePermissionsSchema = z.object({
   role: z.string(),

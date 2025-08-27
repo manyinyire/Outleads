@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
-import { prisma } from '@/lib/prisma';
-import { checkUserRole } from '@/lib/auth-utils';
+import { prisma } from '@/lib/db/prisma';
+import { checkUserRole } from '@/lib/auth/auth-utils';
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
   try {

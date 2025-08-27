@@ -1,5 +1,5 @@
-import { withAuthAndRole } from '@/lib/auth';
-import { createCrudHandlers } from '@/lib/crud-factory';
+import { withAuthAndRole } from '@/lib/auth/auth';
+import { createCrudHandlers } from '@/lib/db/crud-factory';
 import { z } from 'zod';
 
 const productSchema = z.object({

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Button, Card, Typography, Space, Alert } from 'antd'
-import { clearCorruptedAuth } from '@/lib/clear-auth'
+import { clearCorruptedAuth } from '@/lib/auth/clear-auth'
 
 const { Title, Text, Paragraph } = Typography
 

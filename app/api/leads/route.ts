@@ -1,7 +1,7 @@
-import { prisma } from '@/lib/prisma';
-import { errorResponse, successResponse } from '@/lib/api-utils';
+import { prisma } from '@/lib/db/prisma';
+import { errorResponse, successResponse } from '@/lib/api/api-utils';
 import { z } from 'zod';
-import { createCrudHandlers } from '@/lib/crud-factory';
+import { createCrudHandlers } from '@/lib/db/crud-factory';
 import { Prisma } from '@prisma/client';
 
 const createLeadSchema = z.object({

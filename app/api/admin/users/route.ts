@@ -1,6 +1,6 @@
-import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth';
+import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth/auth';
 import { z } from 'zod';
-import { createCrudHandlers } from '@/lib/crud-factory';
+import { createCrudHandlers } from '@/lib/db/crud-factory';
 import nodemailer from 'nodemailer';
 import { NextRequest } from 'next/server';
 

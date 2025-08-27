@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { PrismaClient, Prisma } from '@prisma/client';
 import { z } from 'zod';
 
-import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth';
+import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth/auth';
 
 const prisma = new PrismaClient();
 

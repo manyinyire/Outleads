@@ -3,7 +3,7 @@
 import { ConfigProvider } from 'antd'
 import { Provider } from 'react-redux'
 import { store } from '@/lib/store'
-import { theme } from '@/lib/theme'
+import { theme } from '@/lib/utils/theme'
 import { HydrationProvider } from './hydration-provider'
 
 export function Providers({ children }: { children: React.ReactNode }) {

@@ -6,7 +6,7 @@ import { ColumnsType } from 'antd/es/table'
 import CrudTable from '@/components/admin/CrudTable'
 import LeadDetailModal from '@/components/admin/LeadDetailModal'
 import { EyeOutlined, UserSwitchOutlined } from '@ant-design/icons'
-import api from '@/lib/api'
+import api from '@/lib/api/api'
 import { useLeads } from '@/hooks/useLeads'
 
 const { RangePicker } = DatePicker

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { withAuth, AuthenticatedRequest } from '@/lib/auth';
+import { prisma } from '@/lib/db/prisma';
+import { withAuth, AuthenticatedRequest } from '@/lib/auth/auth';
 import { z } from 'zod';
 
 const onboardingSchema = z

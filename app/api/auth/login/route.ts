@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
-import { authenticateDomainUser, getUserInfo, manageUser } from '@/lib/authService';
-import { ApiError } from '@/lib/errors';
+import { authenticateDomainUser, getUserInfo, manageUser } from '@/lib/auth/authService';
+import { ApiError } from '@/lib/utils/errors';
 
 const loginSchema = z.object({
   username: z.string(),

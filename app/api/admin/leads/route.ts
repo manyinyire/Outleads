@@ -1,8 +1,8 @@
-import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth';
-import { createCrudHandlers } from '@/lib/crud-factory';
+import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth/auth';
+import { createCrudHandlers } from '@/lib/db/crud-factory';
 import { z } from 'zod';
-import { prisma } from '@/lib/prisma';
-import { successResponse, withErrorHandler, extractPaginationParams, calculatePaginationMeta } from '@/lib/api-utils';
+import { prisma } from '@/lib/db/prisma';
+import { successResponse, withErrorHandler, extractPaginationParams, calculatePaginationMeta } from '@/lib/api/api-utils';
 
 const leadSchema = z.object({
   fullName: z.string(),

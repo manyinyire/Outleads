@@ -1,6 +1,6 @@
-import { withAuthAndRole } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { successResponse, errorResponse, withErrorHandler } from '@/lib/api-utils';
+import { withAuthAndRole } from '@/lib/auth/auth';
+import { prisma } from '@/lib/db/prisma';
+import { successResponse, errorResponse, withErrorHandler } from '@/lib/api/api-utils';
 
 const getHandler = withErrorHandler(async () => {
   try {

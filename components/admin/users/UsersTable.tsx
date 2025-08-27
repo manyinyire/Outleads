@@ -13,7 +13,7 @@ import Papa from 'papaparse'
 
 import CrudTable, { CrudField } from '@/components/admin/CrudTable'
 import AddUser from '@/components/admin/AddUser'
-import { apiClient } from '@/lib/api-client'
+import { apiClient } from '@/lib/api/api-client'
 
 // --- TYPE DEFINITIONS ---
 interface User {
@@ -97,7 +97,7 @@ export default function UsersTable() {
     setSearchText(value)
   }
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     deleteMutation.mutate(id);
   }
 

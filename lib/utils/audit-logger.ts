@@ -1,5 +1,5 @@
-import { prisma } from './prisma';
-import { logger } from './logger';
+import { prisma } from '@/lib/db/prisma';
+import { logger } from '@/lib/utils/logger';
 
 export interface AuditLogEntry {
   userId?: string;
@@ -155,7 +155,7 @@ export class AuditLogger {
             return null;
           }
         })
-        .filter((log): log is AuditLogEntry & { timestamp: string } => log !== null)
+        .filter((log: any): log is AuditLogEntry & { timestamp: string } => log !== null)
         .filter((log: AuditLogEntry & { timestamp: string }) => {
           if (filters?.userId && log.userId !== filters.userId) return false;
           if (filters?.resource && log.resource !== filters.resource) return false;

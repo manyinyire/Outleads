@@ -1,5 +1,5 @@
-import { prisma } from './prisma';
-import { logger } from './logger';
+import { prisma } from '@/lib/db/prisma';
+import { logger } from '@/lib/utils/logger';
 
 export interface DatabaseHealthCheck {
   status: 'healthy' | 'degraded' | 'unhealthy';

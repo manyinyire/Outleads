@@ -1,6 +1,6 @@
-import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { successResponse, errorResponse, withErrorHandler } from '@/lib/api-utils';
+import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth/auth';
+import { prisma } from '@/lib/db/prisma';
+import { successResponse, errorResponse, withErrorHandler } from '@/lib/api/api-utils';
 
 const putHandler = withErrorHandler(async (req: AuthenticatedRequest, { params }: { params: { id: string } }) => {
   const { id } = params;

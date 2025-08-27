@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { withAuthAndRole } from '@/lib/auth';
+import { withAuthAndRole } from '@/lib/auth/auth';
 
 async function handler(req: NextRequest) {
   try {

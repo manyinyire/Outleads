@@ -1,8 +1,6 @@
-import { store } from './store';
-
 class ApiClient {
   private getHeaders() {
-    const token = store.getState().auth.token || localStorage.getItem('auth-token');
+    const token = localStorage.getItem('auth-token');
     return {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,

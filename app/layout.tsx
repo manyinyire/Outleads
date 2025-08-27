@@ -3,7 +3,7 @@
 import { ConfigProvider, App } from 'antd'
 import { Provider } from 'react-redux'
 import { store } from '@/lib/store'
-import { theme } from '@/lib/theme'
+import { theme } from '@/lib/utils/theme'
 import AuthProvider from '@/components/AuthProvider'
 import QueryProvider from '@/components/QueryProvider'
 import './globals.css'

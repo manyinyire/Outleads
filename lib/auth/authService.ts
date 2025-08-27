@@ -1,6 +1,6 @@
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db/prisma';
 import axios from 'axios';
-import { ApiError } from '@/lib/errors';
+import { ApiError } from '@/lib/utils/errors';
 
 const apiBaseUrl = process.env.API_BASE_URL;
 

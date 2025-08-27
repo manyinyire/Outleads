@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { TablePaginationConfig } from 'antd';
 import { App } from 'antd';
 import moment from 'moment';
-import api from '@/lib/api';
+import api from '@/lib/api/api';
 
 interface Lead {
   id: string;

@@ -6,7 +6,7 @@ import { Form, Input, Button, Card, Typography, App, Layout } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState, AppDispatch } from '@/lib/store'
-import { getDashboardRouteForRole } from '@/lib/auth-utils';
+import { getDashboardRouteForRole } from '@/lib/auth/auth-utils';
 import { login, clearError } from '@/lib/store/slices/authSlice'
 import Image from 'next/image'
 import FirstLoginDialog from '@/components/auth/FirstLoginDialog'

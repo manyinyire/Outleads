@@ -3,8 +3,8 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { z } from 'zod';
 import { nanoid } from 'nanoid';
 
-import { prisma } from '@/lib/prisma';
-import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth';
+import { prisma } from '@/lib/db/prisma';
+import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth/auth';
 
 const campaignCreateSchema = z.object({
   campaign_name: z.string().min(1, 'Campaign name is required'),
