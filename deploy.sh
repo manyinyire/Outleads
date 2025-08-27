@@ -11,9 +11,9 @@ git pull
 echo "Installing dependencies..."
 pnpm install
 
-# 3. Run database migrations
+# 3. Run database migrations (production mode)
 echo "Running database migrations..."
-pnpm run db:migrate
+pnpm prisma migrate deploy
 
 # 4. Build the application
 echo "Building the application..."

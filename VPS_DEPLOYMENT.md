@@ -4,7 +4,7 @@
 
 ### Server Requirements
 - Ubuntu 20.04+ or similar Linux distribution
-- Node.js 18+ and npm
+- Node.js 22+ and npm (required by project dependencies)
 - PostgreSQL 12+
 - Nginx
 - SSL certificate (Let's Encrypt recommended)
@@ -15,8 +15,8 @@
 # Update system
 sudo apt update && sudo apt upgrade -y
 
-# Install Node.js 18
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+# Install Node.js 22 (required for this project)
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt-get install -y nodejs
 
 # Install PostgreSQL
