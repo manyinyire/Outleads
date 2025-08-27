@@ -1,94 +1,71 @@
 'use client'
 
-import { Form, Input, Select, Button, Card, Typography, message } from 'antd'
+import { Form, Input, Select, Button, Card, Typography, message, Checkbox } from 'antd'
 import { UserOutlined, PhoneOutlined, BankOutlined } from '@ant-design/icons'
-import { useSelector, useDispatch } from 'react-redux'
-import { RootState, AppDispatch } from '@/lib/store'
 import { useState, useEffect } from 'react'
-import { setSectors } from '@/lib/store/slices/landingSlice'
 
 const { Title } = Typography
 const { Option } = Select
 
-interface LeadFormProps {
-  campaignId?: string | null
+interface Sector {
+  id: string;
+  name: string;
 }
 
-export default function LeadForm({ campaignId }: LeadFormProps) {
+interface LeadFormProps {
+  readonly campaignId?: string | null
+  readonly onNext?: (formData: any) => void
+  readonly initialData?: any
+}
+
+export default function LeadForm({ campaignId, onNext, initialData }: LeadFormProps) {
   const [form] = Form.useForm()
-  const dispatch = useDispatch<AppDispatch>()
-  const { businessSectors, selectedProducts, products } = useSelector((state: RootState) => state.landing)
-  const [submitting, setSubmitting] = useState(false)
+  const [sectors, setSectors] = useState<Sector[]>([])
+  const [loadingSectors, setLoadingSectors] = useState(true)
+  const [submitting] = useState(false)
 
   useEffect(() => {
     const fetchSectors = async () => {
       try {
         const response = await fetch('/api/sectors')
+        if (!response.ok) throw new Error('Failed to fetch sectors')
         const data = await response.json()
-        dispatch(setSectors(Array.isArray(data) ? data : []))
+        setSectors(Array.isArray(data) ? data : [])
       } catch (error) {
         console.error('Failed to fetch sectors:', error)
+        message.error('Failed to load business sectors.')
+      } finally {
+        setLoadingSectors(false)
       }
     }
-
     fetchSectors()
-  }, [dispatch])
+  }, [])
 
-  const selectedProductIds = products
-    .filter(p => selectedProducts.includes(p.id))
-    .map(p => p.id)
-
-  const selectedProductNames = products
-    .filter(p => selectedProducts.includes(p.id))
-    .map(p => p.name)
-
-  const handleSubmit = async (values: any) => {
-    if (selectedProducts.length === 0) {
-      message.warning('Please select at least one product you are interested in.')
-      return
+  // Set initial form data, including the campaignId
+  useEffect(() => {
+    const initialValues = initialData ? { ...initialData } : {};
+    if (campaignId) {
+      initialValues.campaignId = campaignId;
     }
+    form.setFieldsValue(initialValues);
+  }, [initialData, campaignId, form]);
 
-    setSubmitting(true)
-
-    try {
-      const response = await fetch('/api/leads', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: values.fullName,
-          email: values.email,
-          phone: values.phoneNumber,
-          company: values.businessSector,
-          productIds: selectedProductIds,
-          campaignId: campaignId || undefined,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to submit lead')
-      }
-
-      message.success('Thank you! Your information has been submitted successfully. Our team will contact you soon.')
-      form.resetFields()
-    } catch (error) {
-      message.error('Failed to submit your information. Please try again.')
-    } finally {
-      setSubmitting(false)
+  const handleSubmit = (values: any) => {
+    if (onNext) {
+      onNext(values);
     }
-  }
+  };
 
   return (
     <Card
       style={{
         borderRadius: '12px',
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+        border: 'none',
+        backgroundColor: 'rgba(255, 255, 255, 0.8)',
       }}
     >
-      <Title level={3} style={{ textAlign: 'center', marginBottom: '24px', color: '#1f2937' }}>
-        Get Started Today
-      </Title>
+      
 
       <Form
         form={form}
@@ -96,33 +73,21 @@ export default function LeadForm({ campaignId }: LeadFormProps) {
         onFinish={handleSubmit}
         requiredMark={false}
       >
-        <Form.Item
-          name="fullName"
-          label="Full Name"
-          rules={[
-            { required: true, message: 'Please enter your full name' },
-            { min: 2, message: 'Name must be at least 2 characters' }
-          ]}
-        >
-          <Input
-            prefix={<UserOutlined />}
-            placeholder="Enter your full name"
-            size="large"
-          />
+        {/* Hidden field to store campaignId */}
+        <Form.Item name="campaignId" hidden>
+          <Input />
         </Form.Item>
 
         <Form.Item
-          name="email"
-          label="Email Address"
-          rules={[
-            { required: true, message: 'Please enter your email address' },
-            { type: 'email', message: 'Please enter a valid email address' }
-          ]}
+          name="fullName"
+          label="Full Name"
+          rules={[{ required: true, message: 'Please enter your full name' }]}
         >
           <Input
-            prefix={<UserOutlined />}
-            placeholder="Enter your email address"
+            prefix={<UserOutlined style={{ color: '#6ED0F6' }} />}
+            placeholder="Enter your full name"
             size="large"
+            style={{ borderRadius: '0.5rem' }}
           />
         </Form.Item>
 
@@ -131,58 +96,83 @@ export default function LeadForm({ campaignId }: LeadFormProps) {
           label="Phone Number"
           rules={[
             { required: true, message: 'Please enter your phone number' },
-            { pattern: /^[\+]?[1-9][\d]{0,15}$/, message: 'Please enter a valid phone number' }
+            { 
+              pattern: /^0\d{9}$/, 
+              message: 'Phone number must be 10 digits starting with 0 (e.g., 0777111222)' 
+            },
+            {
+              len: 10,
+              message: 'Phone number must be exactly 10 digits'
+            }
           ]}
         >
           <Input
-            prefix={<PhoneOutlined />}
-            placeholder="Enter your phone number"
+            prefix={<PhoneOutlined style={{ color: '#6ED0F6' }} />}
+            placeholder="0777111222"
             size="large"
+            maxLength={10}
+            style={{ borderRadius: '0.5rem' }}
           />
         </Form.Item>
 
         <Form.Item
-          name="businessSector"
           label="Business Sector"
-          rules={[{ required: true, message: 'Please select your business sector' }]}
         >
-          <Select
-            placeholder="Select your business sector"
-            size="large"
-            suffixIcon={<BankOutlined />}
-          >
-            {businessSectors.map(sector => (
-              <Option key={sector.id} value={sector.name}>
-                {sector.name}
-              </Option>
-            ))}
-          </Select>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            width: '100%',
+            minWidth: 0, // Allows flex items to shrink below their content size
+            border: '1px solid #d9d9d9',
+            borderRadius: '0.5rem',
+            backgroundColor: 'white',
+            overflow: 'hidden', // Prevents content from overflowing
+          }}>
+            <BankOutlined style={{ 
+              color: '#6ED0F6', 
+              margin: '0 8px', 
+              flexShrink: 0 // Prevents icon from shrinking on mobile
+            }} />
+            <Form.Item
+              name="sectorId"
+              noStyle
+              rules={[{ required: true, message: 'Please select your business sector' }]}
+            >
+              <Select
+                placeholder="Select your business sector"
+                size="large"
+                loading={loadingSectors}
+                variant="borderless"
+                style={{ 
+                  width: '100%',
+                  minWidth: 0, // Allows select to shrink on mobile
+                  flex: 1 // Takes remaining space in flex container
+                }}
+              >
+                {sectors.map(sector => (
+                  <Option key={sector.id} value={sector.id}>
+                    {sector.name}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </div>
         </Form.Item>
 
-        {selectedProducts.length > 0 && (
-          <div style={{ marginBottom: '16px' }}>
-            <Typography.Text strong>Selected Products:</Typography.Text>
-            <div style={{ marginTop: '8px' }}>
-              {selectedProductNames.map((name, index) => (
-                <span
-                  key={index}
-                  style={{
-                    display: 'inline-block',
-                    background: '#e6f7ff',
-                    color: '#1890ff',
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    fontSize: '12px',
-                    marginRight: '8px',
-                    marginBottom: '4px',
-                  }}
-                >
-                  {name}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
+        <Form.Item
+          name="consent"
+          valuePropName="checked"
+          rules={[
+            { 
+              validator: (_, value) => 
+                value ? Promise.resolve() : Promise.reject(new Error('You must accept the terms and conditions')) 
+            }
+          ]}
+        >
+          <Checkbox>
+            I agree to be contacted about FBC Holdings products and promotions.
+          </Checkbox>
+        </Form.Item>
 
         <Form.Item>
           <Button
@@ -191,24 +181,20 @@ export default function LeadForm({ campaignId }: LeadFormProps) {
             size="large"
             block
             loading={submitting}
-            style={{
-              height: '48px',
-              fontSize: '16px',
-              fontWeight: 'bold',
+            style={{ 
+              backgroundColor: '#2A4D74', 
+              borderColor: '#2A4D74', 
+              color: '#FFFFFF', 
+              borderRadius: '0.5rem', 
+              height: '3rem', 
+              fontSize: '1rem', 
+              fontWeight: 'bold' 
             }}
           >
-            Submit Information
+            Next: Choose Products
           </Button>
         </Form.Item>
       </Form>
-
-      {campaignId && (
-        <div style={{ textAlign: 'center', marginTop: '16px' }}>
-          <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
-            Campaign ID: {campaignId}
-          </Typography.Text>
-        </div>
-      )}
     </Card>
   )
 }

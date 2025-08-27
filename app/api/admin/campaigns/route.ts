@@ -1,117 +1,83 @@
 import { NextResponse } from 'next/server';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { z } from 'zod';
+import { nanoid } from 'nanoid';
+
 import { prisma } from '@/lib/prisma';
-import { withAuth, AuthenticatedRequest } from '@/lib/auth';
-import { validateData, createCampaignSchema } from '@/lib/validation';
-import { generateCampaignLink } from '@/lib/auth-utils';
+import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth';
 
-// GET /api/admin/campaigns - Retrieve all campaigns
-export const GET = withAuth(async (req: AuthenticatedRequest) => {
-  try {
-    const campaigns = await prisma.campaign.findMany({
-      include: {
-        createdBy: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        },
-        _count: {
-          select: {
-            leads: true
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
-
-    return NextResponse.json({
-      campaigns
-    });
-
-  } catch (error) {
-    console.error('Error fetching campaigns:', error);
-    return NextResponse.json({
-      error: 'Internal Server Error',
-      message: 'Failed to fetch campaigns'
-    }, { status: 500 });
-  }
+const campaignCreateSchema = z.object({
+  campaign_name: z.string().min(1, 'Campaign name is required'),
+  organization_name: z.string().min(1, 'Organization name is required'),
+  assignedToId: z.string().min(1, 'Agent is required'),
 });
 
-// POST /api/admin/campaigns - Create a new campaign
-export const POST = withAuth(async (req: AuthenticatedRequest) => {
+const postCampaigns = async (req: AuthenticatedRequest) => {
   try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return NextResponse.json({ error: 'User not found in token' }, { status: 401 });
+    }
+
     const body = await req.json();
-    
-    // Validate request data
-    const validation = validateData(createCampaignSchema, body);
+    const validation = campaignCreateSchema.safeParse(body);
+
     if (!validation.success) {
-      return NextResponse.json({
-        error: 'Validation Error',
-        message: validation.error
-      }, { status: 400 });
+      return NextResponse.json({ error: validation.error.format() }, { status: 400 });
     }
 
-    const { name, companyName } = validation.data;
-    const userId = req.user!.id;
+    const { campaign_name, organization_name, assignedToId } = validation.data;
+    const unique_link = nanoid(10);
 
-    // Generate unique campaign link
-    let uniqueLink: string;
-    let isUnique = false;
-    let attempts = 0;
-    const maxAttempts = 10;
-
-    while (!isUnique && attempts < maxAttempts) {
-      uniqueLink = generateCampaignLink();
-      const existing = await prisma.campaign.findUnique({
-        where: { uniqueLink }
-      });
-      isUnique = !existing;
-      attempts++;
-    }
-
-    if (!isUnique) {
-      return NextResponse.json({
-        error: 'Internal Server Error',
-        message: 'Failed to generate unique campaign link'
-      }, { status: 500 });
-    }
-
-    const campaign = await prisma.campaign.create({
+    const newCampaign = await prisma.campaign.create({
       data: {
-        name,
-        companyName,
-        uniqueLink: uniqueLink!,
-        createdById: userId
+        campaign_name,
+        organization_name,
+        uniqueLink: unique_link,
+        createdById: userId,
+        assignedToId,
       },
-      include: {
-        createdBy: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        },
-        _count: {
-          select: {
-            leads: true
-          }
-        }
-      }
     });
 
-    return NextResponse.json({
-      message: 'Campaign created successfully',
-      campaign
-    }, { status: 201 });
-
+    return NextResponse.json(newCampaign, { status: 201 });
   } catch (error) {
     console.error('Error creating campaign:', error);
-    return NextResponse.json({
-      error: 'Internal Server Error',
-      message: 'Failed to create campaign'
-    }, { status: 500 });
+    if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
+      return NextResponse.json({ error: 'A campaign with this name already exists.' }, { status: 409 });
+    }
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-});
+}
+
+const getCampaigns = async (req: AuthenticatedRequest) => {
+  try {
+    const user = req.user;
+    const whereClause: any = {};
+
+    if (user?.role === 'AGENT') {
+      whereClause.assignedToId = user.id;
+    }
+
+    const campaigns = await prisma.campaign.findMany({
+      where: whereClause,
+      orderBy: {
+        createdAt: 'desc',
+      },
+      include: {
+        assignedTo: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json({ data: campaigns });
+  } catch (error) {
+    console.error('Error fetching campaigns:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+export const POST = withAuthAndRole(['ADMIN', 'SUPERVISOR'], postCampaigns);
+export const GET = withAuthAndRole(['ADMIN', 'SUPERVISOR', 'AGENT'], getCampaigns);

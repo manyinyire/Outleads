@@ -1,128 +1,93 @@
-import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { validateData, createLeadSchema } from '@/lib/validation';
-import { isValidCampaignLink } from '@/lib/auth-utils';
+import { errorResponse, successResponse } from '@/lib/api-utils';
+import { z } from 'zod';
+import { createCrudHandlers } from '@/lib/crud-factory';
+import { Prisma } from '@prisma/client';
 
-// POST /api/leads - Create a new lead (public endpoint)
-export async function POST(request: Request) {
+const createLeadSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  phone: z.string().min(1, 'Phone number is required'),
+  company: z.string().min(1, 'Company/Sector is required'),
+  productIds: z.array(z.string()).min(1, 'At least one product is required'),
+  campaignId: z.string().optional(),
+});
+
+const updateLeadSchema = z.object({
+  fullName: z.string().min(1).optional(),
+  email: z.string().email().optional(),
+  phoneNumber: z.string().min(1).optional(),
+  status: z.enum(['new', 'contacted', 'qualified', 'converted', 'lost']).optional(),
+  notes: z.string().optional(),
+});
+
+const handlers = createCrudHandlers({
+  modelName: 'lead',
+  entityName: 'Lead',
+  // ... other handlers
+});
+
+// Custom POST handler to manage transaction manually
+export async function POST(req: Request) {
   try {
-    const body = await request.json();
-    
-    // Extract data from request body (campaignId can come from body or query params)
-    const { name, email, phone, company, productIds, campaignId: bodyCampaignId } = body;
-    const url = new URL(request.url);
-    const queryCampaignId = url.searchParams.get('campaignId');
-    const campaignId = bodyCampaignId || queryCampaignId;
+    const body = await req.json();
+    const validation = createLeadSchema.safeParse(body);
 
-    // Basic validation
-    if (!name || !phone || !company || !productIds || !Array.isArray(productIds)) {
-      return NextResponse.json({
-        error: 'Validation Error',
-        message: 'Missing required fields: name, phone, company, and productIds'
-      }, { status: 400 });
+    if (!validation.success) {
+      return errorResponse('Validation failed', 400, 'Validation Error', validation.error.format());
     }
 
-    const fullName = name;
-    const phoneNumber = phone;
+    const { name, phone, company, productIds, campaignId } = validation.data;
 
-    // Find sector by name (company field contains sector name)
-    const sector = await prisma.sector.findFirst({
-      where: { name: company }
-    });
-
+    const sector = await prisma.sector.findUnique({ where: { id: company } });
     if (!sector) {
-      return NextResponse.json({
-        error: 'Validation Error',
-        message: 'Invalid business sector'
-      }, { status: 400 });
+      return errorResponse('Business sector not found.', 400);
     }
 
-    // Validate products exist
-    const products = await prisma.product.findMany({
-      where: {
-        id: {
-          in: productIds
-        }
-      }
-    });
-
+    const products = await prisma.product.findMany({ where: { id: { in: productIds } } });
     if (products.length !== productIds.length) {
-      return NextResponse.json({
-        error: 'Validation Error',
-        message: 'One or more product IDs are invalid'
-      }, { status: 400 });
+      return errorResponse('One or more product IDs are invalid.', 400);
     }
 
-    // Validate campaign if provided
-    let validCampaignId = null;
-    if (campaignId && typeof campaignId === 'string') {
-      if (!isValidCampaignLink(campaignId)) {
-        return NextResponse.json({
-          error: 'Validation Error',
-          message: 'Invalid campaign ID format'
-        }, { status: 400 });
+    const leadData: any = {
+      fullName: name,
+      phoneNumber: phone,
+      businessSector: { connect: { id: sector.id } },
+      products: { connect: productIds.map((id) => ({ id })) },
+    };
+
+    if (campaignId) {
+      try {
+        const campaign = await prisma.campaign.findUnique({ where: { id: campaignId } });
+        if (!campaign) {
+          return errorResponse('Campaign not found.', 400);
+        }
+
+        leadData.campaign = { connect: { id: campaignId } };
+        leadData.assignedTo = { connect: { id: campaign.assignedToId } };
+
+        const newLead = await prisma.$transaction(async (tx: any) => {
+          const createdLead = await tx.lead.create({ data: leadData });
+          await tx.campaign.update({
+            where: { id: campaignId },
+            data: { lead_count: { increment: 1 } },
+          });
+          return createdLead;
+        });
+
+        return successResponse({ message: 'Lead created successfully', data: newLead }, 201);
+      } catch (transactionError) {
+        console.error('Transaction failed!', transactionError);
+        return errorResponse('Failed to process lead with campaign.', 500);
       }
-
-      const campaign = await prisma.campaign.findUnique({
-        where: { uniqueLink: campaignId }
-      });
-
-      if (!campaign) {
-        return NextResponse.json({
-          error: 'Validation Error',
-          message: 'Campaign not found'
-        }, { status: 400 });
-      }
-
-      validCampaignId = campaign.id;
+    } else {
+      const newLead = await prisma.lead.create({ data: leadData });
+      return successResponse({ message: 'Lead created successfully', data: newLead }, 201);
     }
-
-    // Create the lead
-    const lead = await prisma.lead.create({
-      data: {
-        fullName,
-        phoneNumber,
-        sectorId: sector.id,
-        campaignId: validCampaignId || undefined,
-        products: {
-          connect: productIds.map((id: string) => ({ id }))
-        }
-      },
-      include: {
-        businessSector: {
-          select: {
-            id: true,
-            name: true
-          }
-        },
-        products: {
-          select: {
-            id: true,
-            name: true,
-            description: true
-          }
-        },
-        campaign: {
-          select: {
-            id: true,
-            name: true,
-            companyName: true,
-            uniqueLink: true
-          }
-        }
-      }
-    });
-
-    return NextResponse.json({
-      message: 'Lead created successfully',
-      lead
-    }, { status: 201 });
-
-  } catch (error) {
-    console.error('Error creating lead:', error);
-    return NextResponse.json({
-      error: 'Internal Server Error',
-      message: 'Failed to create lead'
-    }, { status: 500 });
+  } catch (error: any) {
+    console.error('An unexpected error occurred in POST /api/leads', error);
+    return errorResponse(`Internal Server Error: ${error.message}`, 500);
   }
 }
+
+// GET endpoint - requires authentication (handled in crud factory)
+export const GET = handlers.GET;

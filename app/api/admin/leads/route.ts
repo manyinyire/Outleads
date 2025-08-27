@@ -1,63 +1,101 @@
-import { NextResponse } from 'next/server';
+import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth';
+import { createCrudHandlers } from '@/lib/crud-factory';
+import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { withAuth, AuthenticatedRequest } from '@/lib/auth';
+import { successResponse, withErrorHandler, extractPaginationParams, calculatePaginationMeta } from '@/lib/api-utils';
 
-export const runtime = 'nodejs';
+const leadSchema = z.object({
+  fullName: z.string(),
+  phoneNumber: z.string(),
+});
 
-async function handler(req: AuthenticatedRequest) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const campaignId = searchParams.get('campaignId');
-    const status = searchParams.get('status');
+const customGetHandler = withErrorHandler(async (req: AuthenticatedRequest) => {
+  const url = (req as any).url || (req as any).nextUrl?.href || '';
+  const { page, limit, sortBy, sortOrder } = extractPaginationParams(url);
+  const skip = ((page || 1) - 1) * (limit || 10);
+  
+  const reqUrl = new URL(url);
+  const searchQuery = reqUrl.searchParams.get('search');
+  const productId = reqUrl.searchParams.get('productId');
+  const campaignId = reqUrl.searchParams.get('campaignId');
+  const sectorId = reqUrl.searchParams.get('sectorId');
+  const startDate = reqUrl.searchParams.get('startDate');
+  const endDate = reqUrl.searchParams.get('endDate');
 
-    const where: any = {};
-    if (campaignId) where.campaignId = campaignId;
-    if (status) where.status = status;
+  const user = req.user;
+  const queryConditions: any = { AND: [] };
+  
+  if (user?.role === 'AGENT') {
+    queryConditions.AND.push({ assignedToId: user.id });
+  }
 
-    // SBU-based visibility: limit AGENT/SUPERVISOR to their SBU's products' leads
-    const role = req.user?.role;
-    const sbuId = (req.user as any)?.sbu?.id || (req.user as any)?.sbuId;
-    if (sbuId && (role === 'AGENT' || role === 'SUPERVISOR')) {
-      // Leads where ANY linked product belongs to the user's SBU
-      where.products = {
-        some: {
-          sbus: {
-            some: { sbuId }
-          }
-        }
-      };
-    }
+  if (searchQuery) {
+    queryConditions.OR = ['fullName', 'phoneNumber'].map(field => ({
+      [field]: {
+        contains: searchQuery,
+        mode: 'insensitive'
+      }
+    }));
+  }
 
-    const leads = await prisma.lead.findMany({
-      where,
-      include: {
-        campaign: true,
-        products: true,
-        businessSector: true,
+  if (productId) {
+    queryConditions.AND.push({ products: { some: { id: productId } } });
+  }
+  if (campaignId) {
+    queryConditions.AND.push({ campaignId: campaignId });
+  }
+  if (sectorId) {
+    queryConditions.AND.push({ sectorId: sectorId });
+  }
+  if (startDate && endDate) {
+    queryConditions.AND.push({
+      createdAt: {
+        gte: new Date(startDate),
+        lte: new Date(endDate),
       },
     });
-
-    // Transform the data to match frontend expectations
-    const transformedLeads = leads.map((lead: any) => ({
-      id: lead.id,
-      name: lead.fullName, // Map fullName to name
-      email: lead.email || 'N/A',
-      phone: lead.phoneNumber, // Map phoneNumber to phone
-      company: lead.businessSector?.name || 'N/A', // Use sector as company
-      products: lead.products || [],
-      campaign: lead.campaign,
-      status: lead.status, // Include status field
-      createdAt: lead.createdAt,
-    }));
-
-    return NextResponse.json(transformedLeads);
-  } catch (error) {
-    console.error('Admin leads API error:', error);
-    return NextResponse.json({ 
-      error: 'Something went wrong',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
   }
-}
 
-export const GET = withAuth(handler as any);
+  if (queryConditions.AND.length === 0) {
+    delete queryConditions.AND;
+  }
+
+  const [records, total] = await Promise.all([
+    prisma.lead.findMany({
+      where: queryConditions,
+      skip,
+      take: limit || 10,
+      orderBy: sortBy ? { [sortBy]: sortOrder } : { createdAt: 'desc' },
+      include: {
+        businessSector: true,
+        products: true,
+        campaign: true,
+        assignedTo: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    }),
+    prisma.lead.count({ where: queryConditions })
+  ]);
+  
+  const meta = calculatePaginationMeta(total, page || 1, limit || 10);
+  
+  return successResponse({
+    data: records,
+    meta
+  });
+});
+
+// The handlers factory is not used for GET, but may be used for other methods.
+const handlers = createCrudHandlers({
+  modelName: 'lead',
+  entityName: 'Lead',
+  createSchema: leadSchema,
+  updateSchema: leadSchema.partial(),
+  orderBy: { createdAt: 'desc' },
+  searchFields: ['fullName', 'phoneNumber'],
+});
+
+export const GET = withAuthAndRole(['ADMIN', 'AGENT', 'SUPERVISOR'], customGetHandler);

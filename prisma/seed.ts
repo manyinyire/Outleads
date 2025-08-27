@@ -1,230 +1,160 @@
 import { PrismaClient } from '@prisma/client';
+import { hashPassword } from '../lib/auth-utils';
 
-const prisma = new PrismaClient({
-  log: ['query', 'info', 'warn', 'error'],
-});
+const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Start seeding ...');
+  console.log('🌱 Starting database seed...');
 
-  // Create SBUs
-  const insuranceSbu = await prisma.sbu.upsert({
-    where: { name: 'Insurance' },
-    update: {},
-    create: { name: 'Insurance' },
-  });
+  try {
+    // Clear existing data
+    console.log('--- Deleting Data ---');
+    await prisma.lead.deleteMany({});
+    console.log('Leads deleted.');
+    await prisma.product.deleteMany({});
+    console.log('Products deleted.');
+    await prisma.productCategory.deleteMany({});
+    console.log('ProductCategories deleted.');
+    await prisma.sector.deleteMany({});
+    console.log('Sectors deleted.');
+    await prisma.campaign.deleteMany({});
+    console.log('Campaigns deleted.');
+    await prisma.user.deleteMany({});
+    console.log('Users deleted.');
+    console.log('--- Data Deletion Complete ---');
 
-  const microfinanceSbu = await prisma.sbu.upsert({
-    where: { name: 'Microfinance' },
-    update: {},
-    create: { name: 'Microfinance' },
-  });
+    // Create default sectors
+    const sectors = [
+      { name: 'Technology' },
+      { name: 'Healthcare' },
+      { name: 'Finance' },
+      { name: 'Education' },
+      { name: 'Retail' },
+      { name: 'Manufacturing' },
+      { name: 'Real Estate' },
+      { name: 'Hospitality' },
+      { name: 'Transportation' },
+      { name: 'Other' }
+    ];
 
-  const bankSbu = await prisma.sbu.upsert({
-    where: { name: 'Bank' },
-    update: {},
-    create: { name: 'Bank' },
-  });
+    console.log('--- Creating Sectors ---');
+    for (const sector of sectors) {
+      await prisma.sector.create({ data: sector });
+      console.log(`Created sector: ${sector.name}`);
+    }
+    console.log('--- Sector Creation Complete ---');
 
-  const crownBankSbu = await prisma.sbu.upsert({
-    where: { name: 'Crown Bank' },
-    update: {},
-    create: { name: 'Crown Bank' },
-  });
+    // Create product categories and products
+    const productData = {
+      "Bank Accounts": ["Individual Account", "Company Account"],
+      "Motor Insurance": ["Comprehensive", "Third Party", "Passenger Insurance"],
+      "Micro Insurance": ["Health Cash Plan", "Funeral Cash Plan"],
+      "Business & Agriculture": ["Assets All Risks", "Goods in Transit", "Crop Insurance", "Livestock Insurance"],
+      "Personal Loan": ["Borehole Loan", "Car Loan", "School Fees"],
+      "Credit Cards": ["Mastercard", "Visacard"]
+    };
 
-  console.log('SBUs created.');
+    console.log('--- Creating Products & Categories ---');
+    for (const categoryName in productData) {
+      const category = await prisma.productCategory.create({
+        data: { name: categoryName }
+      });
+      console.log(`Created category: ${category.name}`);
 
-  // Clear existing products to avoid conflicts
-  await prisma.sbuProduct.deleteMany({});
-  await prisma.product.deleteMany({});
-  console.log('Existing products cleared.');
+      const products = productData[categoryName as keyof typeof productData].map(productName => ({
+        name: productName,
+        categoryId: category.id
+      }));
 
-  // Create Products and SubProducts in a hierarchy
-  const finance = await prisma.product.create({
-    data: { name: 'Finance', description: 'Financial products and services' },
-  });
-  const insurance = await prisma.product.create({
-    data: { name: 'Insurance', description: 'Insurance products' },
-  });
-  const investment = await prisma.product.create({
-    data: { name: 'Investment', description: 'Investment products' },
-  });
-  const banking = await prisma.product.create({
-    data: { name: 'Banking', description: 'Banking products and services' },
-  });
+      await prisma.product.createMany({
+        data: products
+      });
+      console.log(`-- Created ${products.length} products for ${category.name}`);
+    }
+    console.log('--- Product & Category Creation Complete ---');
 
-  // Finance Children
-  const businessLoans = await prisma.product.create({
-    data: {
-      name: 'Business Loans',
-      description: 'Flexible financing solutions for business growth.',
-      parentId: finance.id,
-    },
-  });
-  await prisma.product.createMany({
-    data: [
-      { name: 'Working Capital Loans', parentId: businessLoans.id },
-      { name: 'Equipment Finance', parentId: businessLoans.id },
-      { name: 'Trade Finance', parentId: businessLoans.id },
-    ],
-  });
-
-  const personalLoans = await prisma.product.create({
-    data: {
-      name: 'Personal Loans',
-      description: 'Personal financing for your needs.',
-      parentId: finance.id,
-    },
-  });
-  await prisma.product.createMany({
-    data: [
-      { name: 'Salary Advance', parentId: personalLoans.id },
-      { name: 'Emergency Loans', parentId: personalLoans.id },
-    ],
-  });
-
-  // Insurance Children
-  const motorInsurance = await prisma.product.create({
-    data: {
-      name: 'Motor Insurance',
-      description: 'Comprehensive vehicle protection.',
-      parentId: insurance.id,
-    },
-  });
-  await prisma.product.createMany({
-    data: [
-      { name: 'Comprehensive Cover', parentId: motorInsurance.id },
-      { name: 'Third Party', parentId: motorInsurance.id },
-      { name: 'Passenger Insurance', parentId: motorInsurance.id },
-    ],
-  });
-
-  const businessInsurance = await prisma.product.create({
-    data: {
-      name: 'Business Insurance',
-      description: 'Protect your business assets and operations.',
-      parentId: insurance.id,
-    },
-  });
-  await prisma.product.createMany({
-    data: [
-      { name: 'Professional Indemnity', parentId: businessInsurance.id },
-      { name: 'Public Liability', parentId: businessInsurance.id },
-      { name: 'Property Insurance', parentId: businessInsurance.id },
-    ],
-  });
-
-  // Investment Children
-  const mutualFunds = await prisma.product.create({
-    data: {
-      name: 'Mutual Funds',
-      description: 'Diversified investment portfolios.',
-      parentId: investment.id,
-    },
-  });
-  await prisma.product.createMany({
-    data: [
-      { name: 'Equity Funds', parentId: mutualFunds.id },
-      { name: 'Bond Funds', parentId: mutualFunds.id },
-      { name: 'Money Market Funds', parentId: mutualFunds.id },
-    ],
-  });
-
-  const retirementPlans = await prisma.product.create({
-    data: {
-      name: 'Retirement Plans',
-      description: 'Secure your financial future.',
-      parentId: investment.id,
-    },
-  });
-  await prisma.product.createMany({
-    data: [
-      { name: 'Pension Plans', parentId: retirementPlans.id },
-      { name: 'Annuities', parentId: retirementPlans.id },
-    ],
-  });
-
-  // Banking Children
-  const bankAccounts = await prisma.product.create({
-    data: {
-      name: 'Business Accounts',
-      description: 'Banking solutions for businesses.',
-      parentId: banking.id,
-    },
-  });
-  await prisma.product.createMany({
-    data: [
-      { name: 'Current Account', parentId: bankAccounts.id },
-      { name: 'Savings Account', parentId: bankAccounts.id },
-      { name: 'Foreign Currency Account', parentId: bankAccounts.id },
-    ],
-  });
-
-  const creditCards = await prisma.product.create({
-    data: {
-      name: 'Credit Cards',
-      description: 'Flexible payment solutions.',
-      parentId: banking.id,
-    },
-  });
-  await prisma.product.createMany({
-    data: [
-      { name: 'Business Credit Card', parentId: creditCards.id },
-      { name: 'Corporate Card', parentId: creditCards.id },
-    ],
-  });
-
-  console.log('Products hierarchy created.');
-
-  // Create Business Sectors
-  const sectors = [
-    'Technology',
-    'Healthcare',
-    'Manufacturing',
-    'Retail',
-    'Construction',
-    'Agriculture',
-    'Education',
-    'Transportation',
-    'Real Estate',
-    'Professional Services'
-  ];
-
-  for (const sectorName of sectors) {
-    await prisma.sector.upsert({
-      where: { name: sectorName },
-      update: {},
-      create: { name: sectorName },
+    // Create the superuser
+    const superuserPassword = await hashPassword('superuser123!');
+    
+    console.log('--- Creating Superuser ---');
+    const superuser = await prisma.user.create({
+      data: {
+        email: 'superuser@fbc.co.zw',
+        username: 'superuser',
+        password: superuserPassword,
+        name: 'Super User',
+        role: 'ADMIN' as const,
+        status: 'ACTIVE' as const
+      }
     });
+    console.log('Superuser created.');
+    console.log('--- Superuser Creation Complete ---');
+
+    // Create a sample campaign
+    console.log('--- Creating Sample Campaign ---');
+    const campaign = await prisma.campaign.create({
+      data: {
+        campaign_name: 'Q3 2025 Marketing Push',
+        organization_name: 'Nexus Financial Services',
+        createdById: superuser.id,
+        uniqueLink: 'q3-2025-promo',
+        click_count: 42,
+        is_active: true,
+      }
+    });
+    console.log('Sample campaign created.');
+    console.log('--- Sample Campaign Creation Complete ---');
+
+    // Create sample leads
+    console.log('--- Creating Sample Leads ---');
+    const techSector = await prisma.sector.findFirst({ where: { name: 'Technology' } });
+    const financeSector = await prisma.sector.findFirst({ where: { name: 'Finance' } });
+    const personalLoanProduct = await prisma.product.findFirst({ where: { name: 'Personal Loan' } });
+    const creditCardProduct = await prisma.product.findFirst({ where: { name: 'Credit Cards' } });
+
+    if (techSector && financeSector && personalLoanProduct && creditCardProduct) {
+      const lead1 = await prisma.lead.create({
+        data: {
+          fullName: 'Alice Johnson',
+          phoneNumber: '123-456-7890',
+          sectorId: techSector.id,
+          campaignId: campaign.id,
+        }
+      });
+      const lead2 = await prisma.lead.create({
+        data: {
+          fullName: 'Bob Williams',
+          phoneNumber: '234-567-8901',
+          sectorId: financeSector.id,
+          campaignId: campaign.id,
+        }
+      });
+      console.log('Created 2 sample leads.');
+
+      // Associate products with leads
+      await prisma.lead.update({
+        where: { id: lead1.id },
+        data: {
+          products: {
+            connect: [{ id: personalLoanProduct.id }, { id: creditCardProduct.id }]
+          }
+        }
+      });
+      console.log('Associated products with Alice Johnson.');
+    } else {
+      console.warn('Could not find necessary sectors or products to create full sample leads.');
+    }
+    console.log('--- Sample Lead Creation Complete ---');
+
+    console.log('✅ Database seeded successfully!');
+    console.log('Superuser Created:');
+    console.log('Email: superuser@fbc.co.zw');
+    console.log('Password: superuser123!');
+
+  } catch (error) {
+    console.error('❌ Error seeding database:', error);
+    throw error;
   }
-
-  console.log('Business sectors created.');
-
-  // Link SBUs to Products
-  await prisma.sbuProduct.createMany({
-    data: [
-      // Insurance SBU
-      { sbuId: insuranceSbu.id, productId: motorInsurance.id },
-      { sbuId: insuranceSbu.id, productId: businessInsurance.id },
-
-      // Microfinance SBU
-      { sbuId: microfinanceSbu.id, productId: businessLoans.id },
-      { sbuId: microfinanceSbu.id, productId: personalLoans.id },
-
-      // Bank SBU
-      { sbuId: bankSbu.id, productId: bankAccounts.id },
-      { sbuId: bankSbu.id, productId: creditCards.id },
-
-      // Crown Bank SBU
-      { sbuId: crownBankSbu.id, productId: mutualFunds.id },
-      { sbuId: crownBankSbu.id, productId: retirementPlans.id },
-    ],
-    skipDuplicates: true,
-  });
-
-  console.log('SBU-Product links created.');
-
-  console.log('Seeding finished.');
 }
 
 main()

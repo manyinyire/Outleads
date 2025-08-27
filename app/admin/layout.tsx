@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/lib/store'
@@ -13,14 +13,19 @@ export default function AdminLayoutWrapper({
 }) {
   const router = useRouter()
   const { isAuthenticated } = useSelector((state: RootState) => state.auth)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (mounted && !isAuthenticated) {
       router.push('/auth/login')
     }
-  }, [isAuthenticated, router])
+  }, [mounted, isAuthenticated, router])
 
-  if (!isAuthenticated) {
+  if (!mounted || !isAuthenticated) {
     return null
   }
 

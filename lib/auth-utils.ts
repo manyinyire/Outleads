@@ -1,41 +1,56 @@
-import bcrypt from 'bcryptjs';
+import { prisma } from './prisma';
+import { Role } from '@prisma/client';
 import jwt from 'jsonwebtoken';
-import { nanoid } from 'nanoid';
+import bcrypt from 'bcryptjs';
 
-// Hash password
-export const hashPassword = async (password: string): Promise<string> => {
-  const saltRounds = 12;
-  return await bcrypt.hash(password, saltRounds);
+export async function hashPassword(password: string): Promise<string> {
+  const salt = await bcrypt.genSalt(10);
+  return bcrypt.hash(password, salt);
+}
+
+// Gets the default dashboard route based on user role
+export const getDashboardRouteForRole = (role: Role): string => {
+  switch (role) {
+    case 'ADMIN':
+    case 'SUPERVISOR':
+      return '/admin';
+    case 'BSS':
+    case 'INFOSEC':
+      return '/admin/users';
+    case 'AGENT':
+      return '/admin/leads';
+    default:
+      return '/auth/login'; // Fallback to login
+  }
 };
 
-// Compare password
-export const comparePassword = async (password: string, hashedPassword: string): Promise<boolean> => {
-  return await bcrypt.compare(password, hashedPassword);
-};
 
-// Generate JWT token
-export const generateToken = (userId: string): string => {
+// Verify JWT token and get user ID
+export const getUserIdFromToken = (token: string): string | null => {
   const jwtSecret = process.env.JWT_SECRET;
   if (!jwtSecret) {
-    throw new Error('JWT_SECRET is not configured');
+    console.error('JWT_SECRET is not configured');
+    return null;
   }
 
-  return jwt.sign(
-    { userId },
-    jwtSecret,
-    { expiresIn: '24h' }
-  );
+  try {
+    const decoded = jwt.verify(token, jwtSecret) as { userId: string };
+    return decoded.userId;
+  } catch (error) {
+    console.error('Invalid token:', error);
+    return null;
+  }
 };
 
-// Generate unique campaign link
-export const generateCampaignLink = (): string => {
-  // Generate a short, URL-safe, unique identifier
-  return nanoid(10); // 10 characters, URL-safe
-};
-
-// Validate campaign link format
-export const isValidCampaignLink = (link: string): boolean => {
-  // Check if it's a valid nanoid format (alphanumeric + underscore + hyphen)
-  const nanoidRegex = /^[A-Za-z0-9_-]{10}$/;
-  return nanoidRegex.test(link);
+// Check if user has required role for API access
+export const checkUserRole = async (allowedRoles: Role[]): Promise<boolean> => {
+  try {
+    // In a real implementation, you would get the token from the request headers
+    // For now, this is a placeholder that always returns true for development
+    // TODO: Implement proper JWT token validation from request headers
+    return true;
+  } catch (error) {
+    console.error('Error checking user role:', error);
+    return false;
+  }
 };

@@ -1,121 +1,288 @@
 'use client'
 
-import { useState } from 'react'
-import { Input, Button, Table, Modal, Form, Select, message, Card, Typography } from 'antd'
-import { UserOutlined } from '@ant-design/icons'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { Tag, Button, Space, App } from 'antd'
+import { ColumnsType } from 'antd/es/table'
+import { DownloadOutlined, DeleteOutlined, UserAddOutlined } from '@ant-design/icons'
+import { useRouter } from 'next/navigation'
+import { useSelector } from 'react-redux'
+import { RootState } from '@/lib/store'
+// @ts-ignore - papaparse types not available
+import Papa from 'papaparse'
 
-const { Title } = Typography
-const { Option } = Select
+import CrudTable, { CrudField } from '@/components/admin/CrudTable'
+import AddUser from '@/components/admin/AddUser'
 
+// --- TYPE DEFINITIONS ---
+interface User {
+  id: string
+  name: string
+  email: string
+  role: 'ADMIN' | 'BSS' | 'INFOSEC' | 'AGENT' | 'SUPERVISOR'
+  status: 'PENDING' | 'ACTIVE' | 'REJECTED' | 'INACTIVE' | 'DELETED'
+  createdAt: string
+  updatedAt?: string
+  lastLogin?: string
+}
+
+// --- COMPONENT ---
 export default function UsersPage() {
-  const [loading, setLoading] = useState(false)
-  const [users, setUsers] = useState([])
-  const [isModalVisible, setIsModalVisible] = useState(false)
-  const [selectedUser, setSelectedUser] = useState<any>(null)
-  const [form] = Form.useForm()
+  // --- STATE MANAGEMENT ---
+  const [data, setData] = useState<User[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchText, setSearchText] = useState('')
+  const [isAddUserModalVisible, setAddUserModalVisible] = useState(false)
+  
+  // --- HOOKS ---
+  const router = useRouter()
+  const { message } = App.useApp()
+  const userRole = useSelector((state: RootState) => state.auth.user?.role);
 
-  const handleSearch = async (username: string) => {
-    if (!username) return
+  useEffect(() => {
+    if (userRole && !['ADMIN', 'BSS', 'INFOSEC'].includes(userRole)) {
+      router.push('/admin'); // Redirect to a safe page
+    }
+  }, [userRole, router]);
+
+  // --- DATA FETCHING ---
+  const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const response = await fetch(`/api/admin/users/search?username=${username}`)
-      if (response.ok) {
-        const data = await response.json()
-        setUsers(data)
-      } else {
-        message.error('Failed to search for users')
+      const url = new URL('/api/admin/users', window.location.origin)
+      if (searchText) {
+        url.searchParams.set('search', searchText)
       }
+      url.searchParams.set('status', 'ACTIVE,PENDING,REJECTED,INACTIVE');
+      
+      const token = localStorage.getItem('auth-token')
+      const response = await fetch(url.toString(), {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (!response.ok) throw new Error(`Failed to fetch: ${response.statusText}`)
+      
+      const result = await response.json()
+      setData(Array.isArray(result.data) ? result.data : [])
+      
     } catch (error) {
-      message.error('An error occurred while searching for users')
+      console.error("Fetch error:", error)
+      message.error('Failed to load user data.')
     } finally {
       setLoading(false)
     }
+  }, [searchText, message])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  // --- EVENT HANDLERS ---
+  const handleSearch = (value: string) => {
+    setSearchText(value)
   }
 
-  const handleAddUser = (user: any) => {
-    setSelectedUser(user)
-    setIsModalVisible(true)
-  }
 
-  const handleModalOk = async (values: { role: string }) => {
-    if (!selectedUser) return
-
+  const handleDelete = async (id: string) => {
+    const token = localStorage.getItem('auth-token');
     try {
-      const response = await fetch('/api/admin/users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ ...selectedUser, role: values.role }),
-        credentials: 'include',
-      })
+      const response = await fetch(`/api/admin/users/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
 
       if (response.ok) {
-        message.success('User added successfully')
-        setIsModalVisible(false)
-        form.resetFields()
+        message.success('User deleted successfully');
+        fetchData(); // Refresh data
       } else {
-        const error = await response.json()
-        message.error(error.message || 'Failed to add user')
+        const error = await response.json();
+        message.error(error.message || 'Failed to delete user');
       }
     } catch (error) {
-      message.error('An unexpected error occurred')
+      console.error("Delete error:", error);
+      message.error('An error occurred while deleting the user.');
     }
   }
 
-  const columns = [
-    { title: 'First Name', dataIndex: 'first_name', key: 'first_name' },
-    { title: 'Last Name', dataIndex: 'last_name', key: 'last_name' },
+  const handleSubmit = async (values: any, record: User | null) => {
+    const token = localStorage.getItem('auth-token');
+    const url = record ? `/api/admin/users/${record.id}` : '/api/admin/users';
+    const method = record ? 'PUT' : 'POST';
+    const payload = record ? { role: values.role } : values;
+
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+        message.success(`User ${record ? 'updated' : 'created'} successfully`);
+        fetchData(); // Refresh data
+      } else {
+        const error = await response.json();
+        message.error(error.message || `Failed to save user`);
+      }
+    } catch (error) {
+      console.error("Submit error:", error);
+      message.error('An error occurred while saving the user.');
+    }
+  }
+
+  const handleUpdateStatus = async (id: string, status: 'ACTIVE' | 'REJECTED') => {
+    const token = localStorage.getItem('auth-token');
+    try {
+      const response = await fetch(`/api/admin/users/${id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status })
+      });
+
+      if (response.ok) {
+        message.success(`User status updated to ${status}`);
+        fetchData(); // Refresh data
+      } else {
+        const error = await response.json();
+        message.error(error.message || 'Failed to update user status');
+      }
+    } catch (error) {
+      console.error("Update status error:", error);
+      message.error('An error occurred while updating the user status.');
+    }
+  }
+
+  const handleExport = () => {
+    const csv = Papa.unparse(data)
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.setAttribute('download', 'users.csv')
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  // --- MEMOIZED PROPS ---
+  const fields: CrudField[] = useMemo(() => [
+    { name: 'name', label: 'Name', type: 'text', required: true, readOnly: true },
+    { name: 'email', label: 'Email', type: 'email', required: true, readOnly: true },
+    { 
+      name: 'role', 
+      label: 'Role', 
+      type: 'select', 
+      required: true,
+      options: [
+        { label: 'Admin', value: 'ADMIN' },
+        { label: 'BSS', value: 'BSS' },
+        { label: 'InfoSec', value: 'INFOSEC' },
+        { label: 'Agent', value: 'AGENT' },
+        { label: 'Supervisor', value: 'SUPERVISOR' },
+      ]
+    }
+  ], [])
+
+  const columns: ColumnsType<User> = useMemo(() => [
+    { title: 'Name', dataIndex: 'name', key: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
     { title: 'Email', dataIndex: 'email', key: 'email' },
-    { title: 'Department', dataIndex: 'department', key: 'department' },
-    {
-      title: 'Action',
-      key: 'action',
-      render: (_: any, record: any) => (
-        <Button type="primary" onClick={() => handleAddUser(record)}>
-          Add User
-        </Button>
-      ),
+    { 
+      title: 'Role', 
+      dataIndex: 'role', 
+      key: 'role',
+      render: (role: string) => <Tag>{role.toUpperCase()}</Tag>
     },
-  ]
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string) => {
+        let color = 'default';
+        if (status === 'ACTIVE') color = 'green';
+        if (status === 'PENDING') color = 'orange';
+        if (status === 'REJECTED') color = 'red';
+        return <Tag color={color}>{status.toUpperCase()}</Tag>;
+      }
+    },
+    { 
+      title: 'Created Date', 
+      dataIndex: 'createdAt', 
+      key: 'createdAt',
+      render: (date: string) => new Date(date).toLocaleDateString()
+    },
+    { 
+      title: 'Last Login', 
+      dataIndex: 'lastLogin', 
+      key: 'lastLogin',
+      render: (date: string) => date ? new Date(date).toLocaleDateString() : '-'
+    },
+  ], [])
 
   return (
-    <Card>
-      <Title level={2}>User Management</Title>
-      <Input.Search
-        placeholder="Search for a user by username"
-        enterButton="Search"
-        size="large"
-        onSearch={handleSearch}
+    <>
+      <CrudTable<User>
+        title="User Management"
+        columns={columns}
+        fields={fields}
+        dataSource={data}
         loading={loading}
-        prefix={<UserOutlined />}
+        onSearch={handleSearch}
+        onDelete={handleDelete}
+        onSubmit={handleSubmit}
+        customRowActions={(record, handleEdit) => {
+          if (record.status === 'PENDING') {
+            return (
+              <Space>
+                <Button type="primary" onClick={() => handleUpdateStatus(record.id, 'ACTIVE')}>
+                  Accept
+                </Button>
+                <Button danger onClick={() => handleUpdateStatus(record.id, 'REJECTED')}>
+                  Reject
+                </Button>
+              </Space>
+            );
+          }
+          if (record.status === 'ACTIVE') {
+            return (
+              <Space>
+                <Button type="link" onClick={() => handleEdit(record)}>
+                  Edit
+                </Button>
+                <Button type="link" danger onClick={() => handleDelete(record.id)}>
+                  Delete
+                </Button>
+              </Space>
+            );
+          }
+          return null;
+        }}
+        customActions={
+          <Space>
+            {userRole && ['ADMIN', 'BSS'].includes(userRole) && (
+              <Button icon={<UserAddOutlined />} onClick={() => setAddUserModalVisible(true)}>
+                Add User
+              </Button>
+            )}
+            <Button icon={<DownloadOutlined />} onClick={handleExport}>
+              Export to CSV
+            </Button>
+            {userRole === 'ADMIN' && (
+              <Button icon={<DeleteOutlined />} onClick={() => router.push('/admin/users/deleted')}>
+                View Deleted Users
+              </Button>
+            )}
+          </Space>
+        }
       />
-      <Table columns={columns} dataSource={users} rowKey="username" style={{ marginTop: '20px' }} />
-
-      <Modal
-        title="Add User"
-        open={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
-        onOk={() => form.submit()}
-      >
-        {selectedUser && (
-          <div>
-            <p><strong>First Name:</strong> {selectedUser.first_name}</p>
-            <p><strong>Last Name:</strong> {selectedUser.last_name}</p>
-            <p><strong>Email:</strong> {selectedUser.email}</p>
-            <p><strong>Department:</strong> {selectedUser.department}</p>
-            <Form form={form} onFinish={handleModalOk} layout="vertical">
-              <Form.Item name="role" label="Role" rules={[{ required: true, message: 'Please select a role' }]}>
-                <Select placeholder="Select a role">
-                  <Option value="BSS">BSS</Option>
-                  <Option value="ADMIN">Admin</Option>
-                  <Option value="INFOSEC">InfoSec</Option>
-                </Select>
-              </Form.Item>
-            </Form>
-          </div>
-        )}
-      </Modal>
-    </Card>
+      <AddUser
+        visible={isAddUserModalVisible}
+        onClose={() => setAddUserModalVisible(false)}
+        onUserAdded={fetchData} // Refetch data when a user is added
+      />
+    </>
   )
 }

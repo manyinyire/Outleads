@@ -1,226 +1,306 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Table, Tag, Button, Space, Input, Select, Card, Typography, Alert } from 'antd'
-import { SearchOutlined, FilterOutlined } from '@ant-design/icons'
-import { useSelector } from 'react-redux'
-import { RootState } from '@/lib/store'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { App, Tag, Row, Col, Select, DatePicker, Button, TablePaginationConfig, Modal } from 'antd'
+import { ColumnsType } from 'antd/es/table'
+import CrudTable from '@/components/admin/CrudTable'
+import LeadDetailModal from '@/components/admin/LeadDetailModal'
+import moment from 'moment'
+import { EyeOutlined, UserSwitchOutlined } from '@ant-design/icons'
+import api from '@/lib/api';
 
-const { Title } = Typography
-const { Option } = Select
+const { RangePicker } = DatePicker;
+
+interface Lead {
+  id: string
+  fullName: string
+  phoneNumber: string
+  businessSector: { name: string }
+  products: Array<{ id: string, name: string }>
+  campaign?: { id: string, campaign_name: string }
+  assignedTo?: { name: string }
+  createdAt: string
+}
+
+interface FilterData {
+  products: Array<{ id: string, name: string }>
+  campaigns: Array<{ id: string, campaign_name: string }>
+  sectors: Array<{ id: string, name: string }>
+  agents: Array<{ id: string, name: string }>
+}
 
 export default function LeadsPage() {
-  const [leads, setLeads] = useState<any[]>([])
+  const [data, setData] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [searchText, setSearchText] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('')
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth)
+  const [isViewModalVisible, setViewModalVisible] = useState(false)
+  const [isAssignModalVisible, setAssignModalVisible] = useState(false)
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
+  const [selectedLeads, setSelectedLeads] = useState<React.Key[]>([])
+  const [selectedAgent, setSelectedAgent] = useState<string | undefined>(undefined)
+  const [pagination, setPagination] = useState<TablePaginationConfig>({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
+  const [filters, setFilters] = useState<{
+    productId: string | undefined;
+    campaignId: string | undefined;
+    sectorId: string | undefined;
+    dateRange: [moment.Moment, moment.Moment] | undefined;
+  }>({
+    productId: undefined,
+    campaignId: undefined,
+    sectorId: undefined,
+    dateRange: undefined,
+  });
+  const [filterData, setFilterData] = useState<FilterData>({
+    products: [],
+    campaigns: [],
+    sectors: [],
+    agents: [],
+  })
+
+  const { message } = App.useApp()
+
+  const fetchFilterData = useCallback(async () => {
+    try {
+      const [productsRes, campaignsRes, sectorsRes, agentsRes] = await Promise.all([
+        api.get('/admin/products'),
+        api.get('/admin/campaigns'),
+        api.get('/admin/sectors'),
+        api.get('/admin/users?role=AGENT'),
+      ]);
+
+      setFilterData({
+        products: productsRes.data.data || [],
+        campaigns: campaignsRes.data.data || [],
+        sectors: sectorsRes.data.data || [],
+        agents: agentsRes.data.data || [],
+      });
+    } catch (error) {
+      console.error("Failed to fetch filter data:", error);
+      message.error('Failed to load filter options.');
+    }
+  }, [message]);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    try {
+      const { data } = await api.get('/admin/leads', {
+        params: {
+          page: pagination.current,
+          limit: pagination.pageSize,
+          search: searchText,
+          productId: filters.productId,
+          campaignId: filters.campaignId,
+          sectorId: filters.sectorId,
+          startDate: filters.dateRange?.[0]?.toISOString(),
+          endDate: filters.dateRange?.[1]?.toISOString(),
+        }
+      });
+      setData(data.data || []);
+      setPagination(prev => ({ ...prev, total: data.meta.total }));
+    } catch (error) {
+      console.error("Fetch error:", error)
+      message.error('Failed to load leads.')
+    } finally {
+      setLoading(false)
+    }
+  }, [searchText, message, filters, pagination.current, pagination.pageSize]);
 
   useEffect(() => {
-    const fetchLeads = async (status = '') => {
-      try {
-        setError(null)
-        // Don't send Authorization header - let the auth middleware handle the HTTP-only cookie
-        const url = status ? `/api/admin/leads?status=${status}` : '/api/admin/leads';
-        const response = await fetch(url, {
-          credentials: 'include', // Include cookies in the request
-        })
-        
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}))
-          throw new Error(errorData.message || `HTTP error! status: ${response.status}`)
-        }
-        
-        const data = await response.json()
-        console.log('Fetched leads:', data) // Debug log
-        setLeads(Array.isArray(data) ? data : [])
-      } catch (error) {
-        console.error('Failed to fetch leads:', error)
-        setError(error instanceof Error ? error.message : 'Failed to fetch leads')
-        setLeads([])
-      } finally {
-        setLoading(false)
-      }
+    fetchFilterData();
+  }, [fetchFilterData])
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData, filters])
+
+  const handleTableChange = (pagination: TablePaginationConfig) => {
+    setPagination(pagination);
+  };
+
+  const handleFilterChange = (key: string, value: any) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      productId: undefined,
+      campaignId: undefined,
+      sectorId: undefined,
+      dateRange: undefined,
+    });
+  };
+
+  const handleSearch = (value: string) => {
+    setSearchText(value)
+  }
+
+  const handleView = (record: Lead) => {
+    setSelectedLead(record)
+    setViewModalVisible(true)
+  }
+
+  const handleAssign = async () => {
+    if (!selectedAgent) {
+      message.error('Please select an agent.');
+      return;
     }
-
-    if (isAuthenticated) {
-      fetchLeads(statusFilter);
-    } else {
-      setLoading(false);
+    try {
+      await api.post('/admin/leads/assign', {
+        leadIds: selectedLeads,
+        agentId: selectedAgent,
+      });
+      message.success('Leads assigned successfully.');
+      setAssignModalVisible(false);
+      setSelectedLeads([]);
+      fetchData();
+    } catch (error) {
+      console.error("Assign error:", error);
+      message.error('Failed to assign leads.');
     }
-  }, [isAuthenticated, statusFilter]);
+  };
 
-  const filteredLeads = leads.filter((lead: any) => {
-    const searchTextLower = searchText.toLowerCase();
-    return (
-      lead.name.toLowerCase().includes(searchTextLower) ||
-      lead.phone.includes(searchText) ||
-      lead.company.toLowerCase().includes(searchTextLower)
-    );
-  });
-
-  const columns = [
+  const columns: ColumnsType<Lead> = useMemo(() => [
+    { title: 'Name', dataIndex: 'fullName', key: 'fullName' },
+    { title: 'Phone', dataIndex: 'phoneNumber', key: 'phoneNumber' },
+    { title: 'Sector', dataIndex: ['businessSector', 'name'], key: 'sector' },
     {
-      title: 'Name',
-      dataIndex: 'name',
-      key: 'name',
-      sorter: (a: any, b: any) => a.name.localeCompare(b.name),
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status: string) => {
-        let color = 'default';
-        if (status === 'NEW') color = 'blue';
-        if (status === 'INTERESTED') color = 'cyan';
-        if (status === 'CONTACTED') color = 'orange';
-        if (status === 'QUALIFIED') color = 'purple';
-        if (status === 'CONVERTED') color = 'green';
-        return <Tag color={color}>{status}</Tag>;
-      },
-    },
-    {
-      title: 'Email',
-      dataIndex: 'email',
-      key: 'email',
-    },
-    {
-      title: 'Phone',
-      dataIndex: 'phone',
-      key: 'phone',
-    },
-    {
-      title: 'Company',
-      dataIndex: 'company',
-      key: 'company',
-    },
-    {
-      title: 'Interested Products',
+      title: 'Products',
       dataIndex: 'products',
       key: 'products',
-      render: (products: any[]) => (
-        <div>
-          {products.map((product, index) => (
-            <Tag key={index} color="blue" style={{ marginBottom: '4px' }}>
-              {product.name}
-            </Tag>
-          ))}
-        </div>
+      render: (products: Array<{ name: string }>) => (
+        <>
+          {products.map(p => <Tag key={p.name}>{p.name}</Tag>)}
+        </>
       ),
     },
+    { 
+      title: 'Campaign', 
+      dataIndex: 'campaign', 
+      key: 'campaign',
+      render: (campaign) => campaign ? <Tag color="blue">{campaign.campaign_name}</Tag> : <Tag>Direct Lead</Tag>
+    },
+    { title: 'Assigned Agent', dataIndex: ['assignedTo', 'name'], key: 'assignedTo' },
+    { title: 'Date', dataIndex: 'createdAt', key: 'createdAt', render: (date) => new Date(date).toLocaleDateString() },
     {
-      title: 'Campaign Source',
-      dataIndex: ['campaign', 'name'],
-      key: 'campaignSource',
-      render: (campaignName: string) => (
-        <div>
-          {campaignName ? (
-            <Tag color="green">{campaignName}</Tag>
-          ) : (
-            <Tag color="default">Organic</Tag>
-          )}
-        </div>
+      title: 'Actions',
+      key: 'actions',
+      render: (_, record) => (
+        <Button type="link" icon={<EyeOutlined />} onClick={() => handleView(record)}>
+          View
+        </Button>
       ),
     },
-    {
-      title: 'Created Date',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      render: (date: string) => new Date(date).toLocaleDateString(),
-      sorter: (a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  ], [])
+
+  const filterOptions = (
+    <Row gutter={16} style={{ marginBottom: 16 }}>
+      <Col>
+        <Select
+          placeholder="Filter by Product"
+          style={{ width: 200 }}
+          onChange={(value) => handleFilterChange('productId', value)}
+          value={filters.productId}
+          allowClear
+        >
+          {filterData.products.map(p => <Select.Option key={p.id} value={p.id}>{p.name}</Select.Option>)}
+        </Select>
+      </Col>
+      <Col>
+        <Select
+          placeholder="Filter by Campaign"
+          style={{ width: 200 }}
+          onChange={(value) => handleFilterChange('campaignId', value)}
+          value={filters.campaignId}
+          allowClear
+        >
+          {filterData.campaigns.map(c => <Select.Option key={c.id} value={c.id}>{c.campaign_name}</Select.Option>)}
+        </Select>
+      </Col>
+      <Col>
+        <Select
+          placeholder="Filter by Sector"
+          style={{ width: 200 }}
+          onChange={(value) => handleFilterChange('sectorId', value)}
+          value={filters.sectorId}
+          allowClear
+        >
+          {filterData.sectors.map(s => <Select.Option key={s.id} value={s.id}>{s.name}</Select.Option>)}
+        </Select>
+      </Col>
+      <Col>
+        <RangePicker 
+          onChange={(dates) => handleFilterChange('dateRange', dates)}
+          value={filters.dateRange as any}
+        />
+      </Col>
+      <Col>
+        <Button onClick={clearFilters}>Clear Filters</Button>
+      </Col>
+    </Row>
+  );
+
+  const rowSelection = {
+    onChange: (selectedRowKeys: React.Key[]) => {
+      setSelectedLeads(selectedRowKeys);
     },
-  ]
+  };
 
   return (
-    <div>
-      <Title level={2} style={{ marginBottom: '24px' }}>
-        Lead Management
-      </Title>
-
-      {error && (
-        <Alert
-          message="Error Loading Leads"
-          description={error}
-          type="error"
-          showIcon
-          style={{ marginBottom: '24px' }}
-        />
-      )}
-
-      <Card style={{ marginBottom: '24px' }}>
-        <Space style={{ marginBottom: '16px' }}>
-          <Input
-            placeholder="Search leads..."
-            prefix={<SearchOutlined />}
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: 300 }}
-          />
-          <Select
-            placeholder="Filter by status"
-            style={{ width: 150 }}
-            value={statusFilter}
-            onChange={setStatusFilter}
-            allowClear
-          >
-            <Option value="NEW">New</Option>
-            <Option value="INTERESTED">Interested</Option>
-            <Option value="CONTACTED">Contacted</Option>
-            <Option value="QUALIFIED">Qualified</Option>
-            <Option value="CONVERTED">Converted</Option>
-          </Select>
-          <Button 
-            onClick={() => window.location.reload()} 
-            loading={loading}
-          >
-            Refresh
-          </Button>
-          <Button 
-            onClick={async () => {
-              setLoading(true);
-              try {
-                const url = statusFilter ? `/api/admin/leads?status=${statusFilter}` : '/api/admin/leads';
-                const response = await fetch(url, {
-                  credentials: 'include',
-                });
-                const data = await response.json();
-                console.log('Manual fetch result:', { status: response.status, data });
-                if (response.ok) {
-                  setLeads(Array.isArray(data) ? data : []);
-                  setError(null);
-                } else {
-                  setError(data.message || 'Failed to fetch leads');
-                }
-              } catch (err) {
-                console.error('Manual fetch error:', err);
-                setError(err instanceof Error ? err.message : 'Network error');
-              } finally {
-                setLoading(false);
-              }
-            }}
-            loading={loading}
-          >
-            Manual Fetch
-          </Button>
-        </Space>
-
-        <Table
-          columns={columns}
-          dataSource={filteredLeads}
-          loading={loading}
-          rowKey="id"
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} of ${total} leads`,
-          }}
-          scroll={{ x: 1200 }}
-        />
-      </Card>
-    </div>
+    <>
+      <CrudTable<Lead>
+        title="Lead Management"
+        columns={columns}
+        dataSource={data}
+        loading={loading}
+        pagination={pagination}
+        onTableChange={handleTableChange}
+        onSearch={handleSearch}
+        customHeader={
+          <>
+            {filterOptions}
+            {selectedLeads.length > 0 && (
+              <Button
+                type="primary"
+                icon={<UserSwitchOutlined />}
+                onClick={() => setAssignModalVisible(true)}
+                style={{ marginBottom: 16 }}
+              >
+                Assign to Agent
+              </Button>
+            )}
+          </>
+        }
+        hideDefaultActions={true}
+        rowSelection={rowSelection}
+      />
+      <LeadDetailModal
+        lead={selectedLead}
+        visible={isViewModalVisible}
+        onClose={() => setViewModalVisible(false)}
+      />
+      <Modal
+        title="Assign Leads to Agent"
+        open={isAssignModalVisible}
+        onOk={handleAssign}
+        onCancel={() => setAssignModalVisible(false)}
+      >
+        <Select
+          placeholder="Select an agent"
+          style={{ width: '100%' }}
+          onChange={(value) => setSelectedAgent(value)}
+          value={selectedAgent}
+        >
+          {filterData.agents.map(agent => (
+            <Select.Option key={agent.id} value={agent.id}>
+              {agent.name}
+            </Select.Option>
+          ))}
+        </Select>
+      </Modal>
+    </>
   )
 }

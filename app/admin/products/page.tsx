@@ -1,266 +1,170 @@
 'use client'
 
-import { useState, useEffect, Key } from 'react'
-import {
-  Table,
-  Button,
-  Modal,
-  Form,
-  Input,
-  Select,
-  message,
-  Typography,
-  Space,
-} from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
-import { useSelector } from 'react-redux'
-import { RootState } from '@/lib/store'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { App, Tag } from 'antd'
+import { ColumnsType } from 'antd/es/table'
+import CrudTable, { CrudField } from '@/components/admin/CrudTable'
+
+interface ProductCategory {
+  id: string
+  name: string
+}
 
 interface Product {
   id: string
   name: string
   description?: string
-  createdAt: string
-  updatedAt: string
-  parentId?: string | null
-  parent?: Product | null
-  subProducts?: Product[],
-  key?: Key
+  category: ProductCategory
 }
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(false)
-  const [modalVisible, setModalVisible] = useState(false)
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [data, setData] = useState<Product[]>([])
+  const [categories, setCategories] = useState<ProductCategory[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchText, setSearchText] = useState('')
   
-  
-  const { user } = useSelector((state: RootState) => state.auth)
+  const { message } = App.useApp()
 
-  const [form] = Form.useForm()
-
-  const columns = [
-    {
-      title: 'Name',
-      dataIndex: 'name',
-      key: 'name',
-    },
-    {
-      title: 'Description',
-      dataIndex: 'description',
-      key: 'description',
-      render: (text: string) => text || '-',
-    },
-    {
-      title: 'Parent Product',
-      dataIndex: ['parent', 'name'],
-      key: 'parent',
-      render: (text: string) => text || '-',
-    },
-    {
-      title: 'Created At',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      render: (date: string) => new Date(date).toLocaleDateString(),
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (_: any, record: Product) => (
-        <Space size="middle">
-          <Button icon={<EditOutlined />} onClick={() => handleEdit(record)}>
-            Edit
-          </Button>
-          <Button
-            icon={<DeleteOutlined />}
-            onClick={() => handleDelete(record.id)}
-            disabled={record.subProducts && record.subProducts.length > 0}
-            danger
-          >
-            Delete
-          </Button>
-        </Space>
-      ),
-    },
-  ]
-
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
-
-  const fetchProducts = async (page = 1, pageSize = 10) => {
-    setLoading(true)
+  const fetchCategories = useCallback(async (token: string) => {
     try {
-      const response = await fetch(`/api/admin/products?page=${page}&limit=${pageSize}`, {
-        credentials: 'include'
+      // Token is already checked in fetchData, so we can assume it's valid here
+      const response = await fetch('/api/admin/product-categories', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (!response.ok) throw new Error('Failed to fetch categories')
+      const result = await response.json()
+      setCategories(Array.isArray(result.data) ? result.data : [])
+    } catch (error) {
+      console.error("Category fetch error:", error)
+      message.error('Failed to load product categories for the form.')
+    }
+  }, [message])
+
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    const token = localStorage.getItem('auth-token')
+    if (!token) {
+      message.error("Authentication token not found. Please log in again.")
+      setLoading(false)
+      return
+    }
+
+    // Fetch categories for the dropdown first
+    await fetchCategories(token)
+
+    try {
+      const url = new URL('/api/admin/products', window.location.origin)
+      if (searchText) {
+        url.searchParams.set('search', searchText)
+      }
+      
+      const response = await fetch(url.toString(), {
+        headers: { 'Authorization': `Bearer ${token}` }
       })
       
-      if (response.ok) {
-        const data = await response.json()
-        setProducts(Array.isArray(data.products) ? data.products : [])
-        setPagination(prev => ({ ...prev, total: data.totalPages * pageSize, current: page, pageSize: pageSize }))
-      } else {
-        message.error("Failed to fetch products")
-        setProducts([])
-      }
+      if (!response.ok) throw new Error(`Failed to fetch: ${response.statusText}`)
+      
+      const result = await response.json()
+      setData(Array.isArray(result.data) ? result.data : [])
+      
     } catch (error) {
-      console.error('Error fetching products:', error)
-      message.error("Failed to fetch products")
-      setProducts([])
+      console.error("Fetch error:", error)
+      message.error('Failed to load products.')
     } finally {
       setLoading(false)
     }
-  }
+  }, [searchText, message, fetchCategories])
 
   useEffect(() => {
-    if (user?.role === 'ADMIN') {
-      fetchProducts(pagination.current, pagination.pageSize)
-    }
-  }, [user, pagination])
+    fetchData()
+  }, [fetchData])
 
-  if (user?.role !== 'ADMIN') {
-    return (
-      <div className="p-6 text-center">
-        <h1 className="text-2xl font-bold">Access Denied</h1>
-        <p>You don&apos;t have permission to access this page.</p>
-      </div>
-    )
-  }
-
-  const handleCreate = () => {
-    setEditingProduct(null)
-    setModalVisible(true)
-  }
-
-  const handleEdit = (product: Product) => {
-    setEditingProduct(product)
-    form.setFieldsValue({ ...product, parentId: product.parentId || undefined })
-    setModalVisible(true)
+  const handleSearch = (value: string) => {
+    setSearchText(value)
   }
 
   const handleDelete = async (id: string) => {
+    const token = localStorage.getItem('auth-token');
     try {
       const response = await fetch(`/api/admin/products/${id}`, {
         method: 'DELETE',
-        credentials: 'include'
-      })
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
 
       if (response.ok) {
-        message.success("Product deleted successfully")
-        fetchProducts()
+        message.success('Product deleted successfully');
+        fetchData();
       } else {
-        const error = await response.json()
-        message.error(error.message || "Failed to delete product")
+        const error = await response.json();
+        message.error(error.message || 'Failed to delete product');
       }
     } catch (error) {
-      console.error('Error deleting product:', error)
-      message.error("Failed to delete product")
+      console.error("Delete error:", error);
+      message.error('An error occurred while deleting the product.');
     }
   }
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: any, record: Product | null) => {
+    const token = localStorage.getItem('auth-token');
+    const url = record ? `/api/admin/products/${record.id}` : '/api/admin/products';
+    const method = record ? 'PUT' : 'POST';
 
     try {
-      const url = editingProduct 
-        ? `/api/admin/products/${editingProduct.id}`
-        : '/api/admin/products'
-      
-      const method = editingProduct ? 'PUT' : 'POST'
-
       const response = await fetch(url, {
         method,
-        headers: {
+        headers: { 
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
-        credentials: 'include',
-        body: JSON.stringify({ ...values, parentId: values.parentId || null }),
-      })
+        body: JSON.stringify(values)
+      });
 
       if (response.ok) {
-        message.success(`Product ${editingProduct ? 'updated' : 'created'} successfully`)
-        setModalVisible(false)
-        fetchProducts()
+        message.success(`Product ${record ? 'updated' : 'created'} successfully`);
+        fetchData();
       } else {
-        const error = await response.json()
-        message.error(error.message || `Failed to ${editingProduct ? 'update' : 'create'} product`)
+        const error = await response.json();
+        message.error(error.message || `Failed to save product`);
       }
     } catch (error) {
-      console.error('Error saving product:', error)
-      message.error(`Failed to ${editingProduct ? 'update' : 'create'} product`)
+      console.error("Submit error:", error);
+      message.error('An error occurred while saving the product.');
     }
   }
 
-  const parentProducts = products.filter(p => !p.parentId);
+  const fields: CrudField[] = useMemo(() => [
+    { name: 'name', label: 'Product Name', type: 'text', required: true },
+    { name: 'description', label: 'Description', type: 'textarea' },
+    {
+      name: 'categoryId',
+      label: 'Category',
+      type: 'select',
+      required: true,
+      options: categories.map(cat => ({ label: cat.name, value: cat.id }))
+    }
+  ], [categories])
 
-  const tableDataSource = products
-    .filter(p => !p.parentId)
-    .map(p => ({
-      ...p,
-      children: p.subProducts && p.subProducts.length > 0 ? p.subProducts : undefined,
-    }));
+  const columns: ColumnsType<Product> = useMemo(() => [
+    { title: 'Name', dataIndex: 'name', key: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
+    { title: 'Description', dataIndex: 'description', key: 'description' },
+    { 
+      title: 'Category', 
+      dataIndex: ['category', 'name'], 
+      key: 'category',
+      render: (categoryName: string) => <Tag>{categoryName}</Tag>
+    },
+  ], [])
 
   return (
-    <div style={{ padding: '24px' }}>
-      <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography.Title level={2}>Products Management</Typography.Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-          Add Product
-        </Button>
-      </div>
-
-      <Table
-        columns={columns}
-        dataSource={tableDataSource}
-        loading={loading}
-        rowKey="id"
-        pagination={pagination}
-        onChange={(pagination) => fetchProducts(pagination.current, pagination.pageSize)}
-        expandable={{
-          rowExpandable: record => record.children && record.children.length > 0,
-        }}
-      />
-
-      <Modal
-        title={editingProduct ? 'Edit Product' : 'Add Product'}
-        open={modalVisible}
-        onCancel={() => setModalVisible(false)}
-        onOk={() => form.submit()}
-        confirmLoading={loading}
-      >
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Form.Item
-            name="name"
-            label="Name"
-            rules={[{ required: true, message: 'Please enter a name' }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item name="description" label="Description">
-            <Input.TextArea />
-          </Form.Item>
-          <Form.Item name="parentId" label="Parent Product">
-            <Select allowClear>
-              {parentProducts
-                .filter(p => p.id !== editingProduct?.id)
-                .map(p => (
-                  <Select.Option key={p.id} value={p.id}>
-                    {p.name}
-                  </Select.Option>
-                ))}
-            </Select>
-          </Form.Item>
-          <Form.Item
-            name="category"
-            label="Category"
-            rules={[{ required: true, message: 'Please select a category' }]}
-          >
-            <Select>
-              <Select.Option value="finance">Finance</Select.Option>
-              <Select.Option value="insurance">Insurance</Select.Option>
-              <Select.Option value="investment">Investment</Select.Option>
-              <Select.Option value="banking">Banking</Select.Option>
-            </Select>
-          </Form.Item>
-        </Form>
-      </Modal>
-    </div>
+    <CrudTable<Product>
+      title="Products"
+      columns={columns}
+      fields={fields}
+      dataSource={data}
+      loading={loading}
+      onSearch={handleSearch}
+      onDelete={handleDelete}
+      onSubmit={handleSubmit}
+    />
   )
 }

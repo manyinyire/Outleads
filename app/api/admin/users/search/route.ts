@@ -1,24 +1,39 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
+import { withAuthAndRole } from '@/lib/auth';
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const username = searchParams.get('username')
-
-  if (!username) {
-    return NextResponse.json({ error: 'Username is required' }, { status: 400 })
-  }
-
+async function handler(req: NextRequest) {
   try {
-    const response = await fetch(`https://hrms.fbc.co.zw/api/allusers/${username}`)
-    if (response.ok) {
-      const data = await response.json()
-      // The API returns a single object, not an array. Wrap it in an array.
-      return NextResponse.json([data])
-    } else {
-      return NextResponse.json({ error: 'Failed to fetch user from HRMS' }, { status: response.status })
+    const { searchParams } = new URL(req.url);
+    // Use 'q' as the search parameter to avoid conflicts with the table's 'search'
+    const search = searchParams.get('q') || ''; 
+
+    // If search is empty, the external API should return all users.
+    // We construct the URL accordingly.
+    const externalUrl = `${process.env.GET_ALL_USERS_URL}?search=${encodeURIComponent(search)}`;
+
+    const authToken = req.headers.get('authorization');
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    if (authToken) {
+      headers['Authorization'] = authToken;
     }
+
+    const response = await fetch(externalUrl, { headers });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('External API error:', errorData);
+      return NextResponse.json({ message: `Failed to fetch users from external source. Status: ${response.status}` }, { status: response.status });
+    }
+
+    const data = await response.json();
+    return NextResponse.json(data);
+
   } catch (error) {
-    console.error('HRMS user search error:', error)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+    console.error('Proxy API error:', error);
+    return NextResponse.json({ message: 'An internal server error occurred.' }, { status: 500 });
   }
 }
+
+export const GET = withAuthAndRole(['ADMIN', 'BSS'], handler);

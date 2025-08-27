@@ -1,26 +1,18 @@
-import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { withErrorHandler, successResponse, errorResponse } from '@/lib/api-utils';
 
-// GET /api/sectors - Retrieve all sectors (public endpoint)
-export async function GET() {
+const handler = withErrorHandler(async () => {
   try {
     const sectors = await prisma.sector.findMany({
-      select: {
-        id: true,
-        name: true
-      },
       orderBy: {
-        name: 'asc'
-      }
+        name: 'asc',
+      },
     });
-
-    return NextResponse.json(sectors);
-
+    return successResponse(sectors);
   } catch (error) {
-    console.error('Error fetching sectors:', error);
-    return NextResponse.json({
-      error: 'Internal Server Error',
-      message: 'Failed to fetch sectors'
-    }, { status: 500 });
+    console.error('Failed to fetch sectors:', error);
+    return errorResponse('An error occurred while fetching sectors.', 500);
   }
-}
+});
+
+export { handler as GET };

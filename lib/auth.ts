@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 import { prisma } from './prisma';
 import { cookies } from 'next/headers';
+import { JWT_SECRET } from './config';
+import { logger } from './logger';
 
 export interface AuthenticatedRequest extends NextRequest {
   user?: {
@@ -11,118 +13,83 @@ export interface AuthenticatedRequest extends NextRequest {
     name: string;
     role: string;
     status: string;
-    sbu?: string;
+    sbu?: string | null;
   };
+}
+
+interface DecodedToken extends JwtPayload {
+  userId: string;
 }
 
 export async function authenticateToken(req: AuthenticatedRequest): Promise<NextResponse | null> {
   try {
-    // Try to get token from Authorization header first, then from cookie
     const authHeader = req.headers.get('authorization');
-    let token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    let token = authHeader?.split(' ')[1];
 
     if (!token) {
-      // Try to get token from cookie
       const cookieStore = cookies();
-      token = cookieStore.get('auth-token')?.value || null;
+      token = cookieStore.get('auth-token')?.value;
     }
 
     if (!token) {
+      logger.warn('Authentication failed: No token provided', { 
+        userAgent: req.headers.get('user-agent'),
+        ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip')
+      });
       return NextResponse.json({
         error: 'Authentication Error',
         message: 'Access token is required'
       }, { status: 401 });
     }
 
-    // Validate token format before attempting to verify
-    if (typeof token !== 'string' || token.trim() === '') {
-      return NextResponse.json({
-        error: 'Authentication Error',
-        message: 'Token format is invalid. Please log in again.'
-      }, { status: 403 });
-    }
+    const decoded = jwt.verify(token, JWT_SECRET) as DecodedToken;
 
-    // Basic JWT format check (should have 3 parts separated by dots)
-    const tokenParts = token.split('.');
-    if (tokenParts.length !== 3) {
-      return NextResponse.json({
-        error: 'Authentication Error',
-        message: 'Token format is invalid. Please log in again.'
-      }, { status: 403 });
-    }
-
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      throw new Error('JWT_SECRET is not configured');
-    }
-
-    const decoded = jwt.verify(token, jwtSecret) as any;
-
-    // Fetch user to ensure they still exist and get current status and SBU
-    const user = (await prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: {
         id: true,
         email: true,
+        username: true,
         name: true,
         role: true,
         status: true,
-        sbu: true
+        sbu: true,
       }
-    })) as any;
+    });
 
     if (!user) {
+      logger.warn('Authentication failed: User not found', { 
+        userId: decoded.userId,
+        ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip')
+      });
       return NextResponse.json({
         error: 'Authentication Error',
         message: 'User not found'
       }, { status: 401 });
     }
 
-    // Check if user account is active, but allow onboarding/verify paths for PENDING users
-    const pathname = (req as any).nextUrl?.pathname || '';
-    const allowedPendingPaths = ['/api/auth/onboarding', '/api/auth/verify'];
-    if (user?.status && user.status !== 'ACTIVE') {
-      if (!allowedPendingPaths.includes(pathname)) {
-        return NextResponse.json({
-          error: 'Account Status Error',
-          message: 'Your account is not active. Please contact an administrator.'
-        }, { status: 403 });
-      }
+    if (user.status !== 'ACTIVE') {
+      logger.warn('Authentication failed: User account not active', { 
+        userId: user.id,
+        status: user.status,
+        email: user.email
+      });
+      return NextResponse.json({
+        error: 'Account Status Error',
+        message: 'Your account is not active. Please contact an administrator.'
+      }, { status: 403 });
     }
 
     req.user = user;
-    return null; // No error, authentication successful
+    return null;
   } catch (error) {
-    console.error('Authentication error:', error);
-
-    // Log the token for debugging (first 10 chars only for security)
-    const authHeader = req.headers.get('authorization');
-    const headerToken = authHeader && authHeader.split(' ')[1];
-    const cookieStore = cookies();
-    const cookieToken = cookieStore.get('auth-token')?.value;
-
-    console.error('Token debug info:', {
-      hasAuthHeader: !!authHeader,
-      headerTokenPreview: headerToken ? headerToken.substring(0, 10) + '...' : 'none',
-      hasCookieToken: !!cookieToken,
-      cookieTokenPreview: cookieToken ? cookieToken.substring(0, 10) + '...' : 'none'
+    logger.error('Authentication error occurred', error as Error, {
+      ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip'),
+      userAgent: req.headers.get('user-agent')
     });
-
-    // Provide more specific error messages
-    let message = 'Invalid or expired token';
-    if (error instanceof Error) {
-      if (error.message.includes('jwt malformed')) {
-        message = 'Token format is invalid. Please log in again.';
-      } else if (error.message.includes('jwt expired')) {
-        message = 'Token has expired. Please log in again.';
-      } else if (error.message.includes('invalid signature')) {
-        message = 'Token signature is invalid. Please log in again.';
-      }
-    }
-
     return NextResponse.json({
       error: 'Authentication Error',
-      message
+      message: 'Invalid or expired token'
     }, { status: 403 });
   }
 }
@@ -143,21 +110,21 @@ export function withAuth(handler: (req: AuthenticatedRequest, context?: any) => 
   return async (req: AuthenticatedRequest, context?: any) => {
     const authError = await authenticateToken(req);
     if (authError) return authError;
-
+    
     return handler(req, context);
   };
 }
 
-export function withAuthAndRole(roles: string[], handler: (req: AuthenticatedRequest) => Promise<NextResponse>) {
-  return async (req: Request) => {
+export function withAuthAndRole(roles: string[], handler: (req: AuthenticatedRequest, context?: any) => Promise<NextResponse>) {
+  return async (req: Request, context?: any) => {
     const authReq = req as AuthenticatedRequest;
     const authError = await authenticateToken(authReq);
     if (authError) return authError;
-
+    
     const roleError = requireRole(roles)(authReq.user!);
     if (roleError) return roleError;
-
-    return handler(authReq);
+    
+    return handler(authReq, context);
   };
 }
 
@@ -167,7 +134,7 @@ export const ROLE_PERMISSIONS = {
     description: 'Full access to all system functionalities',
     permissions: [
       'manage_all_campaigns',
-      'manage_all_leads',
+      'manage_all_leads', 
       'manage_all_users',
       'manage_system_settings',
       'approve_users',
