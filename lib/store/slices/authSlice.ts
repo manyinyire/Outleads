@@ -129,5 +129,22 @@ const authSlice = createSlice({
   },
 })
 
+// Async logout function
+export const logoutAsync = createAsyncThunk(
+  'auth/logoutAsync',
+  async (_, { dispatch }) => {
+    dispatch(logout())
+    return true
+  }
+)
+
+// Check auth status function
+export const checkAuthStatus = createAsyncThunk(
+  'auth/checkAuthStatus',
+  async (_, { dispatch }) => {
+    return dispatch(verifyToken())
+  }
+)
+
 export const { logout, clearError } = authSlice.actions
 export default authSlice.reducer
