@@ -23,7 +23,7 @@
     "db:seed": "ts-node --project tsconfig.seed.json prisma/seed.ts",
     "db:reset": "prisma migrate reset",
     "precommit": "npm run lint && npm run type-check",
-    "prepare": "husky install"
+    "prepare": "husky install || true"
   },
   "dependencies": {
     "@ant-design/icons": "^5.3.7",
