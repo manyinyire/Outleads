@@ -22,9 +22,9 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "ts-node --project tsconfig.seed.json prisma/seed.ts",
     "db:reset": "prisma migrate reset"
-    
   },
   "dependencies": {
+    "@ant-design/cssinjs": "^1.24.0",
     "@ant-design/icons": "^5.3.7",
     "@hookform/resolvers": "^3.10.0",
     "@prisma/client": "^6.14.0",

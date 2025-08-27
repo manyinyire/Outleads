@@ -45,7 +45,7 @@ export default function DeletedUsersPage() {
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [fetchData])
 
   const handleRestore = async (userId: string) => {
     try {

@@ -127,7 +127,7 @@ export default function CampaignsPage() {
     }
   }
 
-  const handleToggleStatus = async (id: string, currentStatus: boolean) => {
+  const handleToggleStatus = useCallback(async (id: string, currentStatus: boolean) => {
     const token = localStorage.getItem('auth-token');
     try {
       const response = await fetch(`/api/admin/campaigns/${id}/status`, {
@@ -146,9 +146,9 @@ export default function CampaignsPage() {
       console.error("Status toggle error:", error);
       message.error('An error occurred while updating the status.');
     }
-  };
+  }, [message, fetchData]);
 
-  const handleExportLeads = async (campaignId: string, campaignName: string) => {
+  const handleExportLeads = useCallback(async (campaignId: string, campaignName: string) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('auth-token');
@@ -189,7 +189,7 @@ export default function CampaignsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [message]);
 
   const fields: CrudField[] = useMemo(() => [
     { name: 'campaign_name', label: 'Campaign Name', type: 'text', required: true },
@@ -268,7 +268,7 @@ export default function CampaignsPage() {
         </Space>
       ),
     },
-  ], [message, agents])
+  ], [message, agents, handleExportLeads, handleToggleStatus])
 
   const hasAccess = userRole && ['ADMIN', 'SUPERVISOR', 'AGENT'].includes(userRole)
   if (!hasAccess) {
