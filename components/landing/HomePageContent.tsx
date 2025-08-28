@@ -63,9 +63,9 @@ export function HomePageContent({ initialCategories }: HomePageContentProps) {
                 padding: isMobile ? '1rem' : '2rem',
               }}
             >
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '2rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '1rem' }}>
                 <Image src="/logos/logo.png" alt="Nexus Financial Services" width={150} height={150} style={{ objectFit: 'contain' }} />
-                <Paragraph style={{ fontSize: '1rem', color: '#333333', marginTop: '1rem', textAlign: 'center' }}>
+                <Paragraph style={{ fontSize: '1rem', color: '#333333', marginTop: '0.5rem', textAlign: 'center' }}>
                   Discover our comprehensive range of financial solutions tailored for your business needs.
                 </Paragraph>
               </div>

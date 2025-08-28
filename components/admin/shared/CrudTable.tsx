@@ -124,16 +124,11 @@ export default function CrudTable<T extends { id: string }>({
           {onSearch && (
             <Input
               placeholder={searchPlaceholder}
-              prefix={<SearchOutlined />}
               onChange={(e) => onSearch(e.target.value)}
               style={{ width: 200 }}
             />
           )}
-          {customActions || (
-            <Button type="primary" onClick={handleCreate}>
-              Create
-            </Button>
-          )}
+          {customActions}
         </Space>
       </div>
 

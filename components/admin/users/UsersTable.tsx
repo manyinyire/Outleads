@@ -152,9 +152,6 @@ export default function UsersTable() {
             <Button icon={<DownloadOutlined />} onClick={handleExport}>
               Export
             </Button>
-            <Button type="primary" icon={<UserAddOutlined />} onClick={() => setModalVisible(true)}>
-              Add User
-            </Button>
           </Space>
         }
       />
