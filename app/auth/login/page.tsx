@@ -83,8 +83,8 @@ export default function LoginPage() {
               padding: '2rem',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2rem' }}>
-              <Image src="/logos/logo.png" alt="Company Logo" width={150} height={150} />
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
+              <Image src="/logos/logo.png" alt="Company Logo" width={100} height={100} style={{ objectFit: 'contain' }} />
             </div>
 
             <Form
