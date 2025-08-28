@@ -146,6 +146,7 @@ export default function UsersTable() {
         dataSource={users || []}
         loading={isLoading}
         fields={fields}
+        hideDefaultActions
         customActions={
           <Space>
             <Button icon={<DownloadOutlined />} onClick={handleExport}>
