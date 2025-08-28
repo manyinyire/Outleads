@@ -197,7 +197,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <Menu
             theme="dark"
             mode="inline"
-            selectedKeys={[menuItems.find(item => typeof item.key === 'string' && pathname.startsWith(item.key as string))?.key ?? '/admin']}
+            selectedKeys={[getSelectedKey(pathname, menuItems)]}
             items={menuItems}
             onClick={({ key }) => router.push(key)}
             style={{ background: '#2A4D74', borderRight: 0 }}
