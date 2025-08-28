@@ -27,9 +27,7 @@ export async function POST(req: Request) {
     const accessToken = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRATION });
     const refreshToken = jwt.sign({ userId: user.id }, REFRESH_TOKEN_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRATION });
 
-    const { password: _, ...userWithoutPassword } = user;
-
-    const response = NextResponse.json({ token: accessToken, user: userWithoutPassword });
+    const response = NextResponse.json({ token: accessToken, user: user });
     response.headers.set('Set-Cookie', serialize('refresh-token', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV !== 'development',
