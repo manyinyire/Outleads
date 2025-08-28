@@ -125,6 +125,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       hidden: !hasAnyRole(user, ['ADMIN']),
     },
     {
+      key: '/admin/audit-log',
+      icon: <FileTextOutlined />,
+      label: 'Audit Log',
+      hidden: !hasAnyRole(user, ['ADMIN', 'INFOSEC']),
+    },
+    {
       key: '/admin/settings',
       icon: <SettingOutlined />,
       label: 'Settings',
