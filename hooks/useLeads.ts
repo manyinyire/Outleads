@@ -69,7 +69,7 @@ export function useLeads() {
       console.error("Failed to fetch filter data:", error);
       message.error('Failed to load filter options.');
     }
-  }, [message]);
+  }, []);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -94,7 +94,7 @@ export function useLeads() {
     } finally {
       setLoading(false);
     }
-  }, [searchText, message, filters, pagination]);
+  }, [searchText, message, filters, pagination.current, pagination.pageSize]);
 
   useEffect(() => {
     fetchFilterData();
@@ -102,7 +102,7 @@ export function useLeads() {
 
   useEffect(() => {
     fetchData();
-  }, [fetchData, filters]);
+  }, [fetchData]);
 
   const handleTableChange = (pagination: TablePaginationConfig) => {
     setPagination(pagination);
