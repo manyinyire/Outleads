@@ -41,9 +41,9 @@ function validateEnv(): Env {
           SMTP_PORT: process.env.SMTP_PORT,
           SMTP_USER: process.env.SMTP_USER,
           SMTP_PASS: process.env.SMTP_PASS,
-          SMTP_FROM_NAME: process.env.SMTP_FROM_NAME,
-          SMTP_FROM_EMAIL: process.env.SMTP_FROM_EMAIL,
-          ADMIN_EMAIL: process.env.ADMIN_EMAIL,
+          SMTP_FROM_NAME: process.env.SMTP_FROM_NAME || 'Outleads',
+          SMTP_FROM_EMAIL: process.env.SMTP_FROM_EMAIL || '',
+          ADMIN_EMAIL: process.env.ADMIN_EMAIL || '',
         };
       }
       

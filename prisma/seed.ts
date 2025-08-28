@@ -73,15 +73,11 @@ async function main() {
     }
     console.log('--- Product & Category Creation Complete ---');
 
-    // Create the superuser
-    const superuserPassword = await hashPassword('superuser123!');
-    
     console.log('--- Creating Superuser ---');
     const superuser = await prisma.user.create({
       data: {
         email: 'superuser@fbc.co.zw',
         username: 'superuser',
-        password: superuserPassword,
         name: 'Super User',
         role: 'ADMIN' as const,
         status: 'ACTIVE' as const
@@ -91,13 +87,11 @@ async function main() {
     console.log('--- Superuser Creation Complete ---');
 
     // Create a test user
-    const testUserPassword = await hashPassword('testpassword');
     console.log('--- Creating Test User ---');
     await prisma.user.create({
       data: {
         email: 'testuser@fbc.co.zw',
         username: 'testuser',
-        password: testUserPassword,
         name: 'Test User',
         role: 'AGENT' as const,
         status: 'ACTIVE' as const
