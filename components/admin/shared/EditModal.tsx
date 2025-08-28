@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Modal, Form, Button, Space } from 'antd';
 import { CrudField } from './CrudTable';
-import { TextField, SelectField } from './form-fields';
+import { TextField, SelectField } from '@/components/admin/form-fields';
 
 interface EditModalProps<T> {
   title: string;
