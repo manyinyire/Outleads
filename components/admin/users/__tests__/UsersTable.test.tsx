@@ -76,12 +76,12 @@ describe('UsersTable Component', () => {
     });
   });
 
-  it('should call the delete mutation when the delete button is clicked', async () => {
+  it('should call the updateStatusMutation when the disable button is clicked', async () => {
     const mockUsers = [
       { id: '1', name: 'John Doe', email: 'john@example.com', role: 'ADMIN', status: 'ACTIVE', createdAt: new Date().toISOString() },
     ];
     mockedApiClient.get.mockResolvedValue(mockUsers);
-    mockedApiClient.delete.mockResolvedValue({});
+    mockedApiClient.put.mockResolvedValue({});
 
     render(
       <AllTheProviders>
@@ -92,17 +92,47 @@ describe('UsersTable Component', () => {
     // Wait for the user to be loaded
     expect(await screen.findByText('John Doe')).toBeInTheDocument();
 
-    // Find all delete buttons and click the first one
-    const deleteButtons = await screen.findAllByRole('button', { name: /delete/i });
-    fireEvent.click(deleteButtons[0]);
+    // Find all disable buttons and click the first one
+    const disableButtons = await screen.findAllByRole('button', { name: /disable/i });
+    fireEvent.click(disableButtons[0]);
 
     // Wait for the confirmation dialog to appear
     const confirmButton = await screen.findByRole('button', { name: /yes/i });
     fireEvent.click(confirmButton);
 
-    // Wait for the delete mutation to be called
+    // Wait for the updateStatusMutation to be called
     await waitFor(() => {
-      expect(mockedApiClient.delete).toHaveBeenCalledWith('/admin/users/1');
+      expect(mockedApiClient.put).toHaveBeenCalledWith('/admin/users/1', { status: 'INACTIVE' });
+    });
+  });
+
+  it('should call the updateStatusMutation when the reactivate button is clicked', async () => {
+    const mockUsers = [
+      { id: '1', name: 'John Doe', email: 'john@example.com', role: 'ADMIN', status: 'INACTIVE', createdAt: new Date().toISOString() },
+    ];
+    mockedApiClient.get.mockResolvedValue(mockUsers);
+    mockedApiClient.put.mockResolvedValue({});
+
+    render(
+      <AllTheProviders>
+        <UsersTable />
+      </AllTheProviders>
+    );
+
+    // Wait for the user to be loaded
+    expect(await screen.findByText('John Doe')).toBeInTheDocument();
+
+    // Find all reactivate buttons and click the first one
+    const reactivateButtons = await screen.findAllByRole('button', { name: /reactivate/i });
+    fireEvent.click(reactivateButtons[0]);
+
+    // Wait for the confirmation dialog to appear
+    const confirmButton = await screen.findByRole('button', { name: /yes/i });
+    fireEvent.click(confirmButton);
+
+    // Wait for the updateStatusMutation to be called
+    await waitFor(() => {
+      expect(mockedApiClient.put).toHaveBeenCalledWith('/admin/users/1', { status: 'ACTIVE' });
     });
   });
 });

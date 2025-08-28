@@ -43,16 +43,7 @@ export default function UsersTable() {
     },
   })
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiClient.delete(`/admin/users/${id}`),
-    onSuccess: () => {
-      message.success('User deleted successfully')
-      queryClient.invalidateQueries({ queryKey: ['admin-users'] })
-    },
-    onError: () => {
-      message.error('Failed to delete user')
-    },
-  })
+  
 
   const columns: ColumnsType<User> = [
     { title: 'Name', dataIndex: 'name', key: 'name' },
@@ -91,16 +82,19 @@ export default function UsersTable() {
               </Button>
             </Popconfirm>
           )}
-          <Popconfirm
-            title="Are you sure you want to delete this user?"
-            onConfirm={() => deleteMutation.mutate(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button type="link" danger icon={<DeleteOutlined />}>
-              Delete
-            </Button>
-          </Popconfirm>
+          {record.status === 'INACTIVE' && (
+            <Popconfirm
+              title="Are you sure you want to reactivate this user?"
+              onConfirm={() => updateStatusMutation.mutate({ id: record.id, status: 'ACTIVE' })}
+              okText="Yes"
+              cancelText="No"
+            >
+              <Button type="link" icon={<UserAddOutlined />}>
+                Reactivate
+              </Button>
+            </Popconfirm>
+          )}
+          
         </Space>
       ),
     },
