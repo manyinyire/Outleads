@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { serialize } from 'cookie';
+import { prisma } from '@/lib/db/prisma';
 import { authenticateDomainUser, getUserInfo, manageUser } from '@/lib/auth/authService';
 import { ApiError } from '@/lib/utils/errors/errors';
 import { JWT_SECRET, REFRESH_TOKEN_SECRET, ACCESS_TOKEN_EXPIRATION, REFRESH_TOKEN_EXPIRATION } from '@/lib/utils/config/config';
@@ -24,10 +25,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ newUser, user });
     }
 
-    const accessToken = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRATION });
-    const refreshToken = jwt.sign({ userId: user.id }, REFRESH_TOKEN_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRATION });
+    // Update last login time
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLogin: new Date() },
+    });
 
-    const response = NextResponse.json({ token: accessToken, user: user });
+    const accessToken = jwt.sign({ userId: updatedUser.id, role: updatedUser.role }, JWT_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRATION });
+    const refreshToken = jwt.sign({ userId: updatedUser.id }, REFRESH_TOKEN_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRATION });
+
+    const response = NextResponse.json({ token: accessToken, user: updatedUser });
     response.headers.set('Set-Cookie', serialize('refresh-token', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV !== 'development',

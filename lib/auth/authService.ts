@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/db/prisma';
 import axios from 'axios';
 import { ApiError } from '@/lib/utils/errors/errors';
+import { sendEmail } from '@/lib/email/email';
+import { env } from '@/lib/utils/config/env-validation';
 
 const apiBaseUrl = process.env.API_BASE_URL;
 
@@ -52,14 +54,6 @@ export async function getUserInfo(userInfo: any) {
     }
   };
 }
-
-import { prisma } from '@/lib/db/prisma';
-import axios from 'axios';
-import { ApiError } from '@/lib/utils/errors/errors';
-import { sendEmail } from '@/lib/email/email';
-import { env } from '@/lib/utils/config/env-validation';
-
-// ... (keep the rest of the file the same until manageUser)
 
 export async function manageUser(userInfo: any) {
   const { userDetails } = userInfo;
@@ -117,4 +111,3 @@ The Outleads Team`,
 
   return { newUser: false, user };
 }
-

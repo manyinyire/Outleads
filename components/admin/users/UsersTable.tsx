@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { Tag, Button, Space, App, Popconfirm } from 'antd'
 import { ColumnsType } from 'antd/es/table'
-import { DownloadOutlined, DeleteOutlined, UserAddOutlined, EditOutlined } from '@ant-design/icons'
+import { DownloadOutlined, DeleteOutlined, UserAddOutlined, EditOutlined, StopOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 // @ts-ignore - papaparse types not available
 import Papa from 'papaparse'
@@ -19,6 +19,7 @@ interface User {
   role: string
   status: string
   createdAt: string
+  lastLogin?: string
 }
 
 export default function UsersTable() {
@@ -29,6 +30,17 @@ export default function UsersTable() {
   const { data: users, isLoading } = useQuery<User[]>({
     queryKey: ['admin-users'],
     queryFn: () => apiClient.get('/admin/users'),
+  })
+
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string, status: string }) => apiClient.put(`/admin/users/${id}`, { status }),
+    onSuccess: () => {
+      message.success('User status updated successfully')
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] })
+    },
+    onError: () => {
+      message.error('Failed to update user status')
+    },
   })
 
   const deleteMutation = useMutation({
@@ -58,6 +70,7 @@ export default function UsersTable() {
       },
     },
     { title: 'Created At', dataIndex: 'createdAt', key: 'createdAt', render: (date: string) => new Date(date).toLocaleDateString() },
+    { title: 'Last Login', dataIndex: 'lastLogin', key: 'lastLogin', render: (date?: string) => date ? new Date(date).toLocaleString() : 'Never' },
     {
       title: 'Actions',
       key: 'actions',
@@ -66,6 +79,18 @@ export default function UsersTable() {
           <Button type="link" icon={<EditOutlined />}>
             Edit
           </Button>
+          {record.status === 'ACTIVE' && (
+            <Popconfirm
+              title="Are you sure you want to disable this user?"
+              onConfirm={() => updateStatusMutation.mutate({ id: record.id, status: 'INACTIVE' })}
+              okText="Yes"
+              cancelText="No"
+            >
+              <Button type="link" danger icon={<StopOutlined />}>
+                Disable
+              </Button>
+            </Popconfirm>
+          )}
           <Popconfirm
             title="Are you sure you want to delete this user?"
             onConfirm={() => deleteMutation.mutate(record.id)}
@@ -99,7 +124,11 @@ export default function UsersTable() {
 
   const handleExport = () => {
     if (users) {
-      const csv = Papa.unparse(users)
+      const dataToExport = users.map(user => ({
+        ...user,
+        lastLogin: user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never'
+      }));
+      const csv = Papa.unparse(dataToExport)
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
       const link = document.createElement('a')
       link.href = URL.createObjectURL(blob)
