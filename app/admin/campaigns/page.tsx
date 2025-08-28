@@ -8,7 +8,7 @@ import { useSelector } from 'react-redux'
 import { RootState } from '@/lib/store'
 import Papa from 'papaparse'
 
-import CrudTable, { CrudField } from '@/components/admin/CrudTable'
+import CrudTable, { CrudField } from '@/components/admin/shared/CrudTable'
 
 interface Campaign {
   id: string

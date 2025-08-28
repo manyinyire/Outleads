@@ -1,5 +1,5 @@
-// Utility to clear corrupted auth data
-export function clearCorruptedAuth() {
+// Utility to clear auth data
+export function clearAuth() {
   if (typeof window !== 'undefined') {
     try {
       // Clear all auth-related localStorage items
@@ -15,11 +15,10 @@ export function clearCorruptedAuth() {
         }
       })
       
-      // Clear auth-related cookies
-      document.cookie = 'auth-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
-      document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
-      
-      console.log('Cleared corrupted auth data from localStorage and cookies')
+      // Call the logout endpoint to clear the refresh token cookie
+      fetch('/api/auth/logout', { method: 'POST' });
+
+      console.log('Cleared auth data from localStorage and cookies')
     } catch (error) {
       console.error('Error clearing auth data:', error)
     }

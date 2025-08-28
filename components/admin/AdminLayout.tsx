@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { Layout, Menu, Button, Dropdown, Avatar, Typography, Spin } from 'antd'
-import ErrorBoundary from './ErrorBoundary'
+import ErrorBoundary from './shared/ErrorBoundary'
 import {
   DashboardOutlined,
   UserOutlined,

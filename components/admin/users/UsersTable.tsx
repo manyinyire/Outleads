@@ -1,246 +1,140 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Tag, Button, Space, App } from 'antd'
+import { Tag, Button, Space, App, Popconfirm } from 'antd'
 import { ColumnsType } from 'antd/es/table'
-import { DownloadOutlined, DeleteOutlined, UserAddOutlined } from '@ant-design/icons'
-import { useRouter } from 'next/navigation'
-import { useSelector } from 'react-redux'
-import { RootState } from '@/lib/store'
+import { DownloadOutlined, DeleteOutlined, UserAddOutlined, EditOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 // @ts-ignore - papaparse types not available
 import Papa from 'papaparse'
 
-import CrudTable, { CrudField } from '@/components/admin/CrudTable'
+import CrudTable, { CrudField } from '@/components/admin/shared/CrudTable'
 import AddUser from '@/components/admin/AddUser'
 import { apiClient } from '@/lib/api/api-client'
 
-// --- TYPE DEFINITIONS ---
 interface User {
   id: string
   name: string
   email: string
-  role: 'ADMIN' | 'BSS' | 'INFOSEC' | 'AGENT' | 'SUPERVISOR'
-  status: 'PENDING' | 'ACTIVE' | 'REJECTED' | 'INACTIVE' | 'DELETED'
+  role: string
+  status: string
   createdAt: string
-  updatedAt?: string
-  lastLogin?: string
 }
 
-// --- API FUNCTIONS ---
-const fetchUsers = async (searchText: string): Promise<User[]> => {
-  const params: any = { status: 'ACTIVE,PENDING,REJECTED,INACTIVE' };
-  if (searchText) {
-    params.search = searchText;
-  }
-  return apiClient.get<User[]>('/admin/users', params);
-};
-
-const deleteUser = (id: string) => apiClient.delete(`/admin/users/${id}`);
-const updateUser = (user: Partial<User> & { id: string }) => apiClient.put(`/admin/users/${user.id}`, user);
-const updateUserStatus = ({ id, status }: { id: string, status: 'ACTIVE' | 'REJECTED' }) => apiClient.put(`/admin/users/${id}/status`, { status });
-
-
-// --- COMPONENT ---
 export default function UsersTable() {
-  // --- STATE MANAGEMENT ---
-  const [searchText, setSearchText] = useState('')
-  const [isAddUserModalVisible, setAddUserModalVisible] = useState(false)
-  
-  // --- HOOKS ---
-  const router = useRouter()
   const { message } = App.useApp()
-  const userRole = useSelector((state: RootState) => state.auth.user?.role);
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
+  const [isModalVisible, setModalVisible] = useState(false)
 
-  // --- QUERIES AND MUTATIONS ---
-  const { data: users = [], isLoading, isError, error } = useQuery<User[], Error>({
-    queryKey: ['users', searchText],
-    queryFn: () => fetchUsers(searchText),
-  });
+  const { data: users, isLoading } = useQuery<User[]>({
+    queryKey: ['admin-users'],
+    queryFn: () => apiClient.get('/admin/users'),
+  })
 
   const deleteMutation = useMutation({
-    mutationFn: deleteUser,
+    mutationFn: (id: string) => apiClient.delete(`/admin/users/${id}`),
     onSuccess: () => {
-      message.success('User deleted successfully');
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      message.success('User deleted successfully')
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] })
     },
-    onError: (error: Error) => {
-      message.error(error.message || 'Failed to delete user');
+    onError: () => {
+      message.error('Failed to delete user')
     },
-  });
+  })
 
-  const updateMutation = useMutation({
-    mutationFn: updateUser,
-    onSuccess: () => {
-      message.success('User updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-    },
-    onError: (error: Error) => {
-      message.error(error.message || 'Failed to update user');
-    },
-  });
-
-  const updateStatusMutation = useMutation({
-    mutationFn: updateUserStatus,
-    onSuccess: (data, variables) => {
-      message.success(`User status updated to ${variables.status}`);
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-    },
-    onError: (error: Error) => {
-      message.error(error.message || 'Failed to update user status');
-    },
-  });
-
-  // --- EVENT HANDLERS ---
-  const handleSearch = (value: string) => {
-    setSearchText(value)
-  }
-
-  const handleDelete = async (id: string) => {
-    deleteMutation.mutate(id);
-  }
-
-  const handleSubmit = async (values: any, record: User | null) => {
-    if (record) {
-      updateMutation.mutate({ ...values, id: record.id });
-    }
-  }
-
-  const handleUpdateStatus = (id: string, status: 'ACTIVE' | 'REJECTED') => {
-    updateStatusMutation.mutate({ id, status });
-  }
-
-  const handleExport = () => {
-    const csv = Papa.unparse(users)
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.setAttribute('download', 'users.csv')
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
-
-  // --- MEMOIZED PROPS ---
-  const fields: CrudField[] = useMemo(() => [
-    { name: 'name', label: 'Name', type: 'text', required: true, readOnly: true },
-    { name: 'email', label: 'Email', type: 'email', required: true, readOnly: true },
-    { 
-      name: 'role', 
-      label: 'Role', 
-      type: 'select', 
-      required: true,
-      options: [
-        { label: 'Admin', value: 'ADMIN' },
-        { label: 'BSS', value: 'BSS' },
-        { label: 'InfoSec', value: 'INFOSEC' },
-        { label: 'Agent', value: 'AGENT' },
-        { label: 'Supervisor', value: 'SUPERVISOR' },
-      ]
-    }
-  ], [])
-
-  const columns: ColumnsType<User> = useMemo(() => [
-    { title: 'Name', dataIndex: 'name', key: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
+  const columns: ColumnsType<User> = [
+    { title: 'Name', dataIndex: 'name', key: 'name' },
     { title: 'Email', dataIndex: 'email', key: 'email' },
-    { 
-      title: 'Role', 
-      dataIndex: 'role', 
-      key: 'role',
-      render: (role: string) => <Tag>{role.toUpperCase()}</Tag>
-    },
+    { title: 'Role', dataIndex: 'role', key: 'role' },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => {
-        let color = 'default';
-        if (status === 'ACTIVE') color = 'green';
-        if (status === 'PENDING') color = 'orange';
-        if (status === 'REJECTED') color = 'red';
-        return <Tag color={color}>{status.toUpperCase()}</Tag>;
-      }
+        let color = 'geekblue'
+        if (status === 'ACTIVE') color = 'green'
+        if (status === 'INACTIVE') color = 'volcano'
+        return <Tag color={color}>{status.toUpperCase()}</Tag>
+      },
     },
-    { 
-      title: 'Created Date', 
-      dataIndex: 'createdAt', 
-      key: 'createdAt',
-      render: (date: string) => new Date(date).toLocaleDateString()
+    { title: 'Created At', dataIndex: 'createdAt', key: 'createdAt', render: (date: string) => new Date(date).toLocaleDateString() },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_, record) => (
+        <Space>
+          <Button type="link" icon={<EditOutlined />}>
+            Edit
+          </Button>
+          <Popconfirm
+            title="Are you sure you want to delete this user?"
+            onConfirm={() => deleteMutation.mutate(record.id)}
+            okText="Yes"
+            cancelText="No"
+          >
+            <Button type="link" danger icon={<DeleteOutlined />}>
+              Delete
+            </Button>
+          </Popconfirm>
+        </Space>
+      ),
     },
-    { 
-      title: 'Last Login', 
-      dataIndex: 'lastLogin', 
-      key: 'lastLogin',
-      render: (date: string) => date ? new Date(date).toLocaleDateString() : '-'
-    },
-  ], [])
+  ]
 
-  if (isError) {
-    message.error(`Failed to load user data: ${error.message}`);
+  const fields: CrudField[] = [
+    { name: 'name', label: 'Name', required: true },
+    { name: 'email', label: 'Email', required: true },
+    { name: 'password', label: 'Password', required: true, type: 'password' },
+    {
+      name: 'role',
+      label: 'Role',
+      required: true,
+      type: 'select',
+      options: [
+        { label: 'Admin', value: 'ADMIN' },
+        { label: 'Agent', value: 'AGENT' },
+      ],
+    },
+  ]
+
+  const handleExport = () => {
+    if (users) {
+      const csv = Papa.unparse(users)
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(blob)
+      link.setAttribute('download', 'users.csv')
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    }
   }
+
+  const handleUserAdded = () => {
+    setModalVisible(false);
+    queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+  };
 
   return (
     <>
       <CrudTable<User>
-        title="User Management"
+        title="Users"
         columns={columns}
-        fields={fields}
-        dataSource={users}
+        dataSource={users || []}
         loading={isLoading}
-        onSearch={handleSearch}
-        onDelete={handleDelete}
-        onSubmit={handleSubmit}
-        customRowActions={(record, handleEdit) => {
-          if (record.status === 'PENDING') {
-            return (
-              <Space>
-                <Button type="primary" onClick={() => handleUpdateStatus(record.id, 'ACTIVE')}>
-                  Accept
-                </Button>
-                <Button danger onClick={() => handleUpdateStatus(record.id, 'REJECTED')}>
-                  Reject
-                </Button>
-              </Space>
-            );
-          }
-          if (record.status === 'ACTIVE') {
-            return (
-              <Space>
-                <Button type="link" onClick={() => handleEdit(record)}>
-                  Edit
-                </Button>
-                <Button type="link" danger onClick={() => handleDelete(record.id)}>
-                  Delete
-                </Button>
-              </Space>
-            );
-          }
-          return null;
-        }}
+        fields={fields}
         customActions={
           <Space>
-            {userRole && ['ADMIN', 'BSS'].includes(userRole) && (
-              <Button icon={<UserAddOutlined />} onClick={() => setAddUserModalVisible(true)}>
-                Add User
-              </Button>
-            )}
             <Button icon={<DownloadOutlined />} onClick={handleExport}>
-              Export to CSV
+              Export
             </Button>
-            {userRole === 'ADMIN' && (
-              <Button icon={<DeleteOutlined />} onClick={() => router.push('/admin/users/deleted')}>
-                View Deleted Users
-              </Button>
-            )}
+            <Button type="primary" icon={<UserAddOutlined />} onClick={() => setModalVisible(true)}>
+              Add User
+            </Button>
           </Space>
         }
       />
-      <AddUser
-        visible={isAddUserModalVisible}
-        onClose={() => setAddUserModalVisible(false)}
-        onUserAdded={() => queryClient.invalidateQueries({ queryKey: ['users'] })}
-      />
+      <AddUser visible={isModalVisible} onClose={() => setModalVisible(false)} onUserAdded={handleUserAdded} />
     </>
   )
 }

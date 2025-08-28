@@ -1,7 +1,7 @@
 'use client'
 
 import { Form, Select } from 'antd'
-import { CrudField } from '../CrudTable'
+import { CrudField } from '../shared/CrudTable'
 
 interface SelectFieldProps {
   readonly field: CrudField

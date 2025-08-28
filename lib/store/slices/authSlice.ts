@@ -28,56 +28,42 @@ const initialState: AuthState = {
 
 // --- ASYNC THUNKS ---
 
+import { apiClient } from '@/lib/api/api-client';
+
+// ... (keep existing imports and type definitions)
+
+// --- ASYNC THUNKS ---
+
 // Thunk for logging in
 export const login = createAsyncThunk(
   'auth/login',
   async (credentials: { username: string; password: string }, { rejectWithValue }) => {
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credentials),
-      })
-      
-      const data = await response.json()
-      if (!response.ok) {
-        return rejectWithValue(data.message || 'Login failed')
-      }
-      
-      localStorage.setItem('auth-token', data.token)
-      return data.user
+      // The API client now handles setting the token in localStorage
+      const { token, user } = await apiClient.post<{ token: string; user: User }>('/auth/login', credentials);
+      localStorage.setItem('auth-token', token);
+      return user;
     } catch (error: any) {
-      return rejectWithValue(error.message || 'An unknown error occurred')
+      return rejectWithValue(error.message || 'An unknown error occurred');
     }
   }
-)
+);
 
 // Thunk for verifying an existing token
 export const verifyToken = createAsyncThunk(
   'auth/verifyToken',
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('auth-token')
-      if (!token) {
-        return rejectWithValue('No token found')
-      }
-
-      const response = await fetch('/api/auth/verify', {
-        headers: { 'Authorization': `Bearer ${token}` },
-      })
-
-      const data = await response.json()
-      if (!response.ok) {
-        localStorage.removeItem('auth-token')
-        return rejectWithValue(data.message || 'Session expired')
-      }
-      
-      return data.user
+      // apiClient will handle token refresh automatically
+      const { user } = await apiClient.get<{ user: User }>('/auth/verify');
+      return user;
     } catch (error: any) {
-      return rejectWithValue(error.message || 'Verification failed')
+      // If verify fails even after a refresh attempt, it's a real auth failure.
+      localStorage.removeItem('auth-token');
+      return rejectWithValue(error.message || 'Verification failed');
     }
   }
-)
+);
 
 // --- SLICE DEFINITION ---
 const authSlice = createSlice({

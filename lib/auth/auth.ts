@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import { prisma } from '@/lib/db/prisma';
 import { cookies } from 'next/headers';
-import { JWT_SECRET } from '@/lib/utils/config';
-import { logger } from '@/lib/utils/logger';
+import { JWT_SECRET } from '@/lib/utils/config/config';
+import { logger } from '@/lib/utils/logging/logger';
 
 export interface AuthenticatedRequest extends NextRequest {
   user?: {

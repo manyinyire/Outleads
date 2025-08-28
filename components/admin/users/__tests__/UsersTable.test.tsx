@@ -2,6 +2,8 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { App } from 'antd';
+import { Provider } from 'react-redux';
+import configureStore from 'redux-mock-store';
 import UsersTable from '../UsersTable';
 import { apiClient } from '@/lib/api/api-client';
 
@@ -17,16 +19,27 @@ const queryClient = new QueryClient({
   },
 });
 
+const mockStore = configureStore([]);
+const store = mockStore({
+  auth: {
+    user: { role: 'ADMIN' },
+  },
+});
+
 const AllTheProviders = ({ children }: { children: React.ReactNode }) => (
-  <QueryClientProvider client={queryClient}>
-    <App>{children}</App>
-  </QueryClientProvider>
+  <Provider store={store}>
+    <QueryClientProvider client={queryClient}>
+      <App>{children}</App>
+    </QueryClientProvider>
+  </Provider>
 );
 
 describe('UsersTable Component', () => {
   beforeEach(() => {
     // Clear all mocks before each test
     jest.clearAllMocks();
+    // Clear the react-query cache before each test
+    queryClient.clear();
   });
 
   it('should render the table with users', async () => {
@@ -79,9 +92,13 @@ describe('UsersTable Component', () => {
     // Wait for the user to be loaded
     expect(await screen.findByText('John Doe')).toBeInTheDocument();
 
-    // Find the delete button and click it
-    const deleteButton = screen.getByRole('button', { name: /delete/i });
-    fireEvent.click(deleteButton);
+    // Find all delete buttons and click the first one
+    const deleteButtons = await screen.findAllByRole('button', { name: /delete/i });
+    fireEvent.click(deleteButtons[0]);
+
+    // Wait for the confirmation dialog to appear
+    const confirmButton = await screen.findByRole('button', { name: /yes/i });
+    fireEvent.click(confirmButton);
 
     // Wait for the delete mutation to be called
     await waitFor(() => {

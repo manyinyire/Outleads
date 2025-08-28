@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
+import { serialize } from 'cookie';
 import { authenticateDomainUser, getUserInfo, manageUser } from '@/lib/auth/authService';
-import { ApiError } from '@/lib/utils/errors';
+import { ApiError } from '@/lib/utils/errors/errors';
+import { JWT_SECRET, REFRESH_TOKEN_SECRET, ACCESS_TOKEN_EXPIRATION, REFRESH_TOKEN_EXPIRATION } from '@/lib/utils/config/config';
 
 const loginSchema = z.object({
   username: z.string(),
@@ -22,10 +24,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ newUser, user });
     }
 
-    const localToken = jwt.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET!, { expiresIn: '1d' });
+    const accessToken = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRATION });
+    const refreshToken = jwt.sign({ userId: user.id }, REFRESH_TOKEN_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRATION });
+
     const { password: _, ...userWithoutPassword } = user;
 
-    return NextResponse.json({ token: localToken, user: userWithoutPassword });
+    const response = NextResponse.json({ token: accessToken, user: userWithoutPassword });
+    response.headers.set('Set-Cookie', serialize('refresh-token', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV !== 'development',
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7 // 7 days
+    }));
+
+    return response;
 
   } catch (error) {
     if (error instanceof ApiError) {

@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { Form } from 'antd';
 import TextField from '@/components/admin/form-fields/TextField';
-import { CrudField } from '@/components/admin/CrudTable';
+import { CrudField } from '@/components/admin/shared/CrudTable';
 
 // Mock Ant Design's Form component for testing context
 const MockForm = ({ children }: { children: React.ReactNode }) => {

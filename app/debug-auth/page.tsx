@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Button, Card, Typography, Space, Alert } from 'antd'
-import { clearCorruptedAuth } from '@/lib/auth/clear-auth'
+import { clearAuth } from '@/lib/auth/clear-auth'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -33,7 +33,7 @@ export default function DebugAuthPage() {
   }, [])
 
   const handleClearAuth = () => {
-    clearCorruptedAuth()
+    clearAuth()
     window.location.reload()
   }
 

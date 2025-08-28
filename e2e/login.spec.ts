@@ -5,8 +5,8 @@ test('should allow a user to log in and see the admin dashboard', async ({ page 
   await page.goto('/auth/login');
 
   // Fill in the username and password
-  await page.fill('input[name="username"]', 'superuser');
-  await page.fill('input[name="password"]', 'superuser123!');
+  await page.fill('input[name="username"]', 'mabasat');
+  await page.fill('input[name="password"]', 'Rocket@20');
 
   // Click the sign-in button
   await page.click('button[type="submit"]');

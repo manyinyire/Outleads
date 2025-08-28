@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { App } from 'antd'
 import { ColumnsType } from 'antd/es/table'
-import CrudTable, { CrudField } from '@/components/admin/CrudTable'
+import CrudTable, { CrudField } from '@/components/admin/shared/CrudTable'
 
 interface Sector {
   id: string
