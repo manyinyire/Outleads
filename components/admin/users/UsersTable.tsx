@@ -11,6 +11,7 @@ import Papa from 'papaparse'
 import CrudTable, { CrudField } from '@/components/admin/shared/CrudTable'
 import AddUser from '@/components/admin/AddUser'
 import { apiClient } from '@/lib/api/api-client'
+import { AuditLogger } from '@/lib/utils/logging/audit-logger'
 
 interface User {
   id: string
@@ -34,12 +35,37 @@ export default function UsersTable() {
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string, status: string }) => apiClient.put(`/admin/users/${id}`, { status }),
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       message.success('User status updated successfully')
       queryClient.invalidateQueries({ queryKey: ['admin-users'] })
+      AuditLogger.log({
+        userId: 'current_user_id', // Replace with actual actor ID
+        action: `user_status_changed_to_${variables.status}`,
+        resource: 'user',
+        resourceId: variables.id,
+        details: { newStatus: variables.status },
+      })
     },
     onError: () => {
       message.error('Failed to update user status')
+    },
+  })
+
+  const updateUserMutation = useMutation({
+    mutationFn: ({ id, ...data }: { id: string, name: string, email: string, role: string }) => apiClient.put(`/admin/users/${id}`, data),
+    onSuccess: (data, variables) => {
+      message.success('User updated successfully')
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] })
+      AuditLogger.log({
+        userId: 'current_user_id', // Replace with actual actor ID
+        action: 'user_updated',
+        resource: 'user',
+        resourceId: variables.id,
+        details: { ...variables },
+      })
+    },
+    onError: () => {
+      message.error('Failed to update user')
     },
   })
 
@@ -147,10 +173,23 @@ export default function UsersTable() {
         loading={isLoading}
         fields={fields}
         hideDefaultActions
+        onSubmit={(values, record) => {
+          if (record) {
+            return new Promise<void>((resolve, reject) => {
+              updateUserMutation.mutateAsync({ id: record.id, ...values })
+                .then(() => resolve())
+                .catch(reject)
+            })
+          }
+          return Promise.resolve()
+        }}
         customActions={
           <Space>
             <Button icon={<DownloadOutlined />} onClick={handleExport}>
               Export
+            </Button>
+            <Button type="primary" icon={<UserAddOutlined />} onClick={() => setModalVisible(true)}>
+              Add User
             </Button>
           </Space>
         }
