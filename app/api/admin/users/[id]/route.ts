@@ -2,14 +2,15 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth/auth';
 import { z } from 'zod';
-import * as nodemailer from 'nodemailer';
+import { sendEmail } from '@/lib/email/email';
+import { env } from '@/lib/utils/config/env-validation';
 
 const updateUserSchema = z.object({
   name: z.string().optional(),
   email: z.string().email().optional(),
   sbu: z.string().optional(),
   role: z.enum(['ADMIN', 'BSS', 'INFOSEC', 'AGENT', 'SUPERVISOR']).optional(),
-  status: z.enum(['PENDING', 'ACTIVE', 'INACTIVE', 'DELETED']).optional()
+  status: z.enum(['PENDING', 'ACTIVE', 'INACTIVE', 'DELETED', 'REJECTED']).optional()
 });
 
 // PUT /api/admin/users/[id] - Update user (BSS and Admin only)
@@ -22,7 +23,6 @@ export async function PUT(
       const body = await request.json();
       const { id } = params;
       
-      // Validate request data
       const validation = updateUserSchema.safeParse(body);
       if (!validation.success) {
         return NextResponse.json({
@@ -33,18 +33,9 @@ export async function PUT(
 
       const updateData = validation.data;
 
-      // Get current user data
       const currentUser = await prisma.user.findUnique({
         where: { id },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          createdAt: true,
-          updatedAt: true
-        }
-      }) as any;
+      });
 
       if (!currentUser) {
         return NextResponse.json({
@@ -53,30 +44,32 @@ export async function PUT(
         }, { status: 404 });
       }
 
-      // Check if user is being activated
-      const isBeingActivated = updateData.status === 'ACTIVE' && currentUser?.status !== 'ACTIVE';
+      const isBeingActivated = updateData.status === 'ACTIVE' && currentUser.status !== 'ACTIVE';
+      const isBeingRejected = updateData.status === 'REJECTED' && currentUser.status !== 'REJECTED';
 
-      // Update user
       const updatedUser = await prisma.user.update({
         where: { id },
-        data: updateData as any, // Type assertion for enum values
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          createdAt: true,
-          updatedAt: true
-        }
-      }) as any;
+        data: updateData,
+      });
 
-      // Send activation email if user was activated
-      if (isBeingActivated && currentUser.email && currentUser.name) {
-        await sendActivationEmail(currentUser.email, currentUser.name);
+      if (isBeingActivated) {
+        await sendEmail({
+          to: updatedUser.email,
+          subject: 'Your Outleads Account has been Activated',
+          text: `Hello ${updatedUser.name},\n\nCongratulations! Your account for the Outleads platform has been activated.\n\nYou can now log in using your domain credentials.\n\nThank you,\nThe Outleads Team`,
+          html: `<p>Hello ${updatedUser.name},</p><p>Congratulations! Your account for the Outleads platform has been activated.</p><p>You can now log in using your domain credentials.</p><p>Thank you,<br>The Outleads Team</p>`,
+        });
+      } else if (isBeingRejected) {
+        await sendEmail({
+          to: updatedUser.email,
+          subject: 'Your Outleads Account Request',
+          text: `Hello ${updatedUser.name},\n\nWe regret to inform you that your request for access to the Outleads platform has been rejected.\n\nIf you believe this is an error, please contact an administrator.\n\nThank you,\nThe Outleads Team`,
+          html: `<p>Hello ${updatedUser.name},</p><p>We regret to inform you that your request for access to the Outleads platform has been rejected.</p><p>If you believe this is an error, please contact an administrator.</p><p>Thank you,<br>The Outleads Team</p>`,
+        });
       }
 
       return NextResponse.json({
-        message: isBeingActivated ? 'User activated and notification email sent' : 'User updated successfully',
+        message: 'User updated successfully',
         user: updatedUser
       });
 
@@ -99,17 +92,10 @@ export async function DELETE(
     const { id } = params;
     
     try {
-      // Update user status to DELETED instead of deleting
       const updatedUser = await prisma.user.update({
         where: { id },
-        data: { status: 'DELETED' } as any,
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true
-        }
-      }) as any;
+        data: { status: 'DELETED' },
+      });
 
       return NextResponse.json({
         message: 'User deleted successfully',
@@ -123,39 +109,4 @@ export async function DELETE(
       }, { status: 500 });
     }
   })(request);
-}
-
-// Helper function to send activation email
-async function sendActivationEmail(userEmail: string, userName: string) {
-  try {
-    // Configure nodemailer (you'll need to set up SMTP credentials)
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-      }
-    });
-
-    const mailOptions = {
-      from: process.env.SMTP_FROM || 'noreply@fbc.co.zw',
-      to: userEmail,
-      subject: 'Account Activated - Nexus Financial Services Portal',
-      html: `
-        <h2>Account Activated</h2>
-        <p>Dear ${userName},</p>
-        <p>Your account for the Nexus Financial Services Portal has been activated.</p>
-        <p>You can now access the system with your domain credentials.</p>
-        <p>Best regards,<br>Nexus Financial Services Team</p>
-      `
-    };
-
-    await transporter.sendMail(mailOptions);
-    console.log(`Activation email sent to ${userEmail}`);
-  } catch (error) {
-    console.error('Failed to send activation email:', error);
-    // Don't throw error - activation should still succeed even if email fails
-  }
 }

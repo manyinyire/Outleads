@@ -53,6 +53,14 @@ export async function getUserInfo(userInfo: any) {
   };
 }
 
+import { prisma } from '@/lib/db/prisma';
+import axios from 'axios';
+import { ApiError } from '@/lib/utils/errors/errors';
+import { sendEmail } from '@/lib/email/email';
+import { env } from '@/lib/utils/config/env-validation';
+
+// ... (keep the rest of the file the same until manageUser)
+
 export async function manageUser(userInfo: any) {
   const { userDetails } = userInfo;
   const { first_: firstName, last_: surname, email_: email } = userDetails;
@@ -79,8 +87,34 @@ export async function manageUser(userInfo: any) {
         status: 'PENDING',
       }
     });
+
+    // Send notification emails
+    if (env.ADMIN_EMAIL) {
+      await sendEmail({
+        to: env.ADMIN_EMAIL,
+        subject: 'New User Access Request',
+        text: `A new user has requested access to the Outleads platform.\n\nName: ${user.name}\nEmail: ${user.email}\n\nPlease log in to the admin dashboard to approve or reject this request.`, 
+        html: `<p>A new user has requested access to the Outleads platform.</p><ul><li><strong>Name:</strong> ${user.name}</li><li><strong>Email:</strong> ${user.email}</li></ul><p>Please log in to the admin dashboard to approve or reject this request.</p>`,
+      });
+    }
+
+    await sendEmail({
+      to: user.email,
+      subject: 'Your Access Request has been Received',
+      text: `Hello ${user.name},
+
+We have received your request for access to the Outleads platform. Your request is currently pending approval.
+
+You will receive another email once your account has been approved.
+
+Thank you,
+The Outleads Team`,
+      html: `<p>Hello ${user.name},</p><p>We have received your request for access to the Outleads platform. Your request is currently pending approval.</p><p>You will receive another email once your account has been approved.</p><p>Thank you,<br>The Outleads Team</p>`,
+    });
+
     return { newUser: true, user };
   }
 
   return { newUser: false, user };
 }
+

@@ -9,9 +9,11 @@ const envSchema = z.object({
   // Optional SMTP settings
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.string().regex(/^\d+$/, 'SMTP_PORT must be a number').optional(),
-  SMTP_USER: z.string().email().optional(),
+  SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
-  SMTP_FROM: z.string().email().optional(),
+  SMTP_FROM_NAME: z.string().optional().default('Outleads'),
+  SMTP_FROM_EMAIL: z.string().email().optional(),
+  ADMIN_EMAIL: z.string().email().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -39,7 +41,9 @@ function validateEnv(): Env {
           SMTP_PORT: process.env.SMTP_PORT,
           SMTP_USER: process.env.SMTP_USER,
           SMTP_PASS: process.env.SMTP_PASS,
-          SMTP_FROM: process.env.SMTP_FROM,
+          SMTP_FROM_NAME: process.env.SMTP_FROM_NAME,
+          SMTP_FROM_EMAIL: process.env.SMTP_FROM_EMAIL,
+          ADMIN_EMAIL: process.env.ADMIN_EMAIL,
         };
       }
       
