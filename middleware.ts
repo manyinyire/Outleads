@@ -1,70 +1,70 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-
-// Simple in-memory rate limiting (use Redis in production)
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-
-function rateLimit(ip: string, limit: number = 1000, windowMs: number = 15 * 60 * 1000): boolean {
-  const now = Date.now();
-  const key = ip;
-  
-  const record = rateLimitMap.get(key);
-  
-  if (!record || now > record.resetTime) {
-    rateLimitMap.set(key, { count: 1, resetTime: now + windowMs });
-    return true;
-  }
-  
-  if (record.count >= limit) {
-    return false;
-  }
-  
-  record.count++;
-  return true;
-}
+import { securityMiddleware, RATE_LIMITS } from '@/lib/middleware/validation';
+import { logger } from '@/lib/utils/logging/logger';
 
 export function middleware(request: NextRequest) {
   const response = NextResponse.next();
   
-  // Get client IP
+  // Get client IP for rate limiting
   const ip = request.headers.get('x-forwarded-for') || 
             request.headers.get('x-real-ip') || 
             '127.0.0.1';
   
-  // Apply rate limiting to API routes
-  /*
-  if (request.nextUrl.pathname.startsWith('/api/')) {
-    // More restrictive rate limiting for auth endpoints
-    const isAuthEndpoint = request.nextUrl.pathname.startsWith('/api/auth/');
-    const limit = isAuthEndpoint ? 50 : 1000; // 50 requests per 15 minutes for auth, 1000 for general API
-    
-    if (!rateLimit(ip, limit)) {
-      return new NextResponse(
-        JSON.stringify({ 
-          error: 'Rate Limit Exceeded',
-          message: 'Too many requests. Please try again later.' 
-        }),
-        { 
-          status: 429,
-          headers: {
-            'Content-Type': 'application/json',
-            'Retry-After': '900' // 15 minutes
-          }
-        }
-      );
-    }
+  // Apply security middleware based on route type
+  let securityConfig;
+  
+  if (request.nextUrl.pathname.startsWith('/api/auth/')) {
+    // Stricter rate limiting for auth endpoints
+    securityConfig = {
+      rateLimit: RATE_LIMITS.AUTH,
+      enableCSRF: true
+    };
+  } else if (request.nextUrl.pathname.startsWith('/api/')) {
+    // Standard rate limiting for API endpoints
+    securityConfig = {
+      rateLimit: RATE_LIMITS.API,
+      enableCSRF: true
+    };
+  } else {
+    // Lighter rate limiting for public pages
+    securityConfig = {
+      rateLimit: RATE_LIMITS.PUBLIC,
+      enableCSRF: false // Don't enforce CSRF on page requests
+    };
   }
-  */
+  
+  // Apply security checks
+  const securityError = securityMiddleware(securityConfig)(request);
+  if (securityError) {
+    logger.warn('Security middleware blocked request', {
+      path: request.nextUrl.pathname,
+      ip,
+      userAgent: request.headers.get('user-agent')
+    });
+    return securityError;
+  }
   
   // Add security headers
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-XSS-Protection', '1; mode=block');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  response.headers.set(
-    'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:;"
-  );
+  
+  // More restrictive CSP for better security
+  const cspDirectives = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-eval' 'unsafe-inline'", // TODO: Remove unsafe-inline in production
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: https:",
+    "font-src 'self' data:",
+    "connect-src 'self'",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'"
+  ].join('; ');
+  
+  response.headers.set('Content-Security-Policy', cspDirectives);
   
   // Add HSTS header for HTTPS
   if (request.nextUrl.protocol === 'https:') {

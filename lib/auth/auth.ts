@@ -176,3 +176,40 @@ export const ROLE_PERMISSIONS = {
     ]
   }
 } as const;
+
+// Type helper to extract permission strings
+type RolePermissions = typeof ROLE_PERMISSIONS;
+type AllPermissions = RolePermissions[keyof RolePermissions]['permissions'][number];
+
+// Permission checking utilities
+export function hasPermission(userRole: string, permission: string): boolean {
+  const rolePermissions = ROLE_PERMISSIONS[userRole as keyof typeof ROLE_PERMISSIONS];
+  if (!rolePermissions) return false;
+  return (rolePermissions.permissions as readonly string[]).includes(permission);
+}
+
+export function requirePermission(permission: string) {
+  return (user: { role: string }): NextResponse | null => {
+    if (!hasPermission(user.role, permission)) {
+      logger.warn('Permission denied', { userRole: user.role, requiredPermission: permission });
+      return NextResponse.json({
+        error: 'Authorization Error',
+        message: 'Insufficient permissions for this operation'
+      }, { status: 403 });
+    }
+    return null;
+  };
+}
+
+export function withAuthAndPermission(permission: string, handler: (req: AuthenticatedRequest, context?: any) => Promise<NextResponse>) {
+  return async (req: Request, context?: any) => {
+    const authReq = req as AuthenticatedRequest;
+    const authError = await authenticateToken(authReq);
+    if (authError) return authError;
+    
+    const permissionError = requirePermission(permission)(authReq.user!);
+    if (permissionError) return permissionError;
+    
+    return handler(authReq, context);
+  };
+}

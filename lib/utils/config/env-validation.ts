@@ -4,6 +4,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters long'),
+  REFRESH_TOKEN_SECRET: z.string().min(32, 'REFRESH_TOKEN_SECRET must be at least 32 characters long'),
   NEXT_PUBLIC_BASE_URL: z.string().url('NEXT_PUBLIC_BASE_URL must be a valid URL').optional().default('http://localhost:3000'),
   
   // Optional SMTP settings
@@ -36,6 +37,7 @@ function validateEnv(): Env {
           NODE_ENV: (process.env.NODE_ENV as any) || 'development',
           DATABASE_URL: process.env.DATABASE_URL || '',
           JWT_SECRET: process.env.JWT_SECRET || 'dev-fallback-secret-key-minimum-32-chars',
+          REFRESH_TOKEN_SECRET: process.env.REFRESH_TOKEN_SECRET || 'dev-fallback-refresh-secret-key-minimum-32',
           NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000',
           SMTP_HOST: process.env.SMTP_HOST,
           SMTP_PORT: process.env.SMTP_PORT,
@@ -59,10 +61,20 @@ function validateEnv(): Env {
 // Validate environment variables at module load
 export const env = validateEnv();
 
+// Utility function to require environment variables safely
+export function requireEnv(key: string): string {
+  const value = process.env[key];
+  if (!value) {
+    throw new Error(`Environment variable ${key} is required but not set`);
+  }
+  return value;
+}
+
 // Re-export commonly used values
 export const {
   NODE_ENV,
   DATABASE_URL,
   JWT_SECRET,
+  REFRESH_TOKEN_SECRET,
   NEXT_PUBLIC_BASE_URL,
 } = env;

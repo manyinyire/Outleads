@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { createCrudHandlers } from '@/lib/db/crud-factory';
 import nodemailer from 'nodemailer';
 import { NextRequest } from 'next/server';
+import { logger } from '@/lib/utils/logging/logger';
 
 
 const createUserSchema = z.object({
@@ -123,9 +124,9 @@ async function sendActivationEmail(userEmail: string, userName: string) {
     };
 
     await transporter.sendMail(mailOptions);
-    console.log(`Activation email sent to ${userEmail}`);
+    logger.info('Activation email sent successfully', { userEmail, userName });
   } catch (error) {
-    console.error('Failed to send activation email:', error);
+    logger.error('Failed to send activation email', error as Error, { userEmail, userName });
     // Don't throw error - activation should still succeed even if email fails
   }
 }

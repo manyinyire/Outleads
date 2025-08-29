@@ -24,7 +24,63 @@ export interface ApiSuccess<T = any> {
 }
 
 /**
- * Error response helper - ensures consistent error formatting
+ * Enhanced error response helper with user-friendly messages
+ */
+export function enhancedErrorResponse(
+  message: string,
+  status: number = 500,
+  error?: string,
+  details?: any,
+  userFriendlyMessage?: string
+): NextResponse<ApiError & { userMessage?: string }> {
+  const errorType = error || getErrorTypeFromStatus(status);
+  
+  logger.error(`[API Error] ${errorType}: ${message}`, undefined, { details, status });
+  
+  // In production, don't expose internal details to clients
+  const shouldExposeDetails = process.env.NODE_ENV === 'development' && details;
+  
+  // Generate user-friendly messages based on status code
+  const getUserFriendlyMessage = (statusCode: number, defaultMessage?: string): string => {
+    if (defaultMessage) return defaultMessage;
+    
+    switch (statusCode) {
+      case 400:
+        return 'Please check your input and try again.';
+      case 401:
+        return 'Please sign in to continue.';
+      case 403:
+        return 'You don\'t have permission to perform this action.';
+      case 404:
+        return 'The requested resource was not found.';
+      case 409:
+        return 'This action conflicts with existing data.';
+      case 429:
+        return 'Too many requests. Please wait a moment and try again.';
+      case 500:
+        return 'Something went wrong on our end. Please try again later.';
+      case 502:
+      case 503:
+        return 'Our service is temporarily unavailable. Please try again later.';
+      default:
+        return 'An unexpected error occurred. Please try again.';
+    }
+  };
+  
+  return NextResponse.json(
+    {
+      error: errorType,
+      message,
+      userMessage: getUserFriendlyMessage(status, userFriendlyMessage),
+      ...(shouldExposeDetails && { details })
+    },
+    { status }
+  );
+}
+
+/**
+ * Legacy error response helper for backward compatibility
+ * @deprecated Use enhancedErrorResponse instead
  */
 export function errorResponse(
   message: string,
@@ -32,18 +88,7 @@ export function errorResponse(
   error?: string,
   details?: any
 ): NextResponse<ApiError> {
-  const errorType = error || getErrorTypeFromStatus(status);
-  
-  logger.error(`[API Error] ${errorType}: ${message}`, undefined, { details, status });
-  
-  return NextResponse.json(
-    {
-      error: errorType,
-      message,
-      ...(details && { details })
-    },
-    { status }
-  );
+  return enhancedErrorResponse(message, status, error, details) as NextResponse<ApiError>;
 }
 
 /**
@@ -109,6 +154,8 @@ export function withErrorHandler<T extends (...args: any[]) => Promise<NextRespo
  * Handle Prisma-specific errors with appropriate messages
  */
 export function handlePrismaError(error: PrismaClientKnownRequestError): NextResponse {
+  logger.error('Prisma error occurred', error, { code: error.code });
+  
   switch (error.code) {
     case 'P2002': {
       const field = (error.meta?.target as string[])?.join(', ') || 'field';
@@ -125,10 +172,14 @@ export function handlePrismaError(error: PrismaClientKnownRequestError): NextRes
       return errorResponse('Cannot delete: record has dependent data', 409);
     
     default:
-      return errorResponse('Database operation failed', 500, 'Database Error', {
-        code: error.code,
-        message: error.message
-      });
+      // In production, don't expose Prisma error details
+      const shouldExposeDetails = process.env.NODE_ENV === 'development';
+      return errorResponse(
+        'Database operation failed', 
+        500, 
+        'Database Error', 
+        shouldExposeDetails ? { code: error.code, message: error.message } : undefined
+      );
   }
 }
 

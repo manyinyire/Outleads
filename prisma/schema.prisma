@@ -25,9 +25,19 @@ model User {
   updatedAt DateTime   @updatedAt
   lastLogin DateTime?
 
+  // Performance optimized indexes
   @@index([email])
+  @@index([username])
   @@index([status])
   @@index([role])
+  @@index([createdAt])
+  @@index([lastLogin])
+  // Composite indexes for admin queries
+  @@index([status, role])
+  @@index([role, createdAt])
+  @@index([status, lastLogin])
+  // Search optimization
+  @@index([name]) // Add name index for search
   @@map("users")
 }
 
@@ -48,9 +58,18 @@ model Campaign {
   assignedTo        User?    @relation("AssignedCampaigns", fields: [assignedToId], references: [id])
   assignedToId      String?
 
+  // Performance optimized indexes
   @@index([createdById])
+  @@index([assignedToId])
   @@index([is_active])
   @@index([createdAt])
+  @@index([updatedAt])
+  @@index([lead_count])
+  // Composite indexes for dashboard queries
+  @@index([is_active, createdAt])
+  @@index([createdById, is_active])
+  @@index([assignedToId, is_active])
+  @@index([is_active, lead_count, createdAt]) // Performance ranking
   @@map("campaigns")
 }
 
@@ -69,11 +88,19 @@ model Lead {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
+  // Performance optimized indexes
   @@index([fullName])
   @@index([phoneNumber])
   @@index([sectorId])
   @@index([campaignId])
+  @@index([assignedToId])
   @@index([createdAt])
+  @@index([updatedAt])
+  // Composite indexes for common query patterns
+  @@index([campaignId, createdAt])
+  @@index([sectorId, createdAt])
+  @@index([assignedToId, createdAt])
+  @@index([createdAt, campaignId, sectorId]) // Multi-filter queries
   @@map("leads")
 }
 

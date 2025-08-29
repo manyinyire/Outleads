@@ -3,14 +3,18 @@ import { errorResponse, successResponse } from '@/lib/api/api-utils';
 import { z } from 'zod';
 import { createCrudHandlers } from '@/lib/db/crud-factory';
 import { Prisma } from '@prisma/client';
+import { logger } from '@/lib/utils/logging/logger';
 
+
+import { createLeadSchema as importedCreateLeadSchema } from '@/lib/utils/validation/validation-schemas';
 
 const createLeadSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  phone: z.string().min(1, 'Phone number is required'),
-  company: z.string().min(1, 'Company/Sector is required'),
-  productIds: z.array(z.string()).min(1, 'At least one product is required'),
-  campaignId: z.string().optional(),
+  name: z.string().trim().min(1, 'Name is required').max(255, 'Name is too long'),
+  phone: z.string().trim().min(10, 'Phone number must be at least 10 digits').max(20, 'Phone number is too long')
+    .regex(/^[\+]?[0-9\s\-\(\)]+$/, 'Invalid phone number format'),
+  company: z.string().cuid('Invalid sector ID'),
+  productIds: z.array(z.string().cuid('Invalid product ID')).min(1, 'At least one product is required').max(10, 'Too many products selected'),
+  campaignId: z.string().cuid('Invalid campaign ID').optional(),
 });
 
 const updateLeadSchema = z.object({
@@ -79,7 +83,7 @@ export async function POST(req: Request) {
 
         return successResponse({ message: 'Lead created successfully', data: newLead }, 201);
       } catch (transactionError) {
-        console.error('Transaction failed!', transactionError);
+        logger.error('Transaction failed during lead creation with campaign', transactionError as Error, { campaignId });
         return errorResponse('Failed to process lead with campaign.', 500);
       }
     } else {
@@ -90,8 +94,8 @@ export async function POST(req: Request) {
       return successResponse({ message: 'Lead created successfully', data: newLead }, 201);
     }
   } catch (error: any) {
-    console.error('An unexpected error occurred in POST /api/leads', error);
-    return errorResponse(`Internal Server Error: ${error.message}`, 500);
+    logger.error('Unexpected error in POST /api/leads', error as Error);
+    return errorResponse('Internal Server Error. Please try again later.', 500);
   }
 }
 

@@ -1,12 +1,28 @@
 import { z } from 'zod';
 
+// Common validation patterns
+const phoneRegex = /^[\+]?[0-9\s\-\(\)]+$/;
+const nameRegex = /^[a-zA-Z\s\-\'\u00C0-\u017F]+$/; // Allows letters, spaces, hyphens, apostrophes, and accented characters
+const usernameRegex = /^[a-zA-Z0-9_\-\.]+$/;
+
 // User validation schemas
-export const userProfileSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters').max(100),
-  email: z.string().email('Invalid email address'),
+export const createUserSchema = z.object({
+  username: z.string().trim().min(3, 'Username must be at least 3 characters').max(50, 'Username is too long')
+    .regex(usernameRegex, 'Username can only contain letters, numbers, dots, hyphens, and underscores'),
+  email: z.string().trim().email('Invalid email address').max(255, 'Email is too long'),
+  name: z.string().trim().min(2, 'Name must be at least 2 characters').max(100, 'Name is too long')
+    .regex(nameRegex, 'Name can only contain letters, spaces, hyphens, and apostrophes'),
+  role: z.enum(['ADMIN', 'BSS', 'INFOSEC', 'AGENT', 'SUPERVISOR']).default('AGENT'),
+  status: z.enum(['PENDING', 'ACTIVE', 'INACTIVE', 'DELETED']).default('ACTIVE')
 });
 
-export const updateUserSchema = createUserSchema.partial().omit({ password: true });
+export const userProfileSchema = z.object({
+  name: z.string().trim().min(2, 'Name must be at least 2 characters').max(100, 'Name is too long')
+    .regex(nameRegex, 'Name can only contain letters, spaces, hyphens, and apostrophes'),
+  email: z.string().trim().email('Invalid email address').max(255, 'Email is too long'),
+});
+
+export const updateUserSchema = createUserSchema.partial();
 
 // Campaign validation schemas
 export const createCampaignSchema = z.object({
@@ -22,14 +38,15 @@ export const updateCampaignSchema = createCampaignSchema.partial().extend({
 
 // Lead validation schemas
 export const createLeadSchema = z.object({
-  fullName: z.string().min(1, 'Full name is required').max(255),
-  phoneNumber: z.string()
+  fullName: z.string().trim().min(1, 'Full name is required').max(255, 'Full name is too long')
+    .regex(nameRegex, 'Full name can only contain letters, spaces, hyphens, and apostrophes'),
+  phoneNumber: z.string().trim()
     .min(10, 'Phone number must be at least 10 digits')
     .max(20, 'Phone number is too long')
-    .regex(/^[\+]?[0-9\s\-\(\)]+$/, 'Invalid phone number format'),
+    .regex(phoneRegex, 'Invalid phone number format'),
   sectorId: z.string().cuid('Invalid sector ID'),
   campaignId: z.string().cuid('Invalid campaign ID').optional(),
-  products: z.array(z.string().cuid()).optional(),
+  products: z.array(z.string().cuid('Invalid product ID')).min(1, 'At least one product is required').max(10, 'Too many products selected'),
 });
 
 export const updateLeadSchema = createLeadSchema.partial();

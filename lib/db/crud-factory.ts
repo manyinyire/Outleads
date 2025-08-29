@@ -10,6 +10,7 @@ import {
   extractPaginationParams,
   calculatePaginationMeta
 } from '@/lib/api/api-utils';
+import { DatabasePerformance } from '@/lib/db/performance';
 
 /**
  * Configuration for CRUD operations
@@ -62,24 +63,30 @@ export function createGetHandler<T>(config: CrudConfig<T>) {
     // Get the model reference
     const model = prisma[config.modelName] as any;
     
-    // Execute queries in parallel for better performance
-    const [records, total] = await Promise.all([
-      model.findMany({
-        where: queryConditions,
-        skip,
-        take: limit || 10,
-        orderBy: sortBy 
-          ? { [sortBy]: sortOrder }
-          : config.orderBy || { createdAt: 'desc' },
-        include: config.includeRelations
-      }),
-      model.count({ where: queryConditions })
-    ]);
+    // Use performance measurement for database queries
+    const queryName = `${String(config.modelName)}_list`;
+    const result = await DatabasePerformance.measureQuery(queryName, async () => {
+      // Execute queries in parallel for better performance
+      const [records, total] = await Promise.all([
+        model.findMany({
+          where: queryConditions,
+          skip,
+          take: limit || 10,
+          orderBy: sortBy 
+            ? { [sortBy]: sortOrder }
+            : config.orderBy || { createdAt: 'desc' },
+          include: config.includeRelations
+        }),
+        model.count({ where: queryConditions })
+      ]);
+      
+      return { records, total };
+    });
     
-    const meta = calculatePaginationMeta(total, page || 1, limit || 10);
+    const meta = calculatePaginationMeta(result.total, page || 1, limit || 10);
     
     return successResponse({
-      data: records,
+      data: result.records,
       meta
     });
   });
