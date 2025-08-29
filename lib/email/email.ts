@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
 import { env } from '@/lib/utils/config/env-validation';
-import { logger } from '@/lib/utils/logging/logger';
+import { logger } from '@/lib/utils/logging';
 
 interface MailOptions {
   to: string;

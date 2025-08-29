@@ -5,7 +5,7 @@ import { prisma } from '@/lib/db/prisma';
 import { authenticateDomainUser, getUserInfo, manageUser } from '@/lib/auth/authService';
 import { ApiError } from '@/lib/utils/errors/errors';
 import { SessionManager } from '@/lib/auth/session-manager';
-import { logger } from '@/lib/utils/logging/logger';
+import { logger } from '@/lib/utils/logging';
 import { auditAuth, AuditAction } from '@/lib/compliance/audit-logger';
 
 

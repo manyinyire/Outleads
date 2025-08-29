@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { checkDatabaseHealth, getDatabaseStats } from '@/lib/db/database-health';
 import { performanceMonitor } from '@/lib/utils/performance-monitor';
-import { logger } from '@/lib/utils/logging/logger';
+import { logger } from '@/lib/utils/logging';
 
 export async function GET() {
   try {

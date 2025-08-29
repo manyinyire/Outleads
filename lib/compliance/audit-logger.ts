@@ -1,4 +1,4 @@
-import { logger } from '@/lib/utils/logging/logger';
+import { logger } from '@/lib/utils/logging';
 import { prisma } from '@/lib/db/prisma';
 
 /**

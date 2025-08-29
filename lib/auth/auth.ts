@@ -3,7 +3,7 @@ import jwt, { JwtPayload } from 'jsonwebtoken';
 import { prisma } from '@/lib/db/prisma';
 import { cookies } from 'next/headers';
 import { JWT_SECRET } from '@/lib/utils/config/config';
-import { logger } from '@/lib/utils/logging/logger';
+import { logger } from '@/lib/utils/logging';
 
 export interface AuthenticatedRequest extends NextRequest {
   user?: {

@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { ZodError, ZodSchema } from 'zod';
 import { withAuth, AuthenticatedRequest } from '@/lib/auth/auth';
-import { logger } from '@/lib/utils/logging/logger';
+import { logger } from '@/lib/utils/logging';
 
 /**
  * Standard API error response format

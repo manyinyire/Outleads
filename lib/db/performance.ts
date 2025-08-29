@@ -1,5 +1,5 @@
 import { prisma } from './prisma';
-import { logger } from '@/lib/utils/logging/logger';
+import { logger } from '@/lib/utils/logging';
 
 /**
  * Database Performance Optimization Utilities

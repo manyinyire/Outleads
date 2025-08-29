@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { SessionManager } from '@/lib/auth/session-manager';
-import { logger } from '@/lib/utils/logging/logger';
+import { logger } from '@/lib/utils/logging';
 import { serialize } from 'cookie';
 
 export async function POST(req: NextRequest) {

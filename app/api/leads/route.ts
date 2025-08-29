@@ -3,7 +3,7 @@ import { errorResponse, successResponse } from '@/lib/api/api-utils';
 import { z } from 'zod';
 import { createCrudHandlers } from '@/lib/db/crud-factory';
 import { Prisma } from '@prisma/client';
-import { logger } from '@/lib/utils/logging/logger';
+import { logger } from '@/lib/utils/logging';
 
 
 import { createLeadSchema as importedCreateLeadSchema } from '@/lib/utils/validation/validation-schemas';

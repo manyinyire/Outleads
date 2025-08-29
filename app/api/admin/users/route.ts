@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { createCrudHandlers } from '@/lib/db/crud-factory';
 import nodemailer from 'nodemailer';
 import { NextRequest } from 'next/server';
-import { logger } from '@/lib/utils/logging/logger';
+import { logger } from '@/lib/utils/logging';
 
 
 const createUserSchema = z.object({

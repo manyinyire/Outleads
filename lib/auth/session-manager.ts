@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { prisma } from '@/lib/db/prisma';
 import { JWT_SECRET, REFRESH_TOKEN_SECRET } from '@/lib/utils/config/config';
-import { logger } from '@/lib/utils/logging/logger';
+import { logger } from '@/lib/utils/logging';
 
 export interface SessionData {
   userId: string;

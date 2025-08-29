@@ -1,14 +1,4 @@
-// lib/utils/logging/logger.ts - SERVER-SIDE LOGGER
-
-import winston from 'winston';
-import fs from 'fs';
-import path from 'path';
-
-// Ensure log directory exists
-const logDir = 'logs';
-if (!fs.existsSync(logDir)) {
-  fs.mkdirSync(logDir);
-}
+// lib/utils/logging/logger.browser.ts - CLIENT-SIDE LOGGER
 
 interface LogContext {
   userId?: string;
@@ -17,55 +7,22 @@ interface LogContext {
   [key: string]: any;
 }
 
-interface Logger {
+export interface Logger {
   info(message: string, context?: LogContext): void;
   warn(message: string, context?: LogContext): void;
   error(message: string, error?: Error, context?: LogContext): void;
   debug(message: string, context?: LogContext): void;
 }
 
-const { combine, timestamp, printf, colorize, json } = winston.format;
-
-const consoleFormat = printf(({ level, message, timestamp, ...metadata }) => {
-  let msg = `${timestamp} ${level}: ${message}`;
-  if (metadata && Object.keys(metadata).length > 0) {
-    msg += ` | Context: ${JSON.stringify(metadata)}`;
-  }
-  return msg;
-});
-
-const winstonLogger = winston.createLogger({
-  level: process.env.NODE_ENV === 'development' ? 'debug' : 'info',
-  format: combine(
-    timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-    json()
-  ),
-  transports: [
-    new winston.transports.Console({
-      format: combine(
-        colorize(),
-        timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-        consoleFormat
-      ),
-    }),
-    new winston.transports.File({
-      filename: path.join(logDir, 'app.log'),
-      maxsize: 5242880, // 5MB
-      maxFiles: 5,
-    }),
-    new winston.transports.File({
-      filename: path.join(logDir, 'error.log'),
-      level: 'error',
-      maxsize: 5242880, // 5MB
-      maxFiles: 5,
-    }),
-  ],
-  exitOnError: false,
-});
-
-class WinstonLogger implements Logger {
+class BrowserLogger implements Logger {
   private log(level: 'info' | 'warn' | 'error' | 'debug', message: string, context?: LogContext | Error) {
-    winstonLogger[level](message, context);
+    const logMessage = `[${level.toUpperCase()}] ${message}`;
+    
+    if (context) {
+      console[level](logMessage, context);
+    } else {
+      console[level](logMessage);
+    }
   }
 
   info(message: string, context?: LogContext): void {
@@ -86,7 +43,7 @@ class WinstonLogger implements Logger {
   }
 }
 
-export const logger: Logger = new WinstonLogger();
+export const logger: Logger = new BrowserLogger();
 
 // Helper function to create request-scoped logger
 export function createRequestLogger(requestId: string, userId?: string) {

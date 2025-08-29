@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { logger } from '@/lib/utils/logging/logger';
+import { logger } from '@/lib/utils/logging';
 
 interface RateLimitConfig {
   windowMs: number;

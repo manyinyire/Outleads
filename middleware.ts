@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { securityMiddleware, RATE_LIMITS } from '@/lib/middleware/validation';
-import { logger } from '@/lib/utils/logging/logger';
+import { logger } from '@/lib/utils/logging';
 
 export function middleware(request: NextRequest) {
   const response = NextResponse.next();

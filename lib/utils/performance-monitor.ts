@@ -1,4 +1,4 @@
-import { logger } from './logging/logger';
+import { logger } from './logging';
 
 interface PerformanceMetric {
   name: string;
