@@ -25,7 +25,6 @@ export const GET = withAuthAndRole(['ADMIN', 'BSS', 'INFOSEC'], async (req: Auth
       'Username',
       'Name', 
       'Email',
-      'SBU',
       'Role',
       'Status',
       'Created Date',
@@ -37,7 +36,6 @@ export const GET = withAuthAndRole(['ADMIN', 'BSS', 'INFOSEC'], async (req: Auth
       user.username,
       user.name,
       user.email,
-      user.sbu || 'N/A',
       user.role,
       user.status,
       user.createdAt.toISOString().split('T')[0], // Format date as YYYY-MM-DD

@@ -8,7 +8,6 @@ import { env } from '@/lib/utils/config/env-validation';
 const updateUserSchema = z.object({
   name: z.string().optional(),
   email: z.string().email().optional(),
-  sbu: z.string().optional(),
   role: z.enum(['ADMIN', 'BSS', 'INFOSEC', 'AGENT', 'SUPERVISOR']).optional(),
   status: z.enum(['PENDING', 'ACTIVE', 'INACTIVE', 'DELETED', 'REJECTED']).optional()
 });

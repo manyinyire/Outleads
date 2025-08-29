@@ -1,14 +1,11 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit'
 
 // --- TYPE DEFINITIONS ---
-export interface User {
-  id: string
-  email: string
-  username: string
-  name: string
-  role: 'ADMIN' | 'BSS' | 'INFOSEC' | 'AGENT' | 'SUPERVISOR'
-  status: 'PENDING' | 'ACTIVE' | 'INACTIVE'
-  sbu?: string
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
 }
 
 export interface AuthState {

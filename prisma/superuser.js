@@ -19,8 +19,7 @@ function main() {
                 name: 'Super User',
                 email: 'superuser@example.com',
                 role: 'ADMIN',
-                status: 'ACTIVE',
-                sbu: 'Executive'
+                status: 'ACTIVE'
             },
         });
         console.log({ superuser });

@@ -12,7 +12,7 @@ async function main() {
     { id: 'products', name: 'Manage Products' },
     { id: 'product-categories', name: 'Manage Categories' },
     { id: 'sectors', name: 'Manage Sectors' },
-    { id: 'sbus', name: 'Manage SBUs' },
+    
     { id: 'settings', name: 'Manage Settings' },
   ]
 

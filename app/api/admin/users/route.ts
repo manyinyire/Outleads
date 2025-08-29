@@ -9,7 +9,6 @@ const createUserSchema = z.object({
   username: z.string().min(1, 'Username is required'),
   email: z.string().email('Invalid email address'),
   name: z.string().min(1, 'Name is required'),
-  sbu: z.string().optional(),
   role: z.enum(['ADMIN', 'BSS', 'INFOSEC', 'AGENT', 'SUPERVISOR']).default('AGENT'),
   status: z.enum(['PENDING', 'ACTIVE', 'INACTIVE', 'DELETED']).default('ACTIVE')
 });
@@ -18,7 +17,6 @@ const updateUserSchema = z.object({
   username: z.string().min(1).optional(),
   email: z.string().email().optional(),
   name: z.string().min(1).optional(),
-  sbu: z.string().optional(),
   role: z.enum(['ADMIN', 'BSS', 'INFOSEC', 'AGENT', 'SUPERVISOR']).optional(),
   status: z.enum(['PENDING', 'ACTIVE', 'INACTIVE', 'DELETED']).optional()
 });

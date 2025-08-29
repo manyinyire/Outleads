@@ -118,12 +118,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       hidden: !hasAnyRole(user, ['ADMIN']),
     },
     
-    {
-      key: '/admin/sbus',
-      icon: <BankOutlined />,
-      label: 'SBUs',
-      hidden: !hasAnyRole(user, ['ADMIN']),
-    },
+    
     {
       key: '/admin/audit-log',
       icon: <FileTextOutlined />,

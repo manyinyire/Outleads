@@ -1,13 +1,9 @@
 import { z } from 'zod';
 
 // User validation schemas
-export const createUserSchema = z.object({
-  email: z.string().email('Invalid email address').max(255),
-  username: z.string().min(3, 'Username must be at least 3 characters').max(100),
-  name: z.string().min(1, 'Name is required').max(255),
-  password: z.string().min(8, 'Password must be at least 8 characters').optional(),
-  sbu: z.string().max(100).optional(),
-  role: z.enum(['ADMIN', 'BSS', 'INFOSEC', 'AGENT', 'SUPERVISOR']).default('AGENT'),
+export const userProfileSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters').max(100),
+  email: z.string().email('Invalid email address'),
 });
 
 export const updateUserSchema = createUserSchema.partial().omit({ password: true });

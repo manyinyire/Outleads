@@ -16,7 +16,6 @@ model User {
   email     String     @unique @db.VarChar(255)
   username  String     @unique @db.VarChar(100) // To store the HRMS id_ field
   name      String     @db.VarChar(255)
-  sbu       String?    @db.VarChar(100) // SBU selected during onboarding
   role      Role       @default(AGENT)
   status    Status     @default(PENDING)
   campaigns Campaign[] @relation("CreatedCampaigns")
@@ -99,7 +98,6 @@ model Product {
   category        ProductCategory @relation(fields: [categoryId], references: [id])
   categoryId      String
   leads           Lead[]
-  sbuProducts     SbuProduct[]
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
@@ -176,31 +174,5 @@ model RolePermission {
   @@map("role_permissions")
 }
 
-// Strategic Business Unit (SBU) model
-model Sbu {
-  id          String    @id @default(cuid())
-  name        String    @unique @db.VarChar(100)
-  description String?   @db.Text
-  products    SbuProduct[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
 
-  @@index([name])
-  @@map("sbus")
-}
-
-// Junction table for SBU-Product relationships
-model SbuProduct {
-  id        String   @id @default(cuid())
-  sbu       Sbu      @relation(fields: [sbuId], references: [id])
-  sbuId     String
-  product   Product  @relation(fields: [productId], references: [id])
-  productId String
-  createdAt DateTime @default(now())
-
-  @@unique([sbuId, productId])
-  @@index([sbuId])
-  @@index([productId])
-  @@map("sbu_products")
-}
 

@@ -76,11 +76,14 @@ export default function LeadsPage() {
       title: 'Products',
       dataIndex: 'products',
       key: 'products',
-      render: (products: Array<{ name: string }>) => (
-        <>
-          {products.map(p => <Tag key={p.name}>{p.name}</Tag>)}
-        </>
-      ),
+      render: (products: Array<{ name: string }>) => {
+        console.log('Rendering products:', products);
+        return (
+          <>
+            {products.map(p => <Tag key={p.name}>{p.name}</Tag>)}
+          </>
+        )
+      },
     },
     { 
       title: 'Campaign', 
