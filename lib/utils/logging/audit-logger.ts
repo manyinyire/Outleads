@@ -23,18 +23,11 @@ export class AuditLogger {
         ipAddress: entry.ipAddress,
       });
 
-      // Store in database for persistence (you might want to create an audit_logs table)
-      // For now, we'll use the settings table as a simple audit log
-      const auditKey = `audit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const auditValue = JSON.stringify({
-        ...entry,
-        timestamp: new Date().toISOString(),
-      });
-
-      await prisma.setting.create({
+      // Store in database for persistence
+      await prisma.auditLog.create({
         data: {
-          key: auditKey,
-          value: auditValue,
+          ...entry,
+          details: entry.details || undefined,
         },
       });
 
@@ -125,7 +118,7 @@ export class AuditLogger {
     return changes;
   }
 
-  // Method to retrieve audit logs (you might want to create a proper audit_logs table for this)
+  // Method to retrieve audit logs
   static async getAuditLogs(filters?: {
     userId?: string;
     resource?: string;
@@ -135,35 +128,23 @@ export class AuditLogger {
     limit?: number;
   }) {
     try {
-      const settings = await prisma.setting.findMany({
-        where: {
-          key: {
-            startsWith: 'audit_',
-          },
-        },
+      const where: any = {};
+      if (filters?.userId) where.userId = filters.userId;
+      if (filters?.resource) where.resource = filters.resource;
+      if (filters?.action) where.action = filters.action;
+      if (filters?.fromDate || filters?.toDate) {
+        where.createdAt = {};
+        if (filters.fromDate) where.createdAt.gte = filters.fromDate;
+        if (filters.toDate) where.createdAt.lte = filters.toDate;
+      }
+
+      const auditLogs = await prisma.auditLog.findMany({
+        where,
         orderBy: {
           createdAt: 'desc',
         },
         take: filters?.limit || 100,
       });
-
-      const auditLogs = settings
-        .map((setting: any) => {
-          try {
-            return JSON.parse(setting.value) as AuditLogEntry & { timestamp: string };
-          } catch {
-            return null;
-          }
-        })
-        .filter((log: any): log is AuditLogEntry & { timestamp: string } => log !== null)
-        .filter((log: AuditLogEntry & { timestamp: string }) => {
-          if (filters?.userId && log.userId !== filters.userId) return false;
-          if (filters?.resource && log.resource !== filters.resource) return false;
-          if (filters?.action && log.action !== filters.action) return false;
-          if (filters?.fromDate && new Date(log.timestamp) < filters.fromDate) return false;
-          if (filters?.toDate && new Date(log.timestamp) > filters.toDate) return false;
-          return true;
-        });
 
       return auditLogs;
     } catch (error) {

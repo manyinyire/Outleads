@@ -137,6 +137,7 @@ export function createPostHandler<T>(config: CrudConfig<T>) {
       
       // Apply afterCreate hook if provided
       if (config.afterCreate) {
+        console.log('User in createPostHandler before afterCreate:', req.user); // Added for debugging
         await config.afterCreate(record, req);
       }
       

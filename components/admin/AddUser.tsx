@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { Modal, Form, Select, Button, message } from 'antd'
-import { AuditLogger } from '@/lib/utils/logging/audit-logger'
+import { useSelector } from 'react-redux'
+import { RootState } from '@/lib/store'
 
 const { Option } = Select
 
@@ -22,6 +23,7 @@ export default function AddUser({ visible, onClose, onUserAdded }: AddUserProps)
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
   const [allUsersCache, setAllUsersCache] = useState<UserData[]>([])
+  const { user: currentUser } = useSelector((state: RootState) => state.auth)
 
   // Fetch all users once when the modal becomes visible
   useEffect(() => {
@@ -82,17 +84,6 @@ export default function AddUser({ visible, onClose, onUserAdded }: AddUserProps)
       if (response.ok) {
         const newUser = await response.json();
         message.success('User added successfully')
-        AuditLogger.log({
-          userId: 'current_user_id', // Replace with actual user ID
-          action: 'user_created',
-          resource: 'user',
-          resourceId: newUser.id,
-          details: {
-            name: selectedUser.name,
-            email: selectedUser.email,
-            role: values.role,
-          },
-        });
         onUserAdded()
         onClose()
         form.resetFields()

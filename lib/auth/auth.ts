@@ -121,6 +121,8 @@ export function withAuthAndRole(roles: string[], handler: (req: AuthenticatedReq
     const authError = await authenticateToken(authReq);
     if (authError) return authError;
     
+    console.log('User in withAuthAndRole:', authReq.user); // Added for debugging
+
     const roleError = requireRole(roles)(authReq.user!);
     if (roleError) return roleError;
     

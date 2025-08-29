@@ -44,7 +44,7 @@ class ApiClient {
   }
 
   private async handleResponse<T>(response: Response, url: string, options: RequestInit): Promise<T> {
-    if (response.status === 403) {
+    if (response.status === 401 || response.status === 403) {
       if (!this.isRefreshing) {
         this.isRefreshing = true;
         this.refreshToken()
@@ -54,6 +54,8 @@ class ApiClient {
           })
           .catch(error => {
             this.processQueue(error, null);
+            clearAuth();
+            window.location.href = '/auth/login';
           });
       }
 

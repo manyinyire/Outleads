@@ -8,10 +8,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 // @ts-ignore - papaparse types not available
 import Papa from 'papaparse'
 
+import { useSelector } from 'react-redux'
+import { RootState } from '@/lib/store'
 import CrudTable, { CrudField } from '@/components/admin/shared/CrudTable'
 import AddUser from '@/components/admin/AddUser'
 import { apiClient } from '@/lib/api/api-client'
-import { AuditLogger } from '@/lib/utils/logging/audit-logger'
 
 interface User {
   id: string
@@ -27,6 +28,7 @@ export default function UsersTable() {
   const { message } = App.useApp()
   const queryClient = useQueryClient()
   const [isModalVisible, setModalVisible] = useState(false)
+  const { user: currentUser } = useSelector((state: RootState) => state.auth)
 
   const { data: users, isLoading } = useQuery<User[]>({
     queryKey: ['admin-users'],
@@ -35,16 +37,9 @@ export default function UsersTable() {
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string, status: string }) => apiClient.put(`/admin/users/${id}`, { status }),
-    onSuccess: (data, variables) => {
+    onSuccess: () => {
       message.success('User status updated successfully')
       queryClient.invalidateQueries({ queryKey: ['admin-users'] })
-      AuditLogger.log({
-        userId: 'current_user_id', // Replace with actual actor ID
-        action: `user_status_changed_to_${variables.status}`,
-        resource: 'user',
-        resourceId: variables.id,
-        details: { newStatus: variables.status },
-      })
     },
     onError: () => {
       message.error('Failed to update user status')
@@ -53,16 +48,9 @@ export default function UsersTable() {
 
   const updateUserMutation = useMutation({
     mutationFn: ({ id, ...data }: { id: string, name: string, email: string, role: string }) => apiClient.put(`/admin/users/${id}`, data),
-    onSuccess: (data, variables) => {
+    onSuccess: () => {
       message.success('User updated successfully')
       queryClient.invalidateQueries({ queryKey: ['admin-users'] })
-      AuditLogger.log({
-        userId: 'current_user_id', // Replace with actual actor ID
-        action: 'user_updated',
-        resource: 'user',
-        resourceId: variables.id,
-        details: { ...variables },
-      })
     },
     onError: () => {
       message.error('Failed to update user')

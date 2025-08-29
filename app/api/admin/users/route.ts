@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { createCrudHandlers } from '@/lib/db/crud-factory';
 import nodemailer from 'nodemailer';
 import { NextRequest } from 'next/server';
+import { AuditLogger } from '@/lib/utils/logging/audit-logger';
 
 const createUserSchema = z.object({
   username: z.string().min(1, 'Username is required'),
@@ -48,16 +49,34 @@ const handlers = createCrudHandlers({
   },
   
   // Hook to send activation email after creation
-  afterCreate: async (record: any) => {
+  afterCreate: async (record: any, req: AuthenticatedRequest) => {
     if (record.status === 'ACTIVE') {
       await sendActivationEmail(record.email, record.name);
+    }
+    if (req.user) {
+      await AuditLogger.log({
+        userId: req.user.id,
+        action: 'user_created',
+        resource: 'user',
+        resourceId: record.id,
+        details: record,
+      });
     }
   },
 
   // Hook to send activation email after status change
-  afterUpdate: async (record: any) => {
+  afterUpdate: async (record: any, req: AuthenticatedRequest) => {
     if (record.status === 'ACTIVE') {
       await sendActivationEmail(record.email, record.name);
+    }
+    if (req.user) {
+      await AuditLogger.log({
+        userId: req.user.id,
+        action: 'user_updated',
+        resource: 'user',
+        resourceId: record.id,
+        details: record,
+      });
     }
   },
   

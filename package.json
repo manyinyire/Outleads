@@ -50,6 +50,7 @@
     "react-redux": "^9.1.2",
     "recharts": "2.15.4",
     "redux": "^5.0.1",
+    "winston": "^3.17.0",
     "zod": "^3.25.67"
   },
   "devDependencies": {

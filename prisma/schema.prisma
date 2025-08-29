@@ -203,3 +203,22 @@ model SbuProduct {
   @@index([productId])
   @@map("sbu_products")
 }
+
+// Model for storing audit trail logs
+model AuditLog {
+  id          String    @id @default(cuid())
+  userId      String?   @db.VarChar(100)
+  action      String    @db.VarChar(100)
+  resource    String    @db.VarChar(100)
+  resourceId  String?   @db.VarChar(100)
+  details     Json?
+  ipAddress   String?   @db.VarChar(45)
+  userAgent   String?   @db.Text
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+  @@index([resource])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
