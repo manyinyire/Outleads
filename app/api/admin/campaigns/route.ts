@@ -6,6 +6,7 @@ import { nanoid } from 'nanoid';
 import { prisma } from '@/lib/db/prisma';
 import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth/auth';
 
+
 const campaignCreateSchema = z.object({
   campaign_name: z.string().min(1, 'Campaign name is required'),
   organization_name: z.string().min(1, 'Organization name is required'),
@@ -38,6 +39,8 @@ const postCampaigns = async (req: AuthenticatedRequest) => {
         assignedToId,
       },
     });
+
+    
 
     return NextResponse.json(newCampaign, { status: 201 });
   } catch (error) {

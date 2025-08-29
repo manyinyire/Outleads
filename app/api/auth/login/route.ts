@@ -7,15 +7,19 @@ import { authenticateDomainUser, getUserInfo, manageUser } from '@/lib/auth/auth
 import { ApiError } from '@/lib/utils/errors/errors';
 import { JWT_SECRET, REFRESH_TOKEN_SECRET, ACCESS_TOKEN_EXPIRATION, REFRESH_TOKEN_EXPIRATION } from '@/lib/utils/config/config';
 
+
 const loginSchema = z.object({
   username: z.string(),
   password: z.string(),
 });
 
 export async function POST(req: Request) {
+  let username = 'unknown';
   try {
     const body = await req.json();
-    const { username, password } = loginSchema.parse(body);
+    const parsed = loginSchema.parse(body);
+    username = parsed.username;
+    const password = parsed.password;
 
     const authResult = await authenticateDomainUser(username, password);
     const userInfo = await getUserInfo(authResult.user);
@@ -34,6 +38,8 @@ export async function POST(req: Request) {
     const accessToken = jwt.sign({ userId: updatedUser.id, role: updatedUser.role }, JWT_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRATION });
     const refreshToken = jwt.sign({ userId: updatedUser.id }, REFRESH_TOKEN_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRATION });
 
+    
+
     const response = NextResponse.json({ token: accessToken, user: updatedUser });
     response.headers.set('Set-Cookie', serialize('refresh-token', refreshToken, {
       httpOnly: true,
@@ -46,6 +52,8 @@ export async function POST(req: Request) {
     return response;
 
   } catch (error) {
+    
+
     if (error instanceof ApiError) {
       return NextResponse.json({ message: error.message }, { status: error.statusCode });
     }

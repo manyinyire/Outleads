@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { createCrudHandlers } from '@/lib/db/crud-factory';
 import { Prisma } from '@prisma/client';
 
+
 const createLeadSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   phone: z.string().min(1, 'Phone number is required'),
@@ -74,6 +75,8 @@ export async function POST(req: Request) {
           return createdLead;
         });
 
+
+
         return successResponse({ message: 'Lead created successfully', data: newLead }, 201);
       } catch (transactionError) {
         console.error('Transaction failed!', transactionError);
@@ -81,6 +84,9 @@ export async function POST(req: Request) {
       }
     } else {
       const newLead = await prisma.lead.create({ data: leadData });
+      
+      
+      
       return successResponse({ message: 'Lead created successfully', data: newLead }, 201);
     }
   } catch (error: any) {
