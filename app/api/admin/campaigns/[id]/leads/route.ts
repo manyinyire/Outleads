@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
-import { checkUserRole } from '@/lib/auth/auth-utils';
+import { validateUserPermissions } from '@/lib/auth/auth-utils';
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
-    const hasAccess = await checkUserRole(['ADMIN', 'SUPERVISOR']);
+    const hasAccess = await validateUserPermissions(req, ['ADMIN', 'SUPERVISOR']);
     if (!hasAccess) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }

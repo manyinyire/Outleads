@@ -11,6 +11,7 @@ import { login, clearError } from '@/lib/store/slices/authSlice'
 import Image from 'next/image'
 import FirstLoginDialog from '@/components/auth/FirstLoginDialog'
 import axios from 'axios'
+import { Role } from '@prisma/client'
 
 const { Text } = Typography
 const { Content } = Layout
@@ -27,7 +28,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      const redirectUrl = getDashboardRouteForRole(user.role);
+      const redirectUrl = getDashboardRouteForRole(user.role as Role);
       router.push(redirectUrl);
     }
   }, [isAuthenticated, user, router])
@@ -50,7 +51,7 @@ export default function LoginPage() {
         const loggedInUser = response.data.user;
         dispatch(login.fulfilled(loggedInUser, '', { username: values.username, password: values.password }));
         localStorage.setItem('auth-token', response.data.token);
-        const redirectUrl = getDashboardRouteForRole(loggedInUser.role);
+        const redirectUrl = getDashboardRouteForRole(loggedInUser.role as Role);
         router.push(redirectUrl);
       }
     } catch (error: any) {
