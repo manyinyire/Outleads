@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
-import { Prisma } from '@prisma/client';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { ZodError, ZodSchema } from 'zod';
-import { withAuth, AuthenticatedRequest } from '@/lib/auth/auth';
 import { logger } from '@/lib/utils/logging';
+
+// Dynamic imports for Prisma to avoid loading in Edge Runtime
+type PrismaClientKnownRequestError = any;
+type Prisma = any;
 
 /**
  * Standard API error response format
@@ -118,6 +119,13 @@ function getErrorTypeFromStatus(status: number): string {
 }
 
 /**
+ * Check if error is a Prisma error without importing Prisma
+ */
+function isPrismaError(error: any): boolean {
+  return error && error.code && typeof error.code === 'string' && error.code.startsWith('P');
+}
+
+/**
  * Wraps an async handler with error handling
  */
 export function withErrorHandler<T extends (...args: any[]) => Promise<NextResponse>>(
@@ -129,7 +137,7 @@ export function withErrorHandler<T extends (...args: any[]) => Promise<NextRespo
     } catch (error: any) {
       logger.error('Handler error occurred', error);
       
-      if (error instanceof PrismaClientKnownRequestError) {
+      if (isPrismaError(error)) {
         return handlePrismaError(error);
       }
       
@@ -153,7 +161,7 @@ export function withErrorHandler<T extends (...args: any[]) => Promise<NextRespo
 /**
  * Handle Prisma-specific errors with appropriate messages
  */
-export function handlePrismaError(error: PrismaClientKnownRequestError): NextResponse {
+export function handlePrismaError(error: any): NextResponse {
   logger.error('Prisma error occurred', error, { code: error.code });
   
   switch (error.code) {
@@ -231,7 +239,7 @@ export async function performCrudOperation<T>(
     
     return successResponse(result);
   } catch (error: any) {
-    if (error instanceof PrismaClientKnownRequestError) {
+    if (isPrismaError(error)) {
       return handlePrismaError(error);
     }
     
@@ -330,12 +338,16 @@ export function calculatePaginationMeta(
 
 /**
  * Middleware to check authentication and role
+ * Note: This function requires withAuth which should only be used in Node.js runtime
  */
 export function withAuthAndRole(
   allowedRoles: string[],
   handler: (req: any, context?: any) => Promise<NextResponse>
 ) {
-  return withAuth(async (req: AuthenticatedRequest, context?: any) => {
+  // Dynamic import to avoid loading auth in Edge Runtime
+  const { withAuth } = require('@/lib/auth/auth');
+  
+  return withAuth(async (req: any, context?: any) => {
     // Check if user has required role
     if (!req.user || !allowedRoles.includes(req.user.role)) {
       return errorResponse('Insufficient permissions', 403);

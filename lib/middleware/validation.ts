@@ -76,8 +76,10 @@ class RateLimitStore {
 
 const rateLimitStore = new RateLimitStore();
 
-// Cleanup expired entries every 5 minutes
-setInterval(() => rateLimitStore.cleanup(), 5 * 60 * 1000);
+// Cleanup expired entries every 5 minutes (only in Node.js environment)
+if (typeof setInterval !== 'undefined' && typeof process !== 'undefined' && process.env.NEXT_RUNTIME !== 'edge') {
+  setInterval(() => rateLimitStore.cleanup(), 5 * 60 * 1000);
+}
 
 /**
  * Rate limiting configuration
