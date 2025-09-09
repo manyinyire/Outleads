@@ -51,10 +51,15 @@ export function middleware(request: NextRequest) {
   response.headers.set('X-XSS-Protection', '1; mode=block');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   
-  // More restrictive CSP for better security
+  // CSP with different policies for dev vs production
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  const scriptSrc = isDevelopment 
+    ? "'self' 'unsafe-eval' 'unsafe-inline'" // Allow inline scripts in development
+    : "'self' 'unsafe-eval'"; // Strict policy for production
+  
   const cspDirectives = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-eval'",
+    `script-src ${scriptSrc}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https:",
     "font-src 'self' data:",
