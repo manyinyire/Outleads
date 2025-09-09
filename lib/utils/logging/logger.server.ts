@@ -1,7 +1,5 @@
 // lib/utils/logging/logger.ts - SERVER-SIDE LOGGER
 
-import winston from 'winston';
-
 interface LogContext {
   userId?: string;
   requestId?: string;
@@ -21,39 +19,75 @@ export interface Logger {
   debug(message: string, context?: LogContext): void;
 }
 
-const { combine, timestamp, printf, colorize, json } = winston.format;
-
-const consoleFormat = printf(({ level, message, timestamp, ...metadata }) => {
-  let msg = `${timestamp} ${level}: ${message}`;
-  if (metadata && Object.keys(metadata).length > 0) {
-    msg += ` | Context: ${JSON.stringify(metadata)}`;
-  }
-  return msg;
-});
-
 // Detect runtime environment
 const isEdgeRuntime = (typeof globalThis !== 'undefined' && 'EdgeRuntime' in globalThis) ||
   (typeof process !== 'undefined' && process.env.NEXT_RUNTIME === 'edge');
 
-// Create logger with runtime-appropriate transports
-const createWinstonLogger = () => {
-  const transports: winston.transport[] = [
-    new winston.transports.Console({
-      format: combine(
-        colorize(),
-        timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-        consoleFormat
-      ),
-    })
-  ];
+// Edge Runtime compatible logger
+class EdgeLogger implements Logger {
+  private formatMessage(level: string, message: string, context?: LogContext): string {
+    const timestamp = new Date().toISOString();
+    let logMessage = `[${timestamp}] ${level.toUpperCase()}: ${message}`;
+    
+    if (context && Object.keys(context).length > 0) {
+      logMessage += ` | Context: ${JSON.stringify(context)}`;
+    }
+    
+    return logMessage;
+  }
 
-  // Only add file transports in Node.js runtime
-  if (!isEdgeRuntime) {
+  info(message: string, context?: LogContext): void {
+    console.info(this.formatMessage('info', message, context));
+  }
+
+  warn(message: string, context?: LogContext): void {
+    console.warn(this.formatMessage('warn', message, context));
+  }
+
+  error(message: string, error?: Error, context?: LogContext): void {
+    const errorContext = error ? { ...context, stack: error.stack, errorMessage: error.message } : context;
+    console.error(this.formatMessage('error', message, errorContext));
+  }
+
+  debug(message: string, context?: LogContext): void {
+    if (process.env.NODE_ENV === 'development') {
+      console.debug(this.formatMessage('debug', message, context));
+    }
+  }
+}
+
+// Node.js Winston logger
+class WinstonLogger implements Logger {
+  private winstonLogger: any;
+
+  constructor() {
+    // Dynamically import and setup winston only in Node.js environment
+    const winston = require('winston');
+    const { combine, timestamp, printf, colorize, json } = winston.format;
+
+    const consoleFormat = printf(({ level, message, timestamp, ...metadata }: any) => {
+      let msg = `${timestamp} ${level}: ${message}`;
+      if (metadata && Object.keys(metadata).length > 0) {
+        msg += ` | Context: ${JSON.stringify(metadata)}`;
+      }
+      return msg;
+    });
+
+    const transports = [
+      new winston.transports.Console({
+        format: combine(
+          colorize(),
+          timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+          consoleFormat
+        ),
+      })
+    ];
+
+    // Add file transports
     try {
       const fs = require('fs');
       const path = require('path');
       
-      // Ensure log directory exists
       const logDir = 'logs';
       if (!fs.existsSync(logDir)) {
         fs.mkdirSync(logDir);
@@ -73,27 +107,22 @@ const createWinstonLogger = () => {
         })
       );
     } catch (error) {
-      // File system not available, fallback to console only
-      console.warn('File logging not available in this environment');
+      console.warn('File logging not available');
     }
+
+    this.winstonLogger = winston.createLogger({
+      level: process.env.NODE_ENV === 'development' ? 'debug' : 'info',
+      format: combine(
+        timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        json()
+      ),
+      transports,
+      exitOnError: false,
+    });
   }
 
-  return winston.createLogger({
-    level: process.env.NODE_ENV === 'development' ? 'debug' : 'info',
-    format: combine(
-      timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-      json()
-    ),
-    transports,
-    exitOnError: false,
-  });
-};
-
-const winstonLogger = createWinstonLogger();
-
-class WinstonLogger implements Logger {
   private log(level: 'info' | 'warn' | 'error' | 'debug', message: string, context?: LogContext | Error) {
-    winstonLogger[level](message, context);
+    this.winstonLogger[level](message, context);
   }
 
   info(message: string, context?: LogContext): void {
@@ -114,7 +143,8 @@ class WinstonLogger implements Logger {
   }
 }
 
-export const logger: Logger = new WinstonLogger();
+// Export the appropriate logger based on runtime
+export const logger: Logger = isEdgeRuntime ? new EdgeLogger() : new WinstonLogger();
 
 // Helper function to create request-scoped logger
 export function createRequestLogger(requestId: string, userId?: string) {
