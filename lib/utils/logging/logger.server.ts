@@ -1,14 +1,6 @@
 // lib/utils/logging/logger.ts - SERVER-SIDE LOGGER
 
 import winston from 'winston';
-import fs from 'fs';
-import path from 'path';
-
-// Ensure log directory exists
-const logDir = 'logs';
-if (!fs.existsSync(logDir)) {
-  fs.mkdirSync(logDir);
-}
 
 interface LogContext {
   userId?: string;
@@ -39,34 +31,65 @@ const consoleFormat = printf(({ level, message, timestamp, ...metadata }) => {
   return msg;
 });
 
-const winstonLogger = winston.createLogger({
-  level: process.env.NODE_ENV === 'development' ? 'debug' : 'info',
-  format: combine(
-    timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-    json()
-  ),
-  transports: [
+// Detect runtime environment
+const isEdgeRuntime = (typeof globalThis !== 'undefined' && 'EdgeRuntime' in globalThis) ||
+  (typeof process !== 'undefined' && process.env.NEXT_RUNTIME === 'edge');
+
+// Create logger with runtime-appropriate transports
+const createWinstonLogger = () => {
+  const transports: winston.transport[] = [
     new winston.transports.Console({
       format: combine(
         colorize(),
         timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
         consoleFormat
       ),
-    }),
-    new winston.transports.File({
-      filename: path.join(logDir, 'app.log'),
-      maxsize: 5242880, // 5MB
-      maxFiles: 5,
-    }),
-    new winston.transports.File({
-      filename: path.join(logDir, 'error.log'),
-      level: 'error',
-      maxsize: 5242880, // 5MB
-      maxFiles: 5,
-    }),
-  ],
-  exitOnError: false,
-});
+    })
+  ];
+
+  // Only add file transports in Node.js runtime
+  if (!isEdgeRuntime) {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      
+      // Ensure log directory exists
+      const logDir = 'logs';
+      if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir);
+      }
+
+      transports.push(
+        new winston.transports.File({
+          filename: path.join(logDir, 'app.log'),
+          maxsize: 5242880, // 5MB
+          maxFiles: 5,
+        }),
+        new winston.transports.File({
+          filename: path.join(logDir, 'error.log'),
+          level: 'error',
+          maxsize: 5242880, // 5MB
+          maxFiles: 5,
+        })
+      );
+    } catch (error) {
+      // File system not available, fallback to console only
+      console.warn('File logging not available in this environment');
+    }
+  }
+
+  return winston.createLogger({
+    level: process.env.NODE_ENV === 'development' ? 'debug' : 'info',
+    format: combine(
+      timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+      json()
+    ),
+    transports,
+    exitOnError: false,
+  });
+};
+
+const winstonLogger = createWinstonLogger();
 
 class WinstonLogger implements Logger {
   private log(level: 'info' | 'warn' | 'error' | 'debug', message: string, context?: LogContext | Error) {
