@@ -93,7 +93,7 @@ export async function getConnectionInfo() {
       timestamp: new Date(),
     };
   } catch (error) {
-    logger.warn('Could not retrieve connection info', error as Error);
+    logger.warn('Could not retrieve connection info', { error: 'Connection retrieval failed' });
     return {
       activeConnections: null,
       timestamp: new Date(),

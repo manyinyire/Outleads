@@ -34,7 +34,7 @@ export const queryOptimizer = {
    * Build optimized include object with specific fields
    */
   buildInclude: (relations: Record<string, string[] | boolean>) => {
-    const include: any = {}
+    const include: Record<string, unknown> = {}
     
     for (const [relation, fields] of Object.entries(relations)) {
       if (fields === true) {
@@ -82,7 +82,7 @@ export const queryOptimizer = {
   buildDateRangeFilter: (field: string, from?: Date, to?: Date) => {
     if (!from && !to) return {}
     
-    const filter: any = {}
+    const filter: Record<string, unknown> = {}
     if (from) filter.gte = from
     if (to) filter.lte = to
     
@@ -108,7 +108,7 @@ export const batchOperations = {
    */
   createMany: async <T>(
     model: keyof typeof prisma,
-    data: any[]
+    data: Record<string, unknown>[]
   ) => {
     return (prisma[model] as any).createMany({
       data,
@@ -121,7 +121,7 @@ export const batchOperations = {
    */
   updateMany: async <T>(
     model: keyof typeof prisma,
-    where: any,
+    where: Record<string, unknown>,
     data: any
   ) => {
     return (prisma[model] as any).updateMany({

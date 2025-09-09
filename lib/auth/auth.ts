@@ -32,8 +32,8 @@ export async function authenticateToken(req: AuthenticatedRequest): Promise<Next
 
     if (!token) {
       logger.warn('Authentication failed: No token provided', { 
-        userAgent: req.headers.get('user-agent'),
-        ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip')
+        userAgent: req.headers.get('user-agent') || undefined || undefined,
+        ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined || undefined
       });
       return NextResponse.json({
         error: 'Authentication Error',
@@ -58,7 +58,7 @@ export async function authenticateToken(req: AuthenticatedRequest): Promise<Next
     if (!user) {
       logger.warn('Authentication failed: User not found', { 
         userId: decoded.userId,
-        ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip')
+        ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined
       });
       return NextResponse.json({
         error: 'Authentication Error',
@@ -82,8 +82,8 @@ export async function authenticateToken(req: AuthenticatedRequest): Promise<Next
     return null;
   } catch (error) {
     logger.error('Authentication error occurred', error as Error, {
-      ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip'),
-      userAgent: req.headers.get('user-agent')
+      ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined,
+      userAgent: req.headers.get('user-agent') || undefined
     });
     return NextResponse.json({
       error: 'Authentication Error',

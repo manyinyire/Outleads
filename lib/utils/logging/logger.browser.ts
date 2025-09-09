@@ -4,7 +4,12 @@ interface LogContext {
   userId?: string;
   requestId?: string;
   action?: string;
-  [key: string]: any;
+  userAgent?: string;
+  ip?: string;
+  path?: string;
+  stack?: string;
+  errorMessage?: string;
+  [key: string]: unknown;
 }
 
 export interface Logger {

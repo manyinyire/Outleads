@@ -67,7 +67,7 @@ export class DatabasePerformance {
       const skip = (page - 1) * limit;
       
       // Build optimized where clause
-      const where: any = {};
+      const where: Record<string, unknown> = {};
       
       if (status?.length) {
         where.status = { in: status };
@@ -86,7 +86,7 @@ export class DatabasePerformance {
       }
 
       // Optimized select to avoid fetching unnecessary data
-      const select: any = {
+      const select: Record<string, unknown> = {
         id: true,
         email: true,
         username: true,
@@ -161,7 +161,7 @@ export class DatabasePerformance {
       const skip = (page - 1) * limit;
       
       // Build optimized where clause
-      const where: any = {};
+      const where: Record<string, unknown> = {};
       
       if (campaignId) {
         where.campaignId = campaignId;
@@ -184,8 +184,8 @@ export class DatabasePerformance {
       
       if (dateFrom || dateTo) {
         where.createdAt = {};
-        if (dateFrom) where.createdAt.gte = dateFrom;
-        if (dateTo) where.createdAt.lte = dateTo;
+        if (dateFrom) (where.createdAt as Record<string, unknown>).gte = dateFrom;
+        if (dateTo) (where.createdAt as Record<string, unknown>).lte = dateTo;
       }
 
       // Optimized select with minimal relations
@@ -256,7 +256,7 @@ export class DatabasePerformance {
       const skip = (page - 1) * limit;
       
       // Build optimized where clause
-      const where: any = {};
+      const where: Record<string, unknown> = {};
       
       if (createdById) {
         where.createdById = createdById;

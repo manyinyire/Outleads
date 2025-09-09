@@ -10,8 +10,8 @@ export async function POST(req: NextRequest) {
 
   if (!refreshToken) {
     logger.warn('Refresh attempt without token', {
-      ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip'),
-      userAgent: req.headers.get('user-agent')
+      ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined,
+      userAgent: req.headers.get('user-agent') || undefined
     });
     return NextResponse.json({ message: 'Refresh token not found.' }, { status: 401 });
   }

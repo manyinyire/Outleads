@@ -387,7 +387,7 @@ export class ComplianceAuditLogger {
     // 3. Implement data retention policies
     
     // For now, we'll store using the existing logger
-    logger.info('Compliance audit event', entry);
+    logger.info('Compliance audit event', entry as unknown as Record<string, unknown>);
   }
 
   private static async alertSecurityTeam(entry: AuditLogEntry): Promise<void> {
@@ -397,7 +397,7 @@ export class ComplianceAuditLogger {
     // - Email notifications
     // - SIEM systems
     
-    logger.error('CRITICAL SECURITY EVENT', undefined, entry);
+    logger.error('CRITICAL SECURITY EVENT', undefined, entry as unknown as Record<string, unknown>);
   }
 
   private static async getAuditLogs(params: {

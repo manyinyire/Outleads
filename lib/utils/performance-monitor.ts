@@ -150,11 +150,11 @@ export const performanceMonitor = new PerformanceMonitor();
 
 // Decorator for measuring method performance
 export function measurePerformance(name?: string) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return function (target: object, propertyKey: string, descriptor: PropertyDescriptor) {
     const originalMethod = descriptor.value;
     const methodName = name || `${target.constructor.name}.${propertyKey}`;
 
-    descriptor.value = function (...args: any[]) {
+    descriptor.value = function (...args: unknown[]) {
       if (originalMethod.constructor.name === 'AsyncFunction') {
         return performanceMonitor.measureAsync(methodName, () => originalMethod.apply(this, args));
       } else {

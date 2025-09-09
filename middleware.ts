@@ -40,7 +40,7 @@ export function middleware(request: NextRequest) {
     logger.warn('Security middleware blocked request', {
       path: request.nextUrl.pathname,
       ip,
-      userAgent: request.headers.get('user-agent')
+      userAgent: request.headers.get('user-agent') || undefined
     });
     return securityError;
   }
@@ -54,7 +54,7 @@ export function middleware(request: NextRequest) {
   // More restrictive CSP for better security
   const cspDirectives = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-eval' 'unsafe-inline'", // TODO: Remove unsafe-inline in production
+    "script-src 'self' 'unsafe-eval'",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https:",
     "font-src 'self' data:",
