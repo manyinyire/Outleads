@@ -1,36 +1,30 @@
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/db/prisma'
 import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth/auth'
+import { withErrorHandler, successResponse, errorResponse } from '@/lib/api/api-utils'
 
-const prisma = new PrismaClient()
+const handler = withErrorHandler(async (req: AuthenticatedRequest, { params }: { params: { reportType: string } }) => {
+  const { searchParams } = new URL(req.url)
+  const startDate = searchParams.get('startDate')
+  const endDate = searchParams.get('endDate')
 
-async function handler(req: AuthenticatedRequest, { params }: { params: { reportType: string } }) {
-  try {
-    const { searchParams } = new URL(req.url)
-    const startDate = searchParams.get('startDate')
-    const endDate = searchParams.get('endDate')
-
-    let data;
-    switch (params.reportType) {
-      case 'lead-details':
-        data = await getLeadDetails(startDate, endDate)
-        break;
-      case 'campaign-performance':
-        data = await getCampaignPerformance(startDate, endDate)
-        break;
-      case 'user-activity':
-        data = await getUserActivity(startDate, endDate)
-        break;
-      default:
-        return NextResponse.json({ error: 'Invalid report type' }, { status: 400 })
-    }
-
-    return NextResponse.json({ data })
-  } catch (error) {
-    console.error(`Error generating report:`, error)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+  let data;
+  switch (params.reportType) {
+    case 'lead-details':
+      data = await getLeadDetails(startDate, endDate)
+      break;
+    case 'campaign-performance':
+      data = await getCampaignPerformance(startDate, endDate)
+      break;
+    case 'user-activity':
+      data = await getUserActivity(startDate, endDate)
+      break;
+    default:
+      return errorResponse('Invalid report type', 400)
   }
-}
+
+  return successResponse({ data })
+})
 
 export const GET = withAuthAndRole(['ADMIN', 'SUPERVISOR'], handler);
 

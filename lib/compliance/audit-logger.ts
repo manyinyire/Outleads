@@ -430,8 +430,38 @@ export class ComplianceAuditLogger {
 }
 
 // Helper function for easy integration with existing code
-export const auditLog = ComplianceAuditLogger.logEvent;
-export const auditAuth = ComplianceAuditLogger.logAuthEvent;
-export const auditData = ComplianceAuditLogger.logDataAccess;
-export const auditGDPR = ComplianceAuditLogger.logGDPREvent;
-export const auditSecurity = ComplianceAuditLogger.logSecurityEvent;
+export const auditLog = (entry: AuditLogEntry) => ComplianceAuditLogger.logEvent(entry);
+export const auditAuth = (
+  action: AuditAction.LOGIN | AuditAction.LOGOUT | AuditAction.LOGIN_FAILED,
+  userId?: string,
+  userEmail?: string,
+  success: boolean = true,
+  ipAddress?: string,
+  userAgent?: string,
+  errorMessage?: string
+) => ComplianceAuditLogger.logAuthEvent(action, userId, userEmail, success, ipAddress, userAgent, errorMessage);
+export const auditData = (
+  action: AuditAction,
+  userId: string,
+  userEmail: string,
+  userRole: string,
+  resourceType: ResourceType,
+  resourceId?: string,
+  resourceData?: any,
+  ipAddress?: string,
+  userAgent?: string
+) => ComplianceAuditLogger.logDataAccess(action, userId, userEmail, userRole, resourceType, resourceId, resourceData, ipAddress, userAgent);
+export const auditGDPR = (
+  action: AuditAction,
+  dataSubjectEmail: string,
+  requestDetails: any,
+  processedBy?: string,
+  ipAddress?: string
+) => ComplianceAuditLogger.logGDPREvent(action, dataSubjectEmail, requestDetails, processedBy, ipAddress);
+export const auditSecurity = (
+  action: AuditAction,
+  ipAddress: string,
+  userAgent?: string,
+  details?: any,
+  userId?: string
+) => ComplianceAuditLogger.logSecurityEvent(action, ipAddress, userAgent, details, userId);

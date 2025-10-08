@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { App, Tag } from 'antd'
 import { ColumnsType } from 'antd/es/table'
 import CrudTable, { CrudField } from '@/components/admin/shared/CrudTable'
+import { sanitizeText } from '@/lib/utils/sanitization'
 
 interface ProductCategory {
   id: string
@@ -140,18 +141,29 @@ export default function ProductsPage() {
       label: 'Category',
       type: 'select',
       required: true,
-      options: categories.map(cat => ({ label: cat.name, value: cat.id }))
+      options: categories.map(cat => ({ label: sanitizeText(cat.name), value: cat.id }))
     }
   ], [categories])
 
   const columns: ColumnsType<Product> = useMemo(() => [
-    { title: 'Name', dataIndex: 'name', key: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
-    { title: 'Description', dataIndex: 'description', key: 'description' },
+    { 
+      title: 'Name', 
+      dataIndex: 'name', 
+      key: 'name', 
+      sorter: (a, b) => a.name.localeCompare(b.name),
+      render: (name: string) => sanitizeText(name || '')
+    },
+    { 
+      title: 'Description', 
+      dataIndex: 'description', 
+      key: 'description',
+      render: (desc: string) => sanitizeText(desc || '')
+    },
     { 
       title: 'Category', 
       dataIndex: ['category', 'name'], 
       key: 'category',
-      render: (categoryName: string) => <Tag>{categoryName}</Tag>
+      render: (categoryName: string) => <Tag>{sanitizeText(categoryName || '')}</Tag>
     },
   ], [])
 

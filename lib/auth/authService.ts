@@ -3,6 +3,7 @@ import axios from 'axios';
 import { ApiError } from '@/lib/utils/errors/errors';
 import { sendEmail } from '@/lib/email/email';
 import { env } from '@/lib/utils/config/env-validation';
+import { logger } from '@/lib/utils/logging';
 
 const apiBaseUrl = process.env.API_BASE_URL;
 
@@ -12,9 +13,9 @@ if (!apiBaseUrl) {
 
 export async function authenticateDomainUser(username: string, password: string) {
   try {
-    console.log('Attempting authentication with:', { username, apiBaseUrl });
+    logger.debug('Attempting domain authentication', { username, apiBaseUrl });
     const response = await axios.post(apiBaseUrl!, { username, password });
-    console.log('Authentication response:', response.data);
+    logger.info('Domain authentication successful', { username });
     return {
       access: response.data.access,
       refresh: response.data.refresh,
@@ -29,10 +30,12 @@ export async function authenticateDomainUser(username: string, password: string)
       }
     };
   } catch (error) {
-    console.error('Authentication error:', error);
+    logger.error('Domain authentication failed', error as Error, { username });
     if (axios.isAxiosError(error)) {
-      console.error('Response data:', error.response?.data);
-      console.error('Response status:', error.response?.status);
+      logger.debug('Authentication error details', {
+        status: error.response?.status,
+        data: error.response?.data
+      });
     }
     throw new ApiError('Invalid credentials.', 401);
   }

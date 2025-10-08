@@ -1,33 +1,24 @@
-import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { z } from 'zod';
 import { withAuthAndRole } from '@/lib/auth/auth';
+import { withErrorHandler, successResponse, validateRequestBody } from '@/lib/api/api-utils';
 
 const approveUserSchema = z.object({
   userId: z.string(),
 });
 
-async function approveUser(req: Request) {
-  try {
-    const body = await req.json();
-    const validation = approveUserSchema.safeParse(body);
+const approveUser = withErrorHandler(async (req: Request) => {
+  const validation = await validateRequestBody(req, approveUserSchema);
+  if (!validation.success) return validation.error;
 
-    if (!validation.success) {
-      return NextResponse.json({ error: validation.error.format() }, { status: 400 });
-    }
+  const { userId } = validation.data;
 
-    const { userId } = validation.data;
+  await prisma.user.update({
+    where: { id: userId },
+    data: { status: 'APPROVED' },
+  });
 
-    await prisma.user.update({
-      where: { id: userId },
-      data: { status: 'APPROVED' },
-    });
-
-    return NextResponse.json({ message: 'User approved successfully.' });
-  } catch (error) {
-    console.error('Approve user error:', error);
-    return NextResponse.json({ message: 'An internal server error occurred.' }, { status: 500 });
-  }
-}
+  return successResponse({ message: 'User approved successfully.' });
+})
 
 export const POST = withAuthAndRole(['ADMIN'], approveUser);

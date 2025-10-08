@@ -1,36 +1,27 @@
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/db/prisma'
 import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth/auth'
+import { withErrorHandler, successResponse } from '@/lib/api/api-utils'
+import { logger } from '@/lib/utils/logging'
 
-const prisma = new PrismaClient()
+const handler = withErrorHandler(async (req: AuthenticatedRequest) => {
+  const settings = await prisma.setting.findMany()
+  return successResponse(settings)
+})
 
-async function handler(req: AuthenticatedRequest) {
-  try {
-    const settings = await prisma.setting.findMany()
-    return NextResponse.json(settings)
-  } catch (error) {
-    console.error('Error fetching settings:', error)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
-  }
-}
+const postHandler = withErrorHandler(async (req: AuthenticatedRequest) => {
+  const body = await req.json()
+  const { key, value } = body
 
-async function postHandler(req: AuthenticatedRequest) {
-  try {
-    const body = await req.json()
-    const { key, value } = body
+  const updatedSetting = await prisma.setting.upsert({
+    where: { key },
+    update: { value },
+    create: { key, value },
+  })
 
-    const updatedSetting = await prisma.setting.upsert({
-      where: { key },
-      update: { value },
-      create: { key, value },
-    })
-
-    return NextResponse.json(updatedSetting)
-  } catch (error) {
-    console.error('Error updating setting:', error)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
-  }
-}
+  logger.info('Setting updated', { key, userId: req.user?.id })
+  return successResponse(updatedSetting)
+})
 
 export const GET = withAuthAndRole(['ADMIN'], handler);
 export const POST = withAuthAndRole(['ADMIN'], postHandler);

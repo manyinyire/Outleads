@@ -9,6 +9,7 @@ import { RootState } from '@/lib/store'
 import Papa from 'papaparse'
 
 import CrudTable, { CrudField } from '@/components/admin/shared/CrudTable'
+import { sanitizeHtml, sanitizeFilename, sanitizeText } from '@/lib/utils/sanitization'
 
 interface Campaign {
   id: string
@@ -160,12 +161,12 @@ export default function CampaignsPage() {
 
       const leads = await response.json();
 
-      // Format the data for CSV export
+      // Sanitize and format the data for CSV export
       const formattedLeads = leads.map((lead: any) => ({
-        "Full Name": lead.fullName,
-        "Phone Number": lead.phoneNumber,
-        "Business Sector": lead.businessSector?.name || 'N/A',
-        "Products": lead.products?.map((p: any) => p.name).join(', ') || 'N/A',
+        "Full Name": sanitizeText(lead.fullName || ''),
+        "Phone Number": sanitizeText(lead.phoneNumber || ''),
+        "Business Sector": sanitizeText(lead.businessSector?.name || 'N/A'),
+        "Products": sanitizeText(lead.products?.map((p: any) => p.name).join(', ') || 'N/A'),
         "Date Submitted": new Date(lead.createdAt).toLocaleString(),
       }));
 
@@ -178,10 +179,13 @@ export default function CampaignsPage() {
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.setAttribute('download', `${campaignName}-leads.csv`);
+      // Sanitize filename to prevent path traversal and XSS
+      const safeFilename = sanitizeFilename(campaignName);
+      link.setAttribute('download', `${safeFilename}-leads.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(link.href); // Clean up blob URL
       message.success('Leads exported successfully!');
     } catch (error) {
       console.error('Export error:', error);
@@ -199,23 +203,40 @@ export default function CampaignsPage() {
       label: 'Assign to Agent',
       type: 'select',
       required: true,
-      options: agents.map(agent => ({ label: agent.name, value: agent.id })),
+      options: agents.map(agent => ({ label: sanitizeText(agent.name), value: agent.id })),
     },
   ], [agents])
 
   const columns: ColumnsType<Campaign> = useMemo(() => [
-    { title: 'Campaign Name', dataIndex: 'campaign_name', key: 'campaign_name' },
-    { title: 'Organization', dataIndex: 'organization_name', key: 'organization_name' },
-    { title: 'Assigned Agent', dataIndex: ['assignedTo', 'name'], key: 'assignedTo' },
+    { 
+      title: 'Campaign Name', 
+      dataIndex: 'campaign_name', 
+      key: 'campaign_name',
+      render: (name: string) => sanitizeText(name || '')
+    },
+    { 
+      title: 'Organization', 
+      dataIndex: 'organization_name', 
+      key: 'organization_name',
+      render: (name: string) => sanitizeText(name || '')
+    },
+    { 
+      title: 'Assigned Agent', 
+      dataIndex: ['assignedTo', 'name'], 
+      key: 'assignedTo',
+      render: (name: string) => sanitizeText(name || '')
+    },
     {
       title: 'Unique Link',
       dataIndex: 'uniqueLink',
       key: 'uniqueLink',
       render: (link: string) => {
-        const fullLink = `${window.location.origin}/campaign/${link}`;
+        // Sanitize the link parameter to prevent XSS
+        const sanitizedLink = sanitizeText(link || '');
+        const fullLink = `${window.location.origin}/campaign/${encodeURIComponent(sanitizedLink)}`;
         return (
           <Space>
-            <span>{fullLink}</span>
+            <span>{sanitizeText(fullLink)}</span>
             <Tooltip title="Copy Link">
               <Button
                 icon={<CopyOutlined />}

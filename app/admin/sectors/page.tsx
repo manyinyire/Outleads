@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { App } from 'antd'
 import { ColumnsType } from 'antd/es/table'
 import CrudTable, { CrudField } from '@/components/admin/shared/CrudTable'
+import { sanitizeText } from '@/lib/utils/sanitization'
 
 interface Sector {
   id: string
@@ -111,7 +112,13 @@ export default function SectorsPage() {
   ], [])
 
   const columns: ColumnsType<Sector> = useMemo(() => [
-    { title: 'Name', dataIndex: 'name', key: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
+    { 
+      title: 'Name', 
+      dataIndex: 'name', 
+      key: 'name', 
+      sorter: (a, b) => a.name.localeCompare(b.name),
+      render: (name: string) => sanitizeText(name || '')
+    },
   ], [])
 
   return (

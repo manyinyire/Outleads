@@ -2,25 +2,20 @@ import { prisma } from '@/lib/db/prisma';
 import { withErrorHandler, successResponse, errorResponse } from '@/lib/api/api-utils';
 
 const handler = withErrorHandler(async () => {
-  try {
-    const productCategories = await prisma.productCategory.findMany({
-      include: {
-        products: {
-          orderBy: {
-            name: 'asc',
-          },
+  const productCategories = await prisma.productCategory.findMany({
+    include: {
+      products: {
+        orderBy: {
+          name: 'asc',
         },
       },
-      orderBy: {
-        name: 'asc',
-      },
-    });
+    },
+    orderBy: {
+      name: 'asc',
+    },
+  });
 
-    return successResponse(productCategories);
-  } catch (error) {
-    console.error('Failed to fetch products for landing page:', error);
-    return errorResponse('An error occurred while fetching products.', 500);
-  }
+  return successResponse(productCategories);
 });
 
 export { handler as GET };

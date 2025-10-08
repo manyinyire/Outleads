@@ -6,6 +6,7 @@ import { ColumnsType } from 'antd/es/table'
 import { DownloadOutlined } from '@ant-design/icons'
 import moment from 'moment'
 import Papa from 'papaparse'
+import { sanitizeText, sanitizeFilename } from '@/lib/utils/sanitization'
 
 const { Title } = Typography
 const { RangePicker } = DatePicker
@@ -54,17 +55,17 @@ export default function ReportsPage() {
         switch (reportType) {
           case 'lead-details':
             generatedColumns = [
-              { title: 'Full Name', dataIndex: 'full_name', key: 'full_name' },
-              { title: 'Phone Number', dataIndex: 'phone_number', key: 'phone_number' },
-              { title: 'Business Sector', dataIndex: 'business_sector', key: 'business_sector' },
-              { title: 'Campaign', dataIndex: 'campaign', key: 'campaign' },
-              { title: 'Products', dataIndex: 'products', key: 'products' },
+              { title: 'Full Name', dataIndex: 'full_name', key: 'full_name', render: (text: string) => sanitizeText(text || '') },
+              { title: 'Phone Number', dataIndex: 'phone_number', key: 'phone_number', render: (text: string) => sanitizeText(text || '') },
+              { title: 'Business Sector', dataIndex: 'business_sector', key: 'business_sector', render: (text: string) => sanitizeText(text || '') },
+              { title: 'Campaign', dataIndex: 'campaign', key: 'campaign', render: (text: string) => sanitizeText(text || '') },
+              { title: 'Products', dataIndex: 'products', key: 'products', render: (text: string) => sanitizeText(text || '') },
               { title: 'Date', dataIndex: 'created_at', key: 'created_at', render: (date: string) => new Date(date).toLocaleDateString() },
             ];
             break;
           case 'campaign-performance':
             generatedColumns = [
-              { title: 'Campaign Name', dataIndex: 'campaign_name', key: 'campaign_name' },
+              { title: 'Campaign Name', dataIndex: 'campaign_name', key: 'campaign_name', render: (text: string) => sanitizeText(text || '') },
               { title: 'Active', dataIndex: 'is_active', key: 'is_active', render: (active: boolean) => (active ? 'Yes' : 'No') },
               { title: 'Clicks', dataIndex: 'click_count', key: 'click_count' },
               { title: 'Leads', dataIndex: 'lead_count', key: 'lead_count' },
@@ -73,10 +74,10 @@ export default function ReportsPage() {
             break;
           case 'user-activity':
             generatedColumns = [
-              { title: 'Name', dataIndex: 'name', key: 'name' },
-              { title: 'Email', dataIndex: 'email', key: 'email' },
-              { title: 'Role', dataIndex: 'role', key: 'role' },
-              { title: 'Status', dataIndex: 'status', key: 'status' },
+              { title: 'Name', dataIndex: 'name', key: 'name', render: (text: string) => sanitizeText(text || '') },
+              { title: 'Email', dataIndex: 'email', key: 'email', render: (text: string) => sanitizeText(text || '') },
+              { title: 'Role', dataIndex: 'role', key: 'role', render: (text: string) => sanitizeText(text || '') },
+              { title: 'Status', dataIndex: 'status', key: 'status', render: (text: string) => sanitizeText(text || '') },
               { title: 'Last Login', dataIndex: 'last_login', key: 'last_login', render: (date: string) => date !== 'N/A' ? new Date(date).toLocaleString() : 'N/A' },
               { title: 'Campaigns Created', dataIndex: 'campaigns_created', key: 'campaigns_created' },
             ];
@@ -87,7 +88,7 @@ export default function ReportsPage() {
         setColumns(generatedColumns);
         setData(result.data);
       } else {
-        message.info('No data found for the selected criteria.');
+        message.info('No data found for the selected criteria.')
       }
     } catch (error) {
       console.error('Report generation error:', error)
@@ -102,14 +103,30 @@ export default function ReportsPage() {
       message.warning('No data to export.')
       return
     }
-    const csv = Papa.unparse(data)
+    
+    // Sanitize data before export
+    const sanitizedData = data.map(row => {
+      const sanitizedRow: any = {}
+      for (const key in row) {
+        if (typeof row[key] === 'string') {
+          sanitizedRow[key] = sanitizeText(row[key])
+        } else {
+          sanitizedRow[key] = row[key]
+        }
+      }
+      return sanitizedRow
+    })
+    
+    const csv = Papa.unparse(sanitizedData)
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
-    link.setAttribute('download', `${reportType}_${moment().format('YYYY-MM-DD')}.csv`)
+    const safeFilename = sanitizeFilename(`${reportType}_${moment().format('YYYY-MM-DD')}`);
+    link.setAttribute('download', `${safeFilename}.csv`)
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+    URL.revokeObjectURL(link.href) // Clean up blob URL
   }
 
   return (

@@ -2,6 +2,7 @@
 
 import { Modal, Typography, Tag, Row, Col, Card } from 'antd'
 import { UserOutlined, PhoneOutlined, BankOutlined, ShoppingOutlined } from '@ant-design/icons'
+import { sanitizeText } from '@/lib/utils/sanitization'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -50,16 +51,16 @@ export default function LeadDetailModal({ lead, visible, onClose }: LeadDetailMo
       width={600}
     >
       <Card style={{ marginTop: '1rem', border: 'none' }}>
-        <Title level={5} style={{ marginBottom: '1.5rem' }}>{lead.fullName}</Title>
+        <Title level={5} style={{ marginBottom: '1.5rem' }}>{sanitizeText(lead.fullName)}</Title>
         <Row gutter={[16, 16]}>
           <Col span={24}>
             <DetailItem icon={<PhoneOutlined />} title="Phone Number">
-              {lead.phoneNumber}
+              {sanitizeText(lead.phoneNumber)}
             </DetailItem>
           </Col>
           <Col span={24}>
             <DetailItem icon={<BankOutlined />} title="Business Sector">
-              {lead.businessSector.name}
+              {sanitizeText(lead.businessSector.name)}
             </DetailItem>
           </Col>
           <Col span={24}>
@@ -67,7 +68,7 @@ export default function LeadDetailModal({ lead, visible, onClose }: LeadDetailMo
               <div>
                 {lead.products.map(p => (
                   <Tag key={p.id} color="cyan" style={{ marginRight: '0.5rem', marginBottom: '0.5rem' }}>
-                    {p.name}
+                    {sanitizeText(p.name)}
                   </Tag>
                 ))}
               </div>

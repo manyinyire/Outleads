@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
+import { logger } from '@/lib/utils/logging'
 
 export interface Product {
   id: string
@@ -39,7 +40,7 @@ const saveToLocalStorage = (state: LandingState) => {
         selectedProducts: state.selectedProducts,
       }))
     } catch (error) {
-      console.error('Error saving landing state to localStorage:', error)
+      logger.error('Error saving landing state to localStorage', error as Error)
     }
   }
 }
@@ -61,7 +62,7 @@ const landingSlice = createSlice({
             }
           }
         } catch (error) {
-          console.error('Error loading landing state from localStorage, clearing corrupted data:', error)
+          logger.error('Error loading landing state from localStorage, clearing corrupted data', error as Error)
           // Clear corrupted data
           localStorage.removeItem('nexus-landing')
         }

@@ -1,3 +1,5 @@
+import { logger } from '@/lib/utils/logging';
+
 // Utility to clear auth data
 export function clearAuth() {
   if (typeof window !== 'undefined') {
@@ -18,9 +20,9 @@ export function clearAuth() {
       // Call the logout endpoint to clear the refresh token cookie
       fetch('/api/auth/logout', { method: 'POST' });
 
-      console.log('Cleared auth data from localStorage and cookies')
+      logger.debug('Cleared auth data from localStorage and cookies')
     } catch (error) {
-      console.error('Error clearing auth data:', error)
+      logger.error('Error clearing auth data', error as Error)
     }
   }
 }

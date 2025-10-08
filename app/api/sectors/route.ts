@@ -2,17 +2,12 @@ import { prisma } from '@/lib/db/prisma';
 import { withErrorHandler, successResponse, errorResponse } from '@/lib/api/api-utils';
 
 const handler = withErrorHandler(async () => {
-  try {
-    const sectors = await prisma.sector.findMany({
-      orderBy: {
-        name: 'asc',
-      },
-    });
-    return successResponse(sectors);
-  } catch (error) {
-    console.error('Failed to fetch sectors:', error);
-    return errorResponse('An error occurred while fetching sectors.', 500);
-  }
+  const sectors = await prisma.sector.findMany({
+    orderBy: {
+      name: 'asc',
+    },
+  });
+  return successResponse(sectors);
 });
 
 export { handler as GET };

@@ -94,9 +94,18 @@ export interface RateLimitConfig {
  * Default rate limit configurations for different endpoint types
  */
 export const RATE_LIMITS = {
-  AUTH: { maxRequests: 5, windowMs: 15 * 60 * 1000 }, // 5 requests per 15 minutes
-  API: { maxRequests: 100, windowMs: 15 * 60 * 1000 }, // 100 requests per 15 minutes
-  PUBLIC: { maxRequests: 50, windowMs: 15 * 60 * 1000 }, // 50 requests per 15 minutes
+  AUTH: { 
+    maxRequests: process.env.NODE_ENV === 'development' ? 100 : 5, 
+    windowMs: 15 * 60 * 1000 
+  }, // 100 requests per 15 min (dev) / 5 requests per 15 min (prod)
+  API: { 
+    maxRequests: process.env.NODE_ENV === 'development' ? 1000 : 100, 
+    windowMs: 15 * 60 * 1000 
+  }, // 1000 requests per 15 min (dev) / 100 requests per 15 min (prod)
+  PUBLIC: { 
+    maxRequests: process.env.NODE_ENV === 'development' ? 1000 : 50, 
+    windowMs: 15 * 60 * 1000 
+  }, // 1000 requests per 15 min (dev) / 50 requests per 15 min (prod)
 } as const;
 
 /**

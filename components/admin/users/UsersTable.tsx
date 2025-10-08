@@ -13,6 +13,7 @@ import { RootState } from '@/lib/store'
 import CrudTable, { CrudField } from '@/components/admin/shared/CrudTable'
 import AddUser from '@/components/admin/AddUser'
 import { apiClient } from '@/lib/api/api-client'
+import { sanitizeText, sanitizeFilename } from '@/lib/utils/sanitization'
 
 interface User {
   id: string
@@ -60,9 +61,24 @@ export default function UsersTable() {
   
 
   const columns: ColumnsType<User> = [
-    { title: 'Name', dataIndex: 'name', key: 'name' },
-    { title: 'Email', dataIndex: 'email', key: 'email' },
-    { title: 'Role', dataIndex: 'role', key: 'role' },
+    { 
+      title: 'Name', 
+      dataIndex: 'name', 
+      key: 'name',
+      render: (name: string) => sanitizeText(name || '')
+    },
+    { 
+      title: 'Email', 
+      dataIndex: 'email', 
+      key: 'email',
+      render: (email: string) => sanitizeText(email || '')
+    },
+    { 
+      title: 'Role', 
+      dataIndex: 'role', 
+      key: 'role',
+      render: (role: string) => sanitizeText(role || '')
+    },
     {
       title: 'Status',
       dataIndex: 'status',
@@ -71,7 +87,7 @@ export default function UsersTable() {
         let color = 'geekblue'
         if (status === 'ACTIVE') color = 'green'
         if (status === 'INACTIVE') color = 'volcano'
-        return <Tag color={color}>{status.toUpperCase()}</Tag>
+        return <Tag color={color}>{sanitizeText(status.toUpperCase())}</Tag>
       },
     },
     { title: 'Created At', dataIndex: 'createdAt', key: 'createdAt', render: (date: string) => new Date(date).toLocaleDateString() },
@@ -133,17 +149,23 @@ export default function UsersTable() {
   const handleExport = () => {
     if (users) {
       const dataToExport = users.map(user => ({
-        ...user,
+        name: sanitizeText(user.name),
+        email: sanitizeText(user.email),
+        role: sanitizeText(user.role),
+        status: sanitizeText(user.status),
+        createdAt: new Date(user.createdAt).toLocaleDateString(),
         lastLogin: user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never'
       }));
       const csv = Papa.unparse(dataToExport)
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
       const link = document.createElement('a')
       link.href = URL.createObjectURL(blob)
-      link.setAttribute('download', 'users.csv')
+      const safeFilename = sanitizeFilename('users');
+      link.setAttribute('download', `${safeFilename}.csv`)
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
+      URL.revokeObjectURL(link.href)
     }
   }
 

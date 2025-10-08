@@ -6,12 +6,13 @@ import { Form, Input, Button, Card, Typography, App, Layout } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState, AppDispatch } from '@/lib/store'
-import { getDashboardRouteForRole } from '@/lib/auth/auth-utils';
+import { getDashboardRouteForRole } from '@/lib/auth/role-utils';
+import type { Role } from '@/lib/auth/role-utils';
 import { login, clearError } from '@/lib/store/slices/authSlice'
 import Image from 'next/image'
 import FirstLoginDialog from '@/components/auth/FirstLoginDialog'
 import axios from 'axios'
-import { Role } from '@prisma/client'
+
 
 const { Text } = Typography
 const { Content } = Layout

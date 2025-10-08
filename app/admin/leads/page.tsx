@@ -8,6 +8,7 @@ import LeadDetailModal from '@/components/admin/leads/LeadDetailModal'
 import { EyeOutlined, UserSwitchOutlined } from '@ant-design/icons'
 import api from '@/lib/api/api'
 import { useLeads } from '@/hooks/useLeads'
+import { sanitizeText } from '@/lib/utils/sanitization'
 
 const { RangePicker } = DatePicker
 
@@ -69,29 +70,46 @@ export default function LeadsPage() {
   }
 
   const columns: ColumnsType<Lead> = useMemo(() => [
-    { title: 'Name', dataIndex: 'fullName', key: 'fullName' },
-    { title: 'Phone', dataIndex: 'phoneNumber', key: 'phoneNumber' },
-    { title: 'Sector', dataIndex: ['businessSector', 'name'], key: 'sector' },
+    { 
+      title: 'Name', 
+      dataIndex: 'fullName', 
+      key: 'fullName',
+      render: (name: string) => sanitizeText(name || '')
+    },
+    { 
+      title: 'Phone', 
+      dataIndex: 'phoneNumber', 
+      key: 'phoneNumber',
+      render: (phone: string) => sanitizeText(phone || '')
+    },
+    { 
+      title: 'Sector', 
+      dataIndex: ['businessSector', 'name'], 
+      key: 'sector',
+      render: (name: string) => sanitizeText(name || '')
+    },
     {
       title: 'Products',
       dataIndex: 'products',
       key: 'products',
-      render: (products: Array<{ name: string }>) => {
-        console.log('Rendering products:', products);
-        return (
-          <>
-            {products.map(p => <Tag key={p.name}>{p.name}</Tag>)}
-          </>
-        )
-      },
+      render: (products: Array<{ name: string }>) => (
+        <>
+          {products.map(p => <Tag key={p.name}>{sanitizeText(p.name)}</Tag>)}
+        </>
+      ),
     },
     { 
       title: 'Campaign', 
       dataIndex: 'campaign', 
       key: 'campaign',
-      render: (campaign) => campaign ? <Tag color="blue">{campaign.campaign_name}</Tag> : <Tag>Direct Lead</Tag>
+      render: (campaign) => campaign ? <Tag color="blue">{sanitizeText(campaign.campaign_name)}</Tag> : <Tag>Direct Lead</Tag>
     },
-    { title: 'Assigned Agent', dataIndex: ['assignedTo', 'name'], key: 'assignedTo' },
+    { 
+      title: 'Assigned Agent', 
+      dataIndex: ['assignedTo', 'name'], 
+      key: 'assignedTo',
+      render: (name: string) => sanitizeText(name || '')
+    },
     { title: 'Date', dataIndex: 'createdAt', key: 'createdAt', render: (date) => new Date(date).toLocaleDateString() },
     {
       title: 'Actions',
@@ -114,7 +132,7 @@ export default function LeadsPage() {
           value={filters.productId}
           allowClear
         >
-          {filterData.products.map(p => <Select.Option key={p.id} value={p.id}>{p.name}</Select.Option>)}
+          {filterData.products.map(p => <Select.Option key={p.id} value={p.id}>{sanitizeText(p.name)}</Select.Option>)}
         </Select>
       </Col>
       <Col>
@@ -125,7 +143,7 @@ export default function LeadsPage() {
           value={filters.campaignId}
           allowClear
         >
-          {filterData.campaigns.map(c => <Select.Option key={c.id} value={c.id}>{c.campaign_name}</Select.Option>)}
+          {filterData.campaigns.map(c => <Select.Option key={c.id} value={c.id}>{sanitizeText(c.campaign_name)}</Select.Option>)}
         </Select>
       </Col>
       <Col>
@@ -136,7 +154,7 @@ export default function LeadsPage() {
           value={filters.sectorId}
           allowClear
         >
-          {filterData.sectors.map(s => <Select.Option key={s.id} value={s.id}>{s.name}</Select.Option>)}
+          {filterData.sectors.map(s => <Select.Option key={s.id} value={s.id}>{sanitizeText(s.name)}</Select.Option>)}
         </Select>
       </Col>
       <Col>
@@ -204,7 +222,7 @@ export default function LeadsPage() {
         >
           {filterData.agents.map(agent => (
             <Select.Option key={agent.id} value={agent.id}>
-              {agent.name}
+              {sanitizeText(agent.name)}
             </Select.Option>
           ))}
         </Select>
