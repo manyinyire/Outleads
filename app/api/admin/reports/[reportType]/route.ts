@@ -8,34 +8,43 @@ const handler = withErrorHandler(async (req: AuthenticatedRequest, { params }: {
   const startDate = searchParams.get('startDate')
   const endDate = searchParams.get('endDate')
 
-  let data;
-  switch (params.reportType) {
-    case 'lead-details':
-      data = await getLeadDetails(startDate, endDate)
-      break;
-    case 'campaign-performance':
-      data = await getCampaignPerformance(startDate, endDate)
-      break;
-    case 'user-activity':
-      data = await getUserActivity(startDate, endDate)
-      break;
-    default:
-      return errorResponse('Invalid report type', 400)
+  let data: any[] = [];
+  
+  try {
+    switch (params.reportType) {
+      case 'lead-details':
+        data = await getLeadDetails(startDate, endDate)
+        break;
+      case 'campaign-performance':
+        data = await getCampaignPerformance(startDate, endDate)
+        break;
+      case 'user-activity':
+        data = await getUserActivity(startDate, endDate)
+        break;
+      default:
+        return errorResponse('Invalid report type', 400)
+    }
+  } catch (error) {
+    console.error('Report generation error:', error);
+    return errorResponse('Failed to generate report', 500)
   }
 
-  return successResponse({ data })
+  return successResponse({ data: data || [] })
 })
 
 export const GET = withAuthAndRole(['ADMIN', 'SUPERVISOR'], handler);
 
 async function getLeadDetails(startDate: string | null, endDate: string | null) {
+  const whereClause: any = {};
+  
+  if (startDate || endDate) {
+    whereClause.createdAt = {};
+    if (startDate) whereClause.createdAt.gte = new Date(startDate);
+    if (endDate) whereClause.createdAt.lte = new Date(endDate);
+  }
+
   const leads = await prisma.lead.findMany({
-    where: {
-      createdAt: {
-        gte: startDate ? new Date(startDate) : undefined,
-        lte: endDate ? new Date(endDate) : undefined,
-      },
-    },
+    where: whereClause,
     select: {
       id: true,
       fullName: true,
@@ -51,27 +60,31 @@ async function getLeadDetails(startDate: string | null, endDate: string | null) 
         select: { name: true },
       },
     },
+    orderBy: { createdAt: 'desc' },
   })
 
   return leads.map(lead => ({
     id: lead.id,
     full_name: lead.fullName,
     phone_number: lead.phoneNumber,
-    business_sector: lead.businessSector.name,
+    business_sector: lead.businessSector?.name || 'N/A',
     campaign: lead.campaign?.campaign_name || 'N/A',
-    products: lead.products.map(p => p.name).join(', '),
+    products: lead.products.map(p => p.name).join(', ') || 'N/A',
     created_at: lead.createdAt.toISOString(),
   }))
 }
 
 async function getCampaignPerformance(startDate: string | null, endDate: string | null) {
+  const whereClause: any = {};
+  
+  if (startDate || endDate) {
+    whereClause.createdAt = {};
+    if (startDate) whereClause.createdAt.gte = new Date(startDate);
+    if (endDate) whereClause.createdAt.lte = new Date(endDate);
+  }
+
   const campaigns = await prisma.campaign.findMany({
-    where: {
-      createdAt: {
-        gte: startDate ? new Date(startDate) : undefined,
-        lte: endDate ? new Date(endDate) : undefined,
-      },
-    },
+    where: whereClause,
     select: {
       id: true,
       campaign_name: true,
@@ -82,6 +95,7 @@ async function getCampaignPerformance(startDate: string | null, endDate: string 
         select: { leads: true },
       },
     },
+    orderBy: { createdAt: 'desc' },
   })
 
   return campaigns.map(campaign => ({
@@ -95,13 +109,16 @@ async function getCampaignPerformance(startDate: string | null, endDate: string 
 }
 
 async function getUserActivity(startDate: string | null, endDate: string | null) {
+  const whereClause: any = {};
+  
+  if (startDate || endDate) {
+    whereClause.createdAt = {};
+    if (startDate) whereClause.createdAt.gte = new Date(startDate);
+    if (endDate) whereClause.createdAt.lte = new Date(endDate);
+  }
+
   const users = await prisma.user.findMany({
-    where: {
-      createdAt: {
-        gte: startDate ? new Date(startDate) : undefined,
-        lte: endDate ? new Date(endDate) : undefined,
-      },
-    },
+    where: whereClause,
     select: {
       id: true,
       name: true,
@@ -113,6 +130,7 @@ async function getUserActivity(startDate: string | null, endDate: string | null)
         select: { campaigns: true },
       },
     },
+    orderBy: { createdAt: 'desc' },
   })
 
   return users.map(user => ({
