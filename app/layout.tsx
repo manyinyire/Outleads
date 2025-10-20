@@ -1,35 +1,27 @@
-'use client'
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
+import { ReduxProvider } from '@/components/providers/ReduxProvider';
 
-import { ConfigProvider, App } from 'antd'
-import { Provider } from 'react-redux'
-import { store } from '@/lib/store'
-import { theme } from '@/lib/utils/theme'
-import AuthProvider from '@/components/AuthProvider'
-import QueryProvider from '@/components/QueryProvider'
-import './globals.css'
+const inter = Inter({ subsets: ['latin'] });
+
+export const metadata: Metadata = {
+  title: 'Outleads - Lead Generation Platform',
+  description: 'Professional lead generation and campaign management platform',
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en">
-      <body suppressHydrationWarning={true}>
-        <Provider store={store}>
-          <QueryProvider>
-            <AuthProvider>
-              <ConfigProvider theme={theme}>
-                <App>
-                  {children}
-                </App>
-              </ConfigProvider>
-            </AuthProvider>
-          </QueryProvider>
-        </Provider>
+      <body className={inter.className}>
+        <ReduxProvider>
+          {children}
+        </ReduxProvider>
       </body>
     </html>
-  )
+  );
 }
-
-

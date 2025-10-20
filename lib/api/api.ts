@@ -1,15 +1,6 @@
-import axios from 'axios';
+/**
+ * API client for making authenticated requests
+ */
+import { apiClient } from './api-client';
 
-const api = axios.create({
-  baseURL: '/api',
-});
-
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('auth-token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-export default api;
+export default apiClient;

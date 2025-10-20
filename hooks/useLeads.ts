@@ -53,28 +53,28 @@ export function useLeads() {
   const fetchFilterData = useCallback(async () => {
     try {
       const [productsRes, campaignsRes, sectorsRes, agentsRes] = await Promise.all([
-        api.get('/admin/products'),
-        api.get('/admin/campaigns'),
-        api.get('/admin/sectors'),
-        api.get('/admin/users?role=AGENT'),
+        api.get<any>('/admin/products'),
+        api.get<any>('/admin/campaigns'),
+        api.get<any>('/admin/sectors'),
+        api.get<any>('/admin/users?role=AGENT'),
       ]);
 
       setFilterData({
-        products: productsRes.data.data || [],
-        campaigns: campaignsRes.data.data || [],
-        sectors: sectorsRes.data.data || [],
-        agents: agentsRes.data.data || [],
+        products: productsRes?.data || productsRes || [],
+        campaigns: campaignsRes?.data || campaignsRes || [],
+        sectors: sectorsRes?.data || sectorsRes || [],
+        agents: agentsRes?.data || agentsRes || [],
       });
     } catch (error) {
       console.error("Failed to fetch filter data:", error);
       message.error('Failed to load filter options.');
     }
-  }, []);
+  }, [message]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get('/admin/leads', {
+      const response = await api.get<any>('/admin/leads', {
         params: {
           page: pagination.current,
           limit: pagination.pageSize,
@@ -86,8 +86,8 @@ export function useLeads() {
           endDate: filters.dateRange?.[1]?.toISOString(),
         },
       });
-      setData(data.data || []);
-      setPagination(prev => ({ ...prev, total: data.meta.total }));
+      setData(response?.data || response || []);
+      setPagination(prev => ({ ...prev, total: response?.meta?.total || response?.total || 0 }));
     } catch (error) {
       console.error("Fetch error:", error);
       message.error('Failed to load leads.');
