@@ -23,7 +23,7 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
-    "db:seed": "node prisma/seed.js",
+    "db:seed": "ts-node --compiler-options {\"module\":\"commonjs\"} prisma/seed.ts",
     "db:reset": "prisma migrate reset",
     "depcheck": "depcheck"
   },
@@ -79,6 +79,6 @@
     "typescript": "^5"
   },
   "prisma": {
-    "seed": "node prisma/seed.js"
+    "seed": "ts-node --compiler-options {\"module\":\"commonjs\"} prisma/seed.ts"
   }
 }
