@@ -95,17 +95,17 @@ export interface RateLimitConfig {
  */
 export const RATE_LIMITS = {
   AUTH: { 
-    maxRequests: process.env.NODE_ENV === 'development' ? 100 : 5, 
+    maxRequests: process.env.NODE_ENV === 'development' ? 500 : 5, 
     windowMs: 15 * 60 * 1000 
-  }, // 100 requests per 15 min (dev) / 5 requests per 15 min (prod)
+  }, // 500 requests per 15 min (dev) / 5 requests per 15 min (prod)
   API: { 
-    maxRequests: process.env.NODE_ENV === 'development' ? 1000 : 100, 
+    maxRequests: process.env.NODE_ENV === 'development' ? 5000 : 100, 
     windowMs: 15 * 60 * 1000 
-  }, // 1000 requests per 15 min (dev) / 100 requests per 15 min (prod)
+  }, // 5000 requests per 15 min (dev) / 100 requests per 15 min (prod)
   PUBLIC: { 
-    maxRequests: process.env.NODE_ENV === 'development' ? 1000 : 50, 
+    maxRequests: process.env.NODE_ENV === 'development' ? 2000 : 50, 
     windowMs: 15 * 60 * 1000 
-  }, // 1000 requests per 15 min (dev) / 50 requests per 15 min (prod)
+  }, // 2000 requests per 15 min (dev) / 50 requests per 15 min (prod)
 } as const;
 
 /**

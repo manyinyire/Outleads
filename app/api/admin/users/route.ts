@@ -80,15 +80,47 @@ const customGetHandler = async (req: NextRequest) => {
   const status = url.searchParams.get('status');
   const role = url.searchParams.get('role');
   
-  const where: any = {};
+  // Build custom where clause
+  const customWhere: any = {};
   if (status) {
-    where.status = { in: status.split(',') };
+    customWhere.status = { in: status.split(',') };
   }
   if (role) {
-    where.role = role;
+    customWhere.role = role;
   }
   
-  (req as any).query = { where };
+  // If we have custom filters, we need to handle the query manually
+  if (Object.keys(customWhere).length > 0) {
+    const { prisma } = await import('@/lib/db/prisma');
+    const { extractPaginationParams, calculatePaginationMeta, successResponse } = await import('@/lib/api/api-utils');
+    
+    const { page, limit } = extractPaginationParams(req.url);
+    const skip = ((page || 1) - 1) * (limit || 10);
+    
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where: customWhere,
+        skip,
+        take: limit || 10,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          _count: {
+            select: {
+              campaigns: true
+            }
+          }
+        }
+      }),
+      prisma.user.count({ where: customWhere })
+    ]);
+    
+    const meta = calculatePaginationMeta(total, page || 1, limit || 10);
+    
+    return successResponse({
+      data: users,
+      meta
+    });
+  }
   
   return handlers.GET(req as any);
 };

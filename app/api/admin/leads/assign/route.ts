@@ -18,6 +18,25 @@ const postHandler = withErrorHandler(async (req: AuthenticatedRequest) => {
   const { leadIds, agentId } = parseResult.data;
 
   try {
+    // Verify that the selected user has AGENT role
+    const agent = await prisma.user.findUnique({
+      where: { id: agentId },
+      select: { id: true, role: true, status: true }
+    });
+
+    if (!agent) {
+      return errorResponse('Selected user not found.', 404);
+    }
+
+    if (agent.role !== 'AGENT') {
+      return errorResponse('Leads can only be assigned to users with AGENT role.', 400);
+    }
+
+    if (agent.status !== 'ACTIVE') {
+      return errorResponse('Cannot assign leads to inactive users.', 400);
+    }
+
+    // Assign leads to the agent
     await prisma.lead.updateMany({
       where: {
         id: {
@@ -28,6 +47,7 @@ const postHandler = withErrorHandler(async (req: AuthenticatedRequest) => {
         assignedToId: agentId,
       },
     });
+    
     return successResponse({ message: 'Leads assigned successfully' });
   } catch (error) {
     console.error('Error assigning leads:', error);

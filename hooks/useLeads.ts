@@ -56,7 +56,7 @@ export function useLeads() {
         api.get<any>('/admin/products'),
         api.get<any>('/admin/campaigns'),
         api.get<any>('/admin/sectors'),
-        api.get<any>('/admin/users?role=AGENT'),
+        api.get<any>('/admin/users?role=AGENT&status=ACTIVE'),
       ]);
 
       setFilterData({

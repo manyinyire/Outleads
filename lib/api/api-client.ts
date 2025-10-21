@@ -62,11 +62,15 @@ class ApiClient {
 
       return new Promise((resolve, reject) => {
         this.failedQueue.push({ resolve, reject });
-      }).then(() => {
-        return this.request<T>(url, {
+      }).then((token) => {
+        const newOptions = {
           ...options,
-          headers: this.getHeaders(),
-        });
+          headers: {
+            ...options.headers,
+            'Authorization': `Bearer ${token}`,
+          },
+        };
+        return this.request<T>(url, newOptions);
       });
     }
 
