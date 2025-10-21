@@ -39,6 +39,7 @@ export const login = createAsyncThunk(
       // The API client now handles setting the token in localStorage
       const { token, user } = await apiClient.post<{ token: string; user: User }>('/auth/login', credentials);
       localStorage.setItem('auth-token', token);
+      document.cookie = `auth-token=${token}; path=/;`;
       return user;
     } catch (error: any) {
       return rejectWithValue(error.message || 'An unknown error occurred');
@@ -73,6 +74,7 @@ const authSlice = createSlice({
       state.status = 'idle'
       state.error = null
       localStorage.removeItem('auth-token')
+      document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
     },
     clearError: (state) => {
       state.error = null

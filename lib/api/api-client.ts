@@ -36,6 +36,7 @@ class ApiClient {
 
       const { token } = await response.json();
       localStorage.setItem('auth-token', token);
+      document.cookie = `auth-token=${token}; path=/;`;
       return token;
     } catch (error) {
       clearAuth();
