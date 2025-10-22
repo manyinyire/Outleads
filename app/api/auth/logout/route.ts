@@ -4,6 +4,8 @@ import { auditAuth, AuditAction } from '@/lib/compliance/audit-logger';
 import { getUserIdFromRequest } from '@/lib/auth/auth-utils';
 import { prisma } from '@/lib/db/prisma';
 
+export const runtime = 'nodejs';
+
 export async function POST(req: NextRequest) {
   const ipAddress = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '127.0.0.1';
   const userAgent = req.headers.get('user-agent') || 'Unknown';

@@ -6,6 +6,7 @@ import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth/auth';
 import { withErrorHandler, successResponse, errorResponse, validateRequestBody, handlePrismaError } from '@/lib/api/api-utils';
 import { logger } from '@/lib/utils/logging';
 
+export const runtime = 'nodejs';
 
 const campaignCreateSchema = z.object({
   campaign_name: z.string().min(1, 'Campaign name is required'),

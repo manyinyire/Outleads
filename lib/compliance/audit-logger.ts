@@ -450,7 +450,7 @@ export const auditData = (
   resourceData?: any,
   ipAddress?: string,
   userAgent?: string
-) => ComplianceAuditLogger.logDataAccess(action, userId, userEmail, userRole, resourceType, resourceId, resourceData, ipAddress, userAgent);
+) => ComplianceAuditLogger.logDataAccess(action, resourceType, resourceId || '', userId, userEmail, userRole, resourceData, ipAddress, userAgent);
 export const auditGDPR = (
   action: AuditAction,
   dataSubjectEmail: string,

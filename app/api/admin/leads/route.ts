@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db/prisma';
 import { successResponse, withErrorHandler, extractPaginationParams, calculatePaginationMeta } from '@/lib/api/api-utils';
 
+export const runtime = 'nodejs';
+
 const leadSchema = z.object({
   fullName: z.string(),
   phoneNumber: z.string(),

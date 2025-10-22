@@ -4,6 +4,8 @@ import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth/auth'
 import { withErrorHandler, successResponse } from '@/lib/api/api-utils'
 import { logger } from '@/lib/utils/logging'
 
+export const runtime = 'nodejs';
+
 const handler = withErrorHandler(async (req: AuthenticatedRequest) => {
   const settings = await prisma.setting.findMany()
   return successResponse(settings)

@@ -5,6 +5,7 @@ import nodemailer from 'nodemailer';
 import { NextRequest } from 'next/server';
 import { logger } from '@/lib/utils/logging';
 
+export const runtime = 'nodejs';
 
 const createUserSchema = z.object({
   username: z.string().min(1, 'Username is required'),

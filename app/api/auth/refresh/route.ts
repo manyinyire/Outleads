@@ -4,6 +4,8 @@ import { SessionManager } from '@/lib/auth/session-manager';
 import { logger } from '@/lib/utils/logging';
 import { serialize } from 'cookie';
 
+export const runtime = 'nodejs';
+
 export async function POST(req: NextRequest) {
   const cookieStore = cookies();
   const refreshToken = cookieStore.get('refresh-token')?.value;

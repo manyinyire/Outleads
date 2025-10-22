@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth/auth';
 import { withErrorHandler, successResponse, validateRequestBody } from '@/lib/api/api-utils';
 
+export const runtime = 'nodejs';
+
 const categorySchema = z.object({
   name: z.string().min(1, 'Category name is required'),
   description: z.string().optional(),

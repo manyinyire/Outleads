@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db/prisma'
 import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth/auth'
 import { withErrorHandler, successResponse } from '@/lib/api/api-utils'
 
+export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const handler = withErrorHandler(async (req: AuthenticatedRequest) => {

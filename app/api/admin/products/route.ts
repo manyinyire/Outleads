@@ -2,6 +2,8 @@ import { withAuthAndRole } from '@/lib/auth/auth';
 import { createCrudHandlers } from '@/lib/db/crud-factory';
 import { z } from 'zod';
 
+export const runtime = 'nodejs';
+
 const productSchema = z.object({
   name: z.string().min(1, 'Product name is required'),
   description: z.string().optional(),

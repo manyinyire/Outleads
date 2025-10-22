@@ -8,6 +8,7 @@ import { SessionManager } from '@/lib/auth/session-manager';
 import { logger } from '@/lib/utils/logging';
 import { auditAuth, AuditAction } from '@/lib/compliance/audit-logger';
 
+export const runtime = 'nodejs';
 
 const loginSchema = z.object({
   username: z.string(),

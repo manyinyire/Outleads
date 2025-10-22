@@ -2,6 +2,8 @@ import { withAuthAndRole } from '@/lib/auth/auth';
 import { createCrudHandlers } from '@/lib/db/crud-factory';
 import { z } from 'zod';
 
+export const runtime = 'nodejs';
+
 const sectorSchema = z.object({
   name: z.string().min(1, 'Sector name is required'),
 });

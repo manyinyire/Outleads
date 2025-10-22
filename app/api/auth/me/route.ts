@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { withAuth, AuthenticatedRequest } from '@/lib/auth/auth';
 
+export const runtime = 'nodejs';
+
 export const GET = withAuth(async (req: AuthenticatedRequest) => {
   try {
     return NextResponse.json({

@@ -59,11 +59,11 @@ export const ComplianceHelpers = {
     
     return auditData(
       actionMap[action],
-      resourceType,
-      resourceId,
       userId,
       userEmail,
       'USER', // default role
+      resourceType,
+      resourceId,
       undefined,
       ipAddress
     );

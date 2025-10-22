@@ -5,8 +5,7 @@ import { createCrudHandlers } from '@/lib/db/crud-factory';
 import { Prisma } from '@prisma/client';
 import { logger } from '@/lib/utils/logging';
 
-
-import { createLeadSchema as importedCreateLeadSchema } from '@/lib/utils/validation/validation-schemas';
+export const runtime = 'nodejs';
 
 const createLeadSchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(255, 'Name is too long'),
