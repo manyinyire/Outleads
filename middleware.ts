@@ -55,7 +55,7 @@ export function middleware(request: NextRequest) {
   const isDevelopment = process.env.NODE_ENV === 'development';
   const scriptSrc = isDevelopment 
     ? "'self' 'unsafe-eval' 'unsafe-inline'" // Allow inline scripts in development
-    : "'self' 'unsafe-eval'"; // Strict policy for production
+    : "'self' 'unsafe-eval' 'unsafe-inline'"; // WARNING: Allowing inline scripts in production is a security risk.
   
   const cspDirectives = [
     "default-src 'self'",
