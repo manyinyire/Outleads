@@ -17,7 +17,7 @@ export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  return withAuthAndRole(['ADMIN', 'BSS'], async (req: AuthenticatedRequest) => {
+  return withAuthAndRole(['ADMIN', 'BSS', 'SUPERVISOR'], async (req: AuthenticatedRequest) => {
     try {
       const body = await request.json();
       const { id } = params;
@@ -85,9 +85,9 @@ export async function PUT(
 // DELETE /api/admin/users/[id] - Deactivate user (Admin only)
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { id:string } }
 ) {
-  return withAuthAndRole(['ADMIN'], async (req: AuthenticatedRequest) => {
+  return withAuthAndRole(['ADMIN', 'BSS', 'SUPERVISOR'], async (req: AuthenticatedRequest) => {
     const { id } = params;
     
     try {
