@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'Outrisk-',
+      name: 'OUTRISK-LEADS-APPLICATION',
       script: './node_modules/next/dist/bin/next',
       args: 'start',
       cwd: '/var/outrisk/Outleads',
