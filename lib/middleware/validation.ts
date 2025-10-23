@@ -43,120 +43,17 @@ export class InputSanitizer {
   }
 }
 
-/**
- * Rate limiting store (simple in-memory implementation)
- * In production, use Redis or similar distributed cache
- */
-class RateLimitStore {
-  private store = new Map<string, { count: number; resetTime: number }>();
-  
-  increment(key: string, windowMs: number = 15 * 60 * 1000): { count: number; resetTime: number } {
-    const now = Date.now();
-    const existing = this.store.get(key);
-    
-    if (!existing || now > existing.resetTime) {
-      const newEntry = { count: 1, resetTime: now + windowMs };
-      this.store.set(key, newEntry);
-      return newEntry;
-    }
-    
-    existing.count++;
-    return existing;
-  }
-  
-  cleanup(): void {
-    const now = Date.now();
-    for (const [key, value] of this.store.entries()) {
-      if (now > value.resetTime) {
-        this.store.delete(key);
-      }
-    }
-  }
-}
 
-const rateLimitStore = new RateLimitStore();
 
-// Cleanup expired entries every 5 minutes (only in Node.js environment)
-if (typeof setInterval !== 'undefined' && typeof process !== 'undefined' && process.env.NEXT_RUNTIME !== 'edge') {
-  setInterval(() => rateLimitStore.cleanup(), 5 * 60 * 1000);
-}
 
-/**
- * Rate limiting configuration
- */
-export interface RateLimitConfig {
-  maxRequests: number;
-  windowMs: number;
-  keyGenerator?: (req: NextRequest) => string;
-}
 
-/**
- * Default rate limit configurations for different endpoint types
- */
-export const RATE_LIMITS = {
-  AUTH: { 
-    maxRequests: process.env.NODE_ENV === 'development' ? 500 : 5, 
-    windowMs: 15 * 60 * 1000 
-  }, // 500 requests per 15 min (dev) / 5 requests per 15 min (prod)
-  API: { 
-    maxRequests: process.env.NODE_ENV === 'development' ? 5000 : 100, 
-    windowMs: 15 * 60 * 1000 
-  }, // 5000 requests per 15 min (dev) / 100 requests per 15 min (prod)
-  PUBLIC: { 
-    maxRequests: process.env.NODE_ENV === 'development' ? 2000 : 50, 
-    windowMs: 15 * 60 * 1000 
-  }, // 2000 requests per 15 min (dev) / 50 requests per 15 min (prod)
-} as const;
 
-/**
- * Apply rate limiting
- */
-export function rateLimit(config: RateLimitConfig) {
-  return (req: NextRequest): NextResponse | null => {
-    const key = config.keyGenerator 
-      ? config.keyGenerator(req)
-      : req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '127.0.0.1';
-    
-    const { count, resetTime } = rateLimitStore.increment(key, config.windowMs);
-    
-    if (count > config.maxRequests) {
-      const retryAfter = Math.ceil((resetTime - Date.now()) / 1000);
-      
-      logger.warn('Rate limit exceeded', { 
-        key, 
-        count, 
-        maxRequests: config.maxRequests,
-        retryAfter 
-      });
-      
-      return new NextResponse(
-        JSON.stringify({
-          error: 'Rate Limit Exceeded',
-          message: 'Too many requests. Please try again later.'
-        }),
-        {
-          status: 429,
-          headers: {
-            'Content-Type': 'application/json',
-            'Retry-After': retryAfter.toString(),
-            'X-RateLimit-Limit': config.maxRequests.toString(),
-            'X-RateLimit-Remaining': Math.max(0, config.maxRequests - count).toString(),
-            'X-RateLimit-Reset': resetTime.toString()
-          }
-        }
-      );
-    }
-    
-    return null;
-  };
-}
 
 /**
  * Validation middleware factory
  */
 export function validateRequest<T>(schema: ZodSchema<T>, options?: {
   sanitize?: boolean;
-  rateLimit?: RateLimitConfig;
 }) {
   return async (req: NextRequest): Promise<{ 
     success: true; 
@@ -166,14 +63,6 @@ export function validateRequest<T>(schema: ZodSchema<T>, options?: {
     error: NextResponse; 
   }> => {
     try {
-      // Apply rate limiting if configured
-      if (options?.rateLimit) {
-        const rateLimitError = rateLimit(options.rateLimit)(req);
-        if (rateLimitError) {
-          return { success: false, error: rateLimitError };
-        }
-      }
-      
       // Parse request body
       let body: any;
       try {
@@ -272,16 +161,9 @@ export function csrfProtection() {
  * Combined security middleware
  */
 export function securityMiddleware(config?: {
-  rateLimit?: RateLimitConfig;
   enableCSRF?: boolean;
 }) {
   return (req: NextRequest): NextResponse | null => {
-    // Apply rate limiting
-    if (config?.rateLimit) {
-      const rateLimitError = rateLimit(config.rateLimit)(req);
-      if (rateLimitError) return rateLimitError;
-    }
-    
     // Apply CSRF protection
     if (config?.enableCSRF !== false) {
       const csrfError = csrfProtection()(req);

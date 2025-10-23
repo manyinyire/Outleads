@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { securityMiddleware, RATE_LIMITS } from '@/lib/middleware/validation';
+import { securityMiddleware } from '@/lib/middleware/validation';
 import { logger } from '@/lib/utils/logging';
 
 export function middleware(request: NextRequest) {
@@ -17,33 +17,30 @@ export function middleware(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith('/api/auth/')) {
     // Stricter rate limiting for auth endpoints
     securityConfig = {
-      rateLimit: RATE_LIMITS.AUTH,
       enableCSRF: true
     };
   } else if (request.nextUrl.pathname.startsWith('/api/')) {
     // Standard rate limiting for API endpoints
     securityConfig = {
-      rateLimit: RATE_LIMITS.API,
       enableCSRF: true
     };
   } else {
     // Lighter rate limiting for public pages
     securityConfig = {
-      rateLimit: RATE_LIMITS.PUBLIC,
       enableCSRF: false // Don't enforce CSRF on page requests
     };
   }
   
   // Apply security checks
-  const securityError = securityMiddleware(securityConfig)(request);
-  if (securityError) {
-    logger.warn('Security middleware blocked request', {
-      path: request.nextUrl.pathname,
-      ip,
-      userAgent: request.headers.get('user-agent') || undefined
-    });
-    return securityError;
-  }
+  // const securityError = securityMiddleware(securityConfig)(request);
+  // if (securityError) {
+  //   logger.warn('Security middleware blocked request', {
+  //     path: request.nextUrl.pathname,
+  //     ip,
+  //     userAgent: request.headers.get('user-agent') || undefined
+  //   });
+  //   return securityError;
+  // }
   
   // Add security headers
   response.headers.set('X-Content-Type-Options', 'nosniff');
