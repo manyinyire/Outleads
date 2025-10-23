@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: 'Outrisk-',
-      script: 'yarn',
+      script: './node_modules/next/dist/bin/next',
       args: 'start',
       interpreter: '/root/.nvm/versions/node/v22.21.0/bin/node',
       cwd: '/var/outrisk/Outleads',
