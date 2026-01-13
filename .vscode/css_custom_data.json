@@ -1,0 +1,21 @@
+{
+    "version": 1.1,
+    "atDirectives": [
+        {
+            "name": "@apply",
+            "description": "Tailwind CSS directive to inline utility classes"
+        },
+        {
+            "name": "@theme",
+            "description": "Tailwind CSS v4 directive for defining theme values"
+        },
+        {
+            "name": "@custom-variant",
+            "description": "Tailwind CSS v4 directive for custom variant definitions"
+        },
+        {
+            "name": "@layer",
+            "description": "Tailwind CSS directive to define custom CSS in layers"
+        }
+    ]
+}
