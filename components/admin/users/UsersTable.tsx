@@ -87,6 +87,8 @@ export default function UsersTable() {
         let color = 'geekblue'
         if (status === 'ACTIVE') color = 'green'
         if (status === 'INACTIVE') color = 'volcano'
+        if (status === 'PENDING') color = 'orange'
+        if (status === 'REJECTED') color = 'red'
         return <Tag color={color}>{sanitizeText(status.toUpperCase())}</Tag>
       },
     },
@@ -100,6 +102,32 @@ export default function UsersTable() {
           <Button type="link" icon={<EditOutlined />}>
             Edit
           </Button>
+          {record.status === 'PENDING' && (
+            <>
+              <Popconfirm
+                title="Approve this user's access request?"
+                description="The user will receive an email notification and can log in."
+                onConfirm={() => updateStatusMutation.mutate({ id: record.id, status: 'ACTIVE' })}
+                okText="Approve"
+                cancelText="Cancel"
+              >
+                <Button type="link" style={{ color: '#52c41a' }} icon={<UserAddOutlined />}>
+                  Approve
+                </Button>
+              </Popconfirm>
+              <Popconfirm
+                title="Reject this user's access request?"
+                description="The user will be notified and cannot access the system."
+                onConfirm={() => updateStatusMutation.mutate({ id: record.id, status: 'REJECTED' })}
+                okText="Reject"
+                cancelText="Cancel"
+              >
+                <Button type="link" danger icon={<StopOutlined />}>
+                  Reject
+                </Button>
+              </Popconfirm>
+            </>
+          )}
           {record.status === 'ACTIVE' && (
             <Popconfirm
               title="Are you sure you want to disable this user?"

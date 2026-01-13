@@ -37,8 +37,12 @@ export default function ReportsPage() {
       const token = localStorage.getItem('auth-token')
       const url = new URL(`/api/admin/reports/${reportType}`, window.location.origin)
       if (dateRange) {
-        url.searchParams.set('startDate', dateRange[0].toISOString())
-        url.searchParams.set('endDate', dateRange[1].toISOString())
+        // Set start date to beginning of day (00:00:00)
+        const startDate = dateRange[0].clone().startOf('day').toISOString()
+        // Set end date to end of day (23:59:59)
+        const endDate = dateRange[1].clone().endOf('day').toISOString()
+        url.searchParams.set('startDate', startDate)
+        url.searchParams.set('endDate', endDate)
       }
 
       const response = await fetch(url.toString(), {
