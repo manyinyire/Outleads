@@ -3,14 +3,21 @@ import { Layout, Spin } from 'antd'
 import { HomePageContent } from '@/components/landing/HomePageContent'
 import { prisma } from '@/lib/db/prisma'
 
-// Disable caching to always fetch fresh data
-export const revalidate = 0
+// Cache for 5 minutes (products rarely change)
+export const revalidate = 300
 
 async function getProductCategories() {
   try {
     const productCategories = await prisma.productCategory.findMany({
       include: {
-        products: true,
+        products: {
+          orderBy: {
+            name: 'asc',
+          },
+        },
+      },
+      orderBy: {
+        name: 'asc',
       },
     });
     // Ensure the data is a plain object for serialization

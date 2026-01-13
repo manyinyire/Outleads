@@ -121,3 +121,33 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom styling for product category tabs */
+.custom-product-tabs .ant-tabs-tab {
+  border-radius: 0.5rem 0.5rem 0 0;
+  transition: all 0.3s ease;
+}
+
+.custom-product-tabs .ant-tabs-tab:hover {
+  color: #2A4D74;
+  background-color: rgba(110, 208, 246, 0.1);
+}
+
+.custom-product-tabs .ant-tabs-tab-active {
+  background-color: #6ED0F6;
+  color: #FFFFFF !important;
+}
+
+.custom-product-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #FFFFFF !important;
+}
+
+.custom-product-tabs .ant-tabs-tab-active span {
+  color: #FFFFFF !important;
+  font-weight: 600 !important;
+}
+
+.custom-product-tabs .ant-tabs-ink-bar {
+  display: none;
+}
+

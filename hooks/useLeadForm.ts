@@ -28,12 +28,6 @@ export function useLeadForm(initialCategories: ProductCategory[]) {
   const [selectedCategoryKey, setSelectedCategoryKey] = useState<string>('')
 
   useEffect(() => {
-    if (initialCategories.length > 0 && !selectedCategoryKey) {
-      setSelectedCategoryKey(initialCategories[0].id)
-    }
-  }, [initialCategories, selectedCategoryKey])
-
-  useEffect(() => {
     const campaignIdFromUrl = searchParams.get('campaignId');
     if (campaignIdFromUrl) {
       localStorage.setItem('campaignId', campaignIdFromUrl);
@@ -99,7 +93,7 @@ export function useLeadForm(initialCategories: ProductCategory[]) {
       setCurrentStep(0)
       setContactFormData(null)
       setSelectedProducts([])
-      
+
       if (campaignId) {
         localStorage.removeItem('campaignId');
         setCampaignId(null);

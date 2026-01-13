@@ -56,10 +56,10 @@ export function HomePageContent({ initialCategories }: HomePageContentProps) {
       <Content style={{ padding: isMobile ? '1rem' : '2rem' }}>
         <Row justify="center" align="middle" style={{ minHeight: '100%' }}>
           <Col xs={24} sm={20} md={18} lg={16} xl={14}>
-            <Card 
-              style={{ 
-                borderRadius: '1rem', 
-                boxShadow: '0 10px 30px rgba(0,0,0,0.1)', 
+            <Card
+              style={{
+                borderRadius: '1rem',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
                 padding: isMobile ? '1rem' : '2rem',
               }}
             >
@@ -71,16 +71,16 @@ export function HomePageContent({ initialCategories }: HomePageContentProps) {
               </div>
 
               <div style={{ marginBottom: '2rem' }}>
-                <Steps 
-                  current={currentStep} 
-                  items={steps} 
+                <Steps
+                  current={currentStep}
+                  items={steps}
                   direction={isMobile ? 'vertical' : 'horizontal'}
                 />
               </div>
 
               {currentStep === 0 && (
-                <LeadForm 
-                  campaignId={campaignId} 
+                <LeadForm
+                  campaignId={campaignId}
                   onNext={handleContactInfoNext}
                   initialData={contactFormData}
                 />
@@ -98,8 +98,8 @@ export function HomePageContent({ initialCategories }: HomePageContentProps) {
                           {contactFormData?.fullName} | {contactFormData?.phoneNumber}
                         </Paragraph>
                       </div>
-                      <Button 
-                        type="link" 
+                      <Button
+                        type="link"
                         icon={<ArrowLeftOutlined />}
                         onClick={handleBackToContactInfo}
                         style={{ color: '#2A4D74' }}
@@ -109,12 +109,29 @@ export function HomePageContent({ initialCategories }: HomePageContentProps) {
                     </div>
                   </Card>
 
+                  {/* Instructional Banner */}
+                  <Card
+                    variant="borderless"
+                    style={{
+                      backgroundColor: '#E8F4F8',
+                      borderRadius: '0.5rem',
+                      marginBottom: '1.5rem',
+                      borderLeft: '4px solid #6ED0F6'
+                    }}
+                  >
+                    <Paragraph style={{ margin: 0, color: '#2A4D74', fontWeight: 500 }}>
+                      👉 Click on each category tab below to explore all our financial products and services
+                    </Paragraph>
+                  </Card>
+
                   {isMobile && initialCategories ? (
                     <>
                       <Select
-                        value={selectedCategoryKey}
+                        placeholder="Select a category to view products"
+                        value={selectedCategoryKey || undefined}
                         onChange={handleCategoryChange}
                         style={{ width: '100%', marginBottom: '1rem' }}
+                        size="large"
                       >
                         {initialCategories.map(category => (
                           <Select.Option key={category.id} value={category.id}>
@@ -122,28 +139,85 @@ export function HomePageContent({ initialCategories }: HomePageContentProps) {
                           </Select.Option>
                         ))}
                       </Select>
-                      <ProductList
-                        products={initialCategories.find(c => c.id === selectedCategoryKey)?.products || []}
-                        selectedProductIds={selectedProducts.map(p => p.id)}
-                        onProductSelect={handleProductSelect}
-                      />
+                      {selectedCategoryKey ? (
+                        <ProductList
+                          products={initialCategories.find(c => c.id === selectedCategoryKey)?.products || []}
+                          selectedProductIds={selectedProducts.map(p => p.id)}
+                          onProductSelect={handleProductSelect}
+                        />
+                      ) : (
+                        <Card
+                          style={{
+                            textAlign: 'center',
+                            padding: '3rem 1rem',
+                            backgroundColor: '#F9F9F9',
+                            border: '2px dashed #D0D0D0'
+                          }}
+                        >
+                          <Title level={4} style={{ color: '#999' }}>
+                            Select a category above to view products
+                          </Title>
+                        </Card>
+                      )}
                     </>
                   ) : (
-                    <Tabs
-                      activeKey={selectedCategoryKey}
-                      onChange={handleCategoryChange}
-                      items={initialCategories.map(category => ({
-                        key: category.id,
-                        label: <span style={{ color: '#2A4D74' }}>{category.name}</span>,
-                        children: (
-                          <ProductList
-                            products={category.products}
-                            selectedProductIds={selectedProducts.map(p => p.id)}
-                            onProductSelect={handleProductSelect}
-                          />
-                        )
-                      }))}
-                    />
+                    <>
+                      {selectedCategoryKey ? (
+                        <Tabs
+                          activeKey={selectedCategoryKey}
+                          onChange={handleCategoryChange}
+                          items={initialCategories.map(category => ({
+                            key: category.id,
+                            label: <span style={{ fontWeight: selectedCategoryKey === category.id ? '600' : '400' }}>{category.name}</span>,
+                            children: (
+                              <ProductList
+                                products={category.products}
+                                selectedProductIds={selectedProducts.map(p => p.id)}
+                                onProductSelect={handleProductSelect}
+                              />
+                            )
+                          }))}
+                          tabBarStyle={{
+                            borderBottom: '2px solid #E0E0E0'
+                          }}
+                          className="custom-product-tabs"
+                        />
+                      ) : (
+                        <>
+                          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                            {initialCategories.map(category => (
+                              <Button
+                                key={category.id}
+                                onClick={() => handleCategoryChange(category.id)}
+                                style={{
+                                  backgroundColor: '#FFFFFF',
+                                  color: '#2A4D74',
+                                  border: '2px solid #2A4D74',
+                                  borderRadius: '0.5rem',
+                                  fontWeight: 500,
+                                  padding: '0.5rem 1.5rem',
+                                  height: 'auto'
+                                }}
+                              >
+                                {category.name}
+                              </Button>
+                            ))}
+                          </div>
+                          <Card
+                            style={{
+                              textAlign: 'center',
+                              padding: '3rem 2rem',
+                              backgroundColor: '#F9F9F9',
+                              border: '2px dashed #D0D0D0'
+                            }}
+                          >
+                            <Title level={4} style={{ color: '#999' }}>
+                              Click a category above to view products
+                            </Title>
+                          </Card>
+                        </>
+                      )}
+                    </>
                   )}
 
                   {selectedProducts.length > 0 && (
