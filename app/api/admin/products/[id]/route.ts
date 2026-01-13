@@ -1,6 +1,7 @@
 import { withAuthAndRole } from '@/lib/auth/auth';
 import { createCrudHandlers } from '@/lib/db/crud-factory';
 import { z } from 'zod';
+import { revalidatePath } from 'next/cache';
 
 const productSchema = z.object({
   name: z.string().min(1, 'Product name is required'),
@@ -12,6 +13,14 @@ const handlers = createCrudHandlers({
   modelName: 'product',
   entityName: 'Product',
   updateSchema: productSchema,
+  afterUpdate: async () => {
+    // Revalidate homepage to show updated product
+    revalidatePath('/');
+  },
+  afterDelete: async () => {
+    // Revalidate homepage to remove deleted product from form
+    revalidatePath('/');
+  },
 });
 
 export const PUT = withAuthAndRole(['ADMIN'], handlers.PUT);

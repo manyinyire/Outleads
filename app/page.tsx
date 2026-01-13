@@ -3,6 +3,9 @@ import { Layout, Spin } from 'antd'
 import { HomePageContent } from '@/components/landing/HomePageContent'
 import { prisma } from '@/lib/db/prisma'
 
+// Disable caching to always fetch fresh data
+export const revalidate = 0
+
 async function getProductCategories() {
   try {
     const productCategories = await prisma.productCategory.findMany({

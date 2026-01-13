@@ -1,6 +1,7 @@
 import { withAuthAndRole } from '@/lib/auth/auth';
 import { createCrudHandlers } from '@/lib/db/crud-factory';
 import { z } from 'zod';
+import { revalidatePath } from 'next/cache';
 
 export const runtime = 'nodejs';
 
@@ -18,6 +19,10 @@ const handlers = createCrudHandlers({
   orderBy: { name: 'asc' },
   includeRelations: {
     category: true,
+  },
+  afterCreate: async () => {
+    // Revalidate homepage to show new product in form
+    revalidatePath('/');
   },
 });
 

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db/prisma';
 import { z } from 'zod';
 import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth/auth';
 import { withErrorHandler, successResponse, validateRequestBody } from '@/lib/api/api-utils';
+import { revalidatePath } from 'next/cache';
 
 export const runtime = 'nodejs';
 
@@ -17,11 +18,11 @@ const getProductCategories = withErrorHandler(async (req: AuthenticatedRequest) 
 
   const where = search
     ? {
-        OR: [
-          { name: { contains: search, mode: 'insensitive' as const } },
-          { description: { contains: search, mode: 'insensitive' as const } },
-        ],
-      }
+      OR: [
+        { name: { contains: search, mode: 'insensitive' as const } },
+        { description: { contains: search, mode: 'insensitive' as const } },
+      ],
+    }
     : {};
 
   const productCategories = await prisma.productCategory.findMany({
@@ -45,6 +46,9 @@ const createProductCategory = withErrorHandler(async (req: AuthenticatedRequest)
   const newCategory = await prisma.productCategory.create({
     data: validation.data,
   });
+
+  // Revalidate homepage to show new category in form
+  revalidatePath('/');
 
   return successResponse(newCategory, 201);
 });
