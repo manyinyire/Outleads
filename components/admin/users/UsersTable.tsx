@@ -125,9 +125,11 @@ export default function UsersTable() {
       key: 'actions',
       render: (_, record) => (
         <Space>
-          <Button type="link" icon={<EditOutlined />}>
-            Edit
-          </Button>
+          {currentUser?.role && ['ADMIN', 'BSS', 'SUPERVISOR'].includes(currentUser.role) && (
+            <Button type="link" icon={<EditOutlined />}>
+              Edit
+            </Button>
+          )}
           {record.status === 'PENDING' && (
             <>
               <Popconfirm
@@ -187,7 +189,6 @@ export default function UsersTable() {
   const fields: CrudField[] = [
     { name: 'name', label: 'Name', required: true },
     { name: 'email', label: 'Email', required: true },
-    { name: 'password', label: 'Password', required: true, type: 'password' },
     {
       name: 'role',
       label: 'Role',
@@ -195,7 +196,21 @@ export default function UsersTable() {
       type: 'select',
       options: [
         { label: 'Admin', value: 'ADMIN' },
+        { label: 'BSS', value: 'BSS' },
+        { label: 'InfoSec', value: 'INFOSEC' },
+        { label: 'Supervisor', value: 'SUPERVISOR' },
         { label: 'Agent', value: 'AGENT' },
+      ],
+    },
+    {
+      name: 'status',
+      label: 'Status',
+      required: true,
+      type: 'select',
+      options: [
+        { label: 'Active', value: 'ACTIVE' },
+        { label: 'Inactive', value: 'INACTIVE' },
+        { label: 'Pending', value: 'PENDING' },
       ],
     },
   ]
@@ -242,16 +257,27 @@ export default function UsersTable() {
         pagination={pagination}
         onTableChange={handleTableChange}
         fields={fields}
-        hideDefaultActions
         onSubmit={(values, record) => {
           if (record) {
             return new Promise<void>((resolve, reject) => {
-              updateUserMutation.mutateAsync({ id: record.id, ...values })
-                .then(() => resolve())
-                .catch(reject)
-            })
+              const updateData: any = {
+                name: values.name,
+                email: values.email,
+                role: values.role,
+                status: values.status,
+              };
+              updateUserMutation.mutateAsync({ id: record.id, ...updateData })
+                .then(() => {
+                  message.success('User updated successfully');
+                  resolve();
+                })
+                .catch((error) => {
+                  message.error('Failed to update user');
+                  reject(error);
+                });
+            });
           }
-          return Promise.resolve()
+          return Promise.resolve();
         }}
         customActions={
           <Space>

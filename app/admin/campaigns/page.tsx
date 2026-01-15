@@ -46,7 +46,7 @@ export default function CampaignsPage() {
   const fetchAgents = useCallback(async () => {
     try {
       const token = localStorage.getItem('auth-token')
-      const response = await fetch('/api/admin/users?role=AGENT', {
+      const response = await fetch('/api/admin/users?role=AGENT&status=ACTIVE&limit=1000', {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       if (!response.ok) throw new Error('Failed to fetch agents')
