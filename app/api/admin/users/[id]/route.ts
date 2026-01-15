@@ -46,7 +46,7 @@ export async function PUT(
       const isBeingActivated = updateData.status === 'ACTIVE' && currentUser.status !== 'ACTIVE';
       const isBeingRejected = updateData.status === 'REJECTED' && currentUser.status !== 'REJECTED';
 
-      if (isBeingActivated && !['ADMIN', 'BSS'].includes(req.user.role)) {
+      if (isBeingActivated && !['ADMIN', 'BSS'].includes(req.user!.role)) {
         return NextResponse.json({
           error: 'Forbidden',
           message: 'You do not have permission to approve users.'
