@@ -20,15 +20,20 @@ export default function AdminLayoutWrapper({
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem('auth-token')
-      if (token) {
-        // Try to verify the token
-        await dispatch(verifyToken())
+      if (token && !isAuthenticated) {
+        // Only verify if not already authenticated
+        try {
+          await dispatch(verifyToken())
+        } catch (error) {
+          // Silently handle verification errors
+          console.error('Token verification failed:', error)
+        }
       }
       setIsChecking(false)
     }
     
     checkAuth()
-  }, [dispatch])
+  }, [dispatch, isAuthenticated])
 
   useEffect(() => {
     // Only redirect after we've finished checking

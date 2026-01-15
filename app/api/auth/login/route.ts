@@ -48,14 +48,19 @@ export async function POST(req: NextRequest) {
     );
 
     // Log successful login for compliance
-    await auditAuth(
-      AuditAction.LOGIN,
-      updatedUser.id,
-      updatedUser.email,
-      true,
-      ipAddress,
-      userAgent
-    );
+    try {
+      await auditAuth(
+        AuditAction.LOGIN,
+        updatedUser.id,
+        updatedUser.email,
+        true,
+        ipAddress,
+        userAgent
+      );
+    } catch (auditError) {
+      // Don't let audit logging failures break successful login
+      logger.error('Failed to log successful login audit', auditError as Error);
+    }
 
     const response = NextResponse.json({ token: accessToken, user: updatedUser });
     response.headers.set('Set-Cookie', serialize('refresh-token', refreshToken, {
@@ -70,21 +75,34 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     // Log failed login attempt for security monitoring
-    await auditAuth(
-      AuditAction.LOGIN_FAILED,
-      undefined,
-      username,
-      false,
-      ipAddress,
-      userAgent,
-      (error as Error).message
-    );
+    try {
+      await auditAuth(
+        AuditAction.LOGIN_FAILED,
+        undefined,
+        username,
+        false,
+        ipAddress,
+        userAgent,
+        (error as Error).message
+      );
+    } catch (auditError) {
+      // Don't let audit logging failures break login error response
+      logger.error('Failed to log audit event', auditError as Error);
+    }
     
     logger.error('Login attempt failed', error as Error, { username, ipAddress, userAgent });
 
     if (error instanceof ApiError) {
       return NextResponse.json({ message: error.message }, { status: error.statusCode });
     }
-    return NextResponse.json({ message: 'An internal server error occurred.' }, { status: 500 });
+    
+    // Provide more specific error message
+    const errorMessage = (error as Error).message || 'An internal server error occurred.';
+    logger.error('Login error details', error as Error, { errorMessage, username });
+    
+    return NextResponse.json({ 
+      message: 'Authentication service error. Please try again or contact support.',
+      details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+    }, { status: 500 });
   }
 }
