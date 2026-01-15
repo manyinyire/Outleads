@@ -52,18 +52,28 @@ export function useLeads() {
 
   const fetchFilterData = useCallback(async () => {
     try {
+      const token = localStorage.getItem('auth-token');
+      
       const [productsRes, campaignsRes, sectorsRes, agentsRes] = await Promise.all([
-        api.get<any>('/admin/products'),
-        api.get<any>('/admin/campaigns'),
-        api.get<any>('/admin/sectors'),
-        api.get<any>('/admin/users?role=AGENT&status=ACTIVE'),
+        fetch('/api/admin/products?limit=1000', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }).then(r => r.json()),
+        fetch('/api/admin/campaigns?limit=1000', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }).then(r => r.json()),
+        fetch('/api/admin/sectors?limit=1000', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }).then(r => r.json()),
+        fetch('/api/admin/users?role=AGENT&status=ACTIVE&limit=1000', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }).then(r => r.json()),
       ]);
 
       setFilterData({
-        products: productsRes?.data || productsRes || [],
-        campaigns: campaignsRes?.data || campaignsRes || [],
-        sectors: sectorsRes?.data || sectorsRes || [],
-        agents: agentsRes?.data || agentsRes || [],
+        products: Array.isArray(productsRes.data) ? productsRes.data : [],
+        campaigns: Array.isArray(campaignsRes.data) ? campaignsRes.data : [],
+        sectors: Array.isArray(sectorsRes.data) ? sectorsRes.data : [],
+        agents: Array.isArray(agentsRes.data) ? agentsRes.data : [],
       });
     } catch (error) {
       console.error("Failed to fetch filter data:", error);
