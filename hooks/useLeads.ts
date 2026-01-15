@@ -84,20 +84,27 @@ export function useLeads() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await api.get<any>('/admin/leads', {
-        params: {
-          page: pagination.current,
-          limit: pagination.pageSize,
-          search: searchText,
-          productId: filters.productId,
-          campaignId: filters.campaignId,
-          sectorId: filters.sectorId,
-          startDate: filters.dateRange?.[0]?.toISOString(),
-          endDate: filters.dateRange?.[1]?.toISOString(),
-        },
+      const token = localStorage.getItem('auth-token');
+      const url = new URL('/api/admin/leads', window.location.origin);
+      url.searchParams.set('page', String(pagination.current));
+      url.searchParams.set('limit', String(pagination.pageSize));
+      
+      if (searchText) url.searchParams.set('search', searchText);
+      if (filters.productId) url.searchParams.set('productId', filters.productId);
+      if (filters.campaignId) url.searchParams.set('campaignId', filters.campaignId);
+      if (filters.sectorId) url.searchParams.set('sectorId', filters.sectorId);
+      if (filters.dateRange?.[0]) url.searchParams.set('startDate', filters.dateRange[0].toISOString());
+      if (filters.dateRange?.[1]) url.searchParams.set('endDate', filters.dateRange[1].toISOString());
+      
+      const response = await fetch(url.toString(), {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
-      setData(response?.data || response || []);
-      setPagination(prev => ({ ...prev, total: response?.meta?.total || response?.total || 0 }));
+      
+      if (!response.ok) throw new Error('Failed to fetch leads');
+      
+      const result = await response.json();
+      setData(Array.isArray(result.data) ? result.data : []);
+      setPagination(prev => ({ ...prev, total: result.meta?.total || 0 }));
     } catch (error) {
       console.error("Fetch error:", error);
       message.error('Failed to load leads.');
@@ -112,7 +119,7 @@ export function useLeads() {
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, [fetchData, pagination.current, pagination.pageSize, searchText, filters]);
 
   const handleTableChange = (pagination: TablePaginationConfig) => {
     setPagination(pagination);
