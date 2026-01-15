@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { App, Tag } from 'antd'
+import { App, Tag, TablePaginationConfig } from 'antd'
 import { ColumnsType } from 'antd/es/table'
 import CrudTable, { CrudField } from '@/components/admin/shared/CrudTable'
 
@@ -18,6 +18,11 @@ export default function ProductCategoriesPage() {
   const [data, setData] = useState<ProductCategory[]>([])
   const [loading, setLoading] = useState(true)
   const [searchText, setSearchText] = useState('')
+  const [pagination, setPagination] = useState<TablePaginationConfig>({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  })
   
   const { message } = App.useApp()
 
@@ -32,6 +37,8 @@ export default function ProductCategoriesPage() {
       }
 
       const url = new URL('/api/admin/product-categories', window.location.origin)
+      url.searchParams.set('page', String(pagination.current || 1))
+      url.searchParams.set('limit', String(pagination.pageSize || 10))
       if (searchText) {
         url.searchParams.set('search', searchText)
       }
@@ -44,6 +51,7 @@ export default function ProductCategoriesPage() {
       
       const result = await response.json()
       setData(Array.isArray(result.data) ? result.data : [])
+      setPagination(prev => ({ ...prev, total: result.meta?.total || 0 }))
       
     } catch (error) {
       console.error("Fetch error:", error)
@@ -51,7 +59,7 @@ export default function ProductCategoriesPage() {
     } finally {
       setLoading(false)
     }
-  }, [searchText, message])
+  }, [searchText, message, pagination.current, pagination.pageSize])
 
   useEffect(() => {
     fetchData()
@@ -127,6 +135,10 @@ export default function ProductCategoriesPage() {
     },
   ], [])
 
+  const handleTableChange = (newPagination: TablePaginationConfig) => {
+    setPagination(newPagination)
+  }
+
   return (
     <CrudTable<ProductCategory>
       title="Product Categories"
@@ -134,6 +146,8 @@ export default function ProductCategoriesPage() {
       fields={fields}
       dataSource={data}
       loading={loading}
+      pagination={pagination}
+      onTableChange={handleTableChange}
       onSearch={handleSearch}
       onDelete={handleDelete}
       onSubmit={handleSubmit}

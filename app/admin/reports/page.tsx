@@ -187,8 +187,13 @@ export default function ReportsPage() {
           <Table
             columns={columns}
             dataSource={data}
-            rowKey="id"
+            rowKey={(record, index) => record.id || `row-${index}`}
             scroll={{ x: 'max-content' }}
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+            }}
           />
         )}
       </Card>

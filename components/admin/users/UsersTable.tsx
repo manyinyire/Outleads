@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Tag, Button, Space, App, Popconfirm } from 'antd'
+import { Tag, Button, Space, App, Popconfirm, TablePaginationConfig } from 'antd'
 import { ColumnsType } from 'antd/es/table'
 import { DownloadOutlined, DeleteOutlined, UserAddOutlined, EditOutlined, StopOutlined } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -29,11 +29,37 @@ export default function UsersTable() {
   const { message } = App.useApp()
   const queryClient = useQueryClient()
   const [isModalVisible, setModalVisible] = useState(false)
+  const [pagination, setPagination] = useState<TablePaginationConfig>({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  })
   const { user: currentUser } = useSelector((state: RootState) => state.auth)
 
   const { data: users, isLoading } = useQuery<User[]>({
-    queryKey: ['admin-users'],
-    queryFn: () => apiClient.get('/admin/users'),
+    queryKey: ['admin-users', pagination.current, pagination.pageSize],
+    queryFn: async () => {
+      const token = localStorage.getItem('auth-token')
+      const url = new URL('/api/admin/users', window.location.origin)
+      url.searchParams.set('page', String(pagination.current))
+      url.searchParams.set('limit', String(pagination.pageSize))
+      
+      const response = await fetch(url.toString(), {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch users')
+      }
+      
+      const result = await response.json()
+      
+      if (result.meta?.total) {
+        setPagination(prev => ({ ...prev, total: result.meta.total }))
+      }
+      
+      return Array.isArray(result.data) ? result.data : result
+    },
   })
 
   const updateStatusMutation = useMutation({
@@ -176,7 +202,7 @@ export default function UsersTable() {
 
   const handleExport = () => {
     if (users) {
-      const dataToExport = users.map(user => ({
+      const dataToExport = users.map((user: User) => ({
         name: sanitizeText(user.name),
         email: sanitizeText(user.email),
         role: sanitizeText(user.role),
@@ -202,6 +228,10 @@ export default function UsersTable() {
     queryClient.invalidateQueries({ queryKey: ['admin-users'] });
   };
 
+  const handleTableChange = (newPagination: TablePaginationConfig) => {
+    setPagination(newPagination)
+  }
+
   return (
     <>
       <CrudTable<User>
@@ -209,6 +239,8 @@ export default function UsersTable() {
         columns={columns}
         dataSource={users || []}
         loading={isLoading}
+        pagination={pagination}
+        onTableChange={handleTableChange}
         fields={fields}
         hideDefaultActions
         onSubmit={(values, record) => {
