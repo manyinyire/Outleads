@@ -201,5 +201,30 @@ model RolePermission {
   @@map("role_permissions")
 }
 
+model AuditLog {
+  id            String   @id @default(cuid())
+  userId        String?
+  userEmail     String?  @db.VarChar(255)
+  userRole      String?  @db.VarChar(50)
+  action        String   @db.VarChar(100)
+  resourceType  String   @db.VarChar(100)
+  resourceId    String?  @db.VarChar(255)
+  resourceData  Json?
+  ipAddress     String?  @db.VarChar(45)
+  userAgent     String?  @db.Text
+  success       Boolean  @default(true)
+  errorMessage  String?  @db.Text
+  metadata      Json?
+  severity      String   @db.VarChar(50)
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([resourceType])
+  @@index([createdAt])
+  @@index([severity])
+  @@index([success])
+  @@map("audit_logs")
+}
 
 

@@ -381,13 +381,33 @@ export class ComplianceAuditLogger {
   }
 
   private static async storeAuditEvent(entry: AuditLogEntry): Promise<void> {
-    // In a real implementation, you might want to:
-    // 1. Store in a separate audit database
-    // 2. Use write-only database access
-    // 3. Implement data retention policies
-    
-    // For now, we'll store using the existing logger
-    logger.info('Compliance audit event', entry as unknown as Record<string, unknown>);
+    try {
+      const { prisma } = await import('@/lib/db/prisma');
+      
+      await prisma.auditLog.create({
+        data: {
+          userId: entry.userId,
+          userEmail: entry.userEmail,
+          userRole: entry.userRole,
+          action: entry.action,
+          resourceType: entry.resourceType,
+          resourceId: entry.resourceId,
+          resourceData: entry.resourceData ? JSON.parse(JSON.stringify(entry.resourceData)) : null,
+          ipAddress: entry.ipAddress,
+          userAgent: entry.userAgent,
+          success: entry.success,
+          errorMessage: entry.errorMessage,
+          metadata: entry.metadata ? JSON.parse(JSON.stringify(entry.metadata)) : null,
+          severity: entry.severity,
+        },
+      });
+      
+      // Also log to application logger for immediate visibility
+      logger.info('Compliance audit event', entry as unknown as Record<string, unknown>);
+    } catch (error) {
+      // Never let audit storage failures break the application
+      logger.error('Failed to store audit event in database', error as Error);
+    }
   }
 
   private static async alertSecurityTeam(entry: AuditLogEntry): Promise<void> {
