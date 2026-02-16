@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Modal, Form, Select, Input, Button, App, Divider, Space, Typography, Tabs, Timeline, Tag } from 'antd'
-import { PhoneOutlined, ClockCircleOutlined, HistoryOutlined } from '@ant-design/icons'
+import { PhoneOutlined, CopyOutlined, HistoryOutlined } from '@ant-design/icons'
 import api from '@/lib/api/api'
 
 const { TextArea } = Input
@@ -61,28 +61,16 @@ export default function CallLeadModal({
   const [thirdLevelDispositions, setThirdLevelDispositions] = useState<Disposition[]>([])
   const [selectedFirstLevel, setSelectedFirstLevel] = useState<string | undefined>()
   const [selectedSecondLevel, setSelectedSecondLevel] = useState<string | undefined>()
-  const [callDuration, setCallDuration] = useState(0)
-  const [isCallActive, setIsCallActive] = useState(false)
   const [dispositionHistory, setDispositionHistory] = useState<DispositionHistory[]>([])
   const [activeTab, setActiveTab] = useState('1')
   const { message } = App.useApp()
 
-  // Call timer effect
-  useEffect(() => {
-    let interval: NodeJS.Timeout
-    if (isCallActive) {
-      interval = setInterval(() => {
-        setCallDuration(prev => prev + 1)
-      }, 1000)
+  // Copy phone number to clipboard
+  const handleCopyNumber = () => {
+    if (lead?.phoneNumber) {
+      navigator.clipboard.writeText(lead.phoneNumber)
+      message.success('Phone number copied to clipboard!')
     }
-    return () => clearInterval(interval)
-  }, [isCallActive])
-
-  // Format call duration
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
   // Quick notes templates
@@ -104,9 +92,6 @@ export default function CallLeadModal({
         fetchDispositionHistory()
       }
       
-      // Reset call timer
-      setCallDuration(0)
-      setIsCallActive(false)
       setActiveTab('1')
       
       // Pre-fill existing disposition data
@@ -229,11 +214,6 @@ export default function CallLeadModal({
         <Space>
           <PhoneOutlined />
           <span>Call Lead - {lead?.fullName}</span>
-          {isCallActive && (
-            <Tag icon={<ClockCircleOutlined />} color="processing">
-              {formatDuration(callDuration)}
-            </Tag>
-          )}
         </Space>
       }
       open={visible}
