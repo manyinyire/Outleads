@@ -61,12 +61,20 @@ export default function CallLeadModal({
   const [thirdLevelDispositions, setThirdLevelDispositions] = useState<Disposition[]>([])
   const [selectedFirstLevel, setSelectedFirstLevel] = useState<string | undefined>()
   const [selectedSecondLevel, setSelectedSecondLevel] = useState<string | undefined>()
+  const [callDuration, setCallDuration] = useState(0)
+  const [isCallActive, setIsCallActive] = useState(false)
   const [dispositionHistory, setDispositionHistory] = useState<DispositionHistory[]>([])
+  const [activeTab, setActiveTab] = useState('1')
   const { message } = App.useApp()
 
   // Call timer effect
   useEffect(() => {
     let interval: NodeJS.Timeout
+    if (isCallActive) {
+      interval = setInterval(() => {
+        setCallDuration(prev => prev + 1)
+      }, 1000)
+    }
     return () => clearInterval(interval)
   }, [isCallActive])
 
