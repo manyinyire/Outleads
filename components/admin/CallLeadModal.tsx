@@ -268,18 +268,6 @@ export default function CallLeadModal({
 
             <Form.Item name="dispositionNotes" label="Notes">
               <TextArea rows={4} placeholder="Add any additional notes..." />
-              <Select
-                placeholder="Quick Notes Templates"
-                style={{ width: '100%', marginTop: 8 }}
-                onChange={(value) => form.setFieldValue('dispositionNotes', value)}
-                allowClear
-              >
-                {noteTemplates.map((template, index) => (
-                  <Select.Option key={index} value={template}>
-                    {template}
-                  </Select.Option>
-                ))}
-              </Select>
             </Form.Item>
 
             <Form.Item>
