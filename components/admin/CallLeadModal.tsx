@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Modal, Form, Select, Input, Button, App, Divider, Space, Typography, Tabs, Timeline, Tag } from 'antd'
 import { PhoneOutlined, ClockCircleOutlined, HistoryOutlined } from '@ant-design/icons'
 import api from '@/lib/api/api'
+import { originateCall, hangupCall } from '@/lib/xcally/phonebar-api'
 
 const { TextArea } = Input
 const { Text } = Typography
@@ -65,6 +66,8 @@ export default function CallLeadModal({
   const [isCallActive, setIsCallActive] = useState(false)
   const [dispositionHistory, setDispositionHistory] = useState<DispositionHistory[]>([])
   const [activeTab, setActiveTab] = useState('1')
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
+  const [callingInProgress, setCallingInProgress] = useState(false)
   const { message } = App.useApp()
 
   // Call timer effect
@@ -107,6 +110,7 @@ export default function CallLeadModal({
       // Reset call timer
       setCallDuration(0)
       setIsCallActive(false)
+      setCurrentSessionId(null)
       setActiveTab('1')
       
       // Pre-fill existing disposition data
@@ -194,6 +198,46 @@ export default function CallLeadModal({
     form.setFieldValue('thirdLevelDispositionId', undefined)
   }
 
+  const handleCallToggle = async () => {
+    if (isCallActive) {
+      // End call - hangup via XCALLY
+      if (currentSessionId) {
+        setCallingInProgress(true)
+        const result = await hangupCall(currentSessionId)
+        setCallingInProgress(false)
+        
+        if (result.success) {
+          message.success('Call ended')
+          setIsCallActive(false)
+          setCurrentSessionId(null)
+        } else {
+          message.error(result.error || 'Failed to end call')
+        }
+      } else {
+        // Just stop timer if no session
+        setIsCallActive(false)
+      }
+    } else {
+      // Start call - originate via XCALLY
+      if (!lead?.phoneNumber) {
+        message.error('No phone number available')
+        return
+      }
+
+      setCallingInProgress(true)
+      const result = await originateCall(lead.phoneNumber)
+      setCallingInProgress(false)
+
+      if (result.success) {
+        message.success('Calling...')
+        setIsCallActive(true)
+        setCurrentSessionId(result.sessionId || null)
+      } else {
+        message.error(result.error || 'Failed to originate call')
+      }
+    }
+  }
+
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields()
@@ -202,6 +246,14 @@ export default function CallLeadModal({
       await api.put(`/admin/leads/${lead?.id}/disposition`, values)
 
       message.success('Call disposition saved successfully!')
+      
+      // End call if still active
+      if (isCallActive && currentSessionId) {
+        await hangupCall(currentSessionId)
+        setIsCallActive(false)
+        setCurrentSessionId(null)
+      }
+      
       onSuccess()
       onClose()
     } catch (error: any) {
