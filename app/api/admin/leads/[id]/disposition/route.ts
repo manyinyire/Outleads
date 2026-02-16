@@ -7,8 +7,8 @@ export const runtime = 'nodejs';
 
 const dispositionSchema = z.object({
   firstLevelDispositionId: z.string().cuid('Invalid disposition ID'),
-  secondLevelDispositionId: z.string().cuid('Invalid disposition ID').optional(),
-  thirdLevelDispositionId: z.string().cuid('Invalid disposition ID').optional(),
+  secondLevelDispositionId: z.string().cuid('Invalid disposition ID').optional().nullable(),
+  thirdLevelDispositionId: z.string().cuid('Invalid disposition ID').optional().nullable(),
   dispositionNotes: z.string().optional(),
 });
 
@@ -44,9 +44,10 @@ export async function PUT(
         }, { status: 404 });
       }
 
-      // Verify dispositions exist
+      // Verify dispositions exist and validate business rules
       const firstLevel = await prisma.firstLevelDisposition.findUnique({
-        where: { id: firstLevelDispositionId }
+        where: { id: firstLevelDispositionId },
+        select: { id: true, name: true }
       });
 
       if (!firstLevel) {
@@ -56,26 +57,104 @@ export async function PUT(
         }, { status: 400 });
       }
 
-      // Update lead with disposition
-      const updatedLead = await prisma.lead.update({
-        where: { id: leadId },
-        data: {
-          firstLevelDispositionId,
-          secondLevelDispositionId: secondLevelDispositionId || null,
-          thirdLevelDispositionId: thirdLevelDispositionId || null,
-          dispositionNotes: dispositionNotes || null,
-          lastCalledAt: new Date(),
-        },
-        include: {
-          firstLevelDisposition: true,
-          secondLevelDisposition: true,
-          thirdLevelDisposition: true,
-          businessSector: true,
-          products: true,
-          campaign: true,
-          assignedTo: true
+      // Validation Rule 1: "Sale" or "No Sale" requires "Contacted" first level
+      if (secondLevelDispositionId) {
+        const secondLevel = await prisma.secondLevelDisposition.findUnique({
+          where: { id: secondLevelDispositionId },
+          select: { id: true, name: true }
+        });
+
+        if (!secondLevel) {
+          return NextResponse.json({
+            error: 'Invalid Disposition',
+            message: 'Second level disposition not found'
+          }, { status: 400 });
         }
-      });
+
+        // Check if first level is "Contacted"
+        if (firstLevel.name !== 'Contacted') {
+          return NextResponse.json({
+            error: 'Validation Error',
+            message: 'Sale status can only be set when contact status is "Contacted"'
+          }, { status: 400 });
+        }
+      }
+
+      // Validation Rule 2: Third level requires second level
+      if (thirdLevelDispositionId && !secondLevelDispositionId) {
+        return NextResponse.json({
+          error: 'Validation Error',
+          message: 'Reason (Level 3) requires a sale status (Level 2) to be selected first'
+        }, { status: 400 });
+      }
+
+      // Validation Rule 3: Verify third level disposition exists and matches category
+      if (thirdLevelDispositionId) {
+        const thirdLevel = await prisma.thirdLevelDisposition.findUnique({
+          where: { id: thirdLevelDispositionId },
+          select: { id: true, name: true, category: true }
+        });
+
+        if (!thirdLevel) {
+          return NextResponse.json({
+            error: 'Invalid Disposition',
+            message: 'Third level disposition not found'
+          }, { status: 400 });
+        }
+
+        // Verify category matches second level
+        if (secondLevelDispositionId) {
+          const secondLevel = await prisma.secondLevelDisposition.findUnique({
+            where: { id: secondLevelDispositionId },
+            select: { name: true }
+          });
+
+          const expectedCategory = secondLevel?.name === 'Sale' ? null : 
+                                   secondLevel?.name === 'No Sale' ? 'no_sale' : 
+                                   'not_contacted';
+
+          if (secondLevel?.name === 'No Sale' && thirdLevel.category !== 'no_sale') {
+            return NextResponse.json({
+              error: 'Validation Error',
+              message: 'Selected reason does not match "No Sale" category'
+            }, { status: 400 });
+          }
+        }
+      }
+
+      // Update lead with disposition and create history entry in a transaction
+      const [updatedLead, _] = await prisma.$transaction([
+        prisma.lead.update({
+          where: { id: leadId },
+          data: {
+            firstLevelDispositionId,
+            secondLevelDispositionId: secondLevelDispositionId || null,
+            thirdLevelDispositionId: thirdLevelDispositionId || null,
+            dispositionNotes: dispositionNotes || null,
+            lastCalledAt: new Date(),
+          },
+          include: {
+            firstLevelDisposition: true,
+            secondLevelDisposition: true,
+            thirdLevelDisposition: true,
+            businessSector: true,
+            products: true,
+            campaign: true,
+            assignedTo: true
+          }
+        }),
+        // Create history entry
+        prisma.dispositionHistory.create({
+          data: {
+            leadId,
+            firstLevelDispositionId,
+            secondLevelDispositionId: secondLevelDispositionId || null,
+            thirdLevelDispositionId: thirdLevelDispositionId || null,
+            dispositionNotes: dispositionNotes || null,
+            changedById: authReq.user.id
+          }
+        })
+      ]);
 
       return NextResponse.json({
         message: 'Lead disposition updated successfully',

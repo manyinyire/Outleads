@@ -12,18 +12,19 @@ datasource db {
 
 // User who can access the admin dashboard
 model User {
-  id        String     @id @default(cuid())
-  email     String     @unique @db.VarChar(255)
-  username  String     @unique @db.VarChar(100) // To store the HRMS id_ field
-  name      String     @db.VarChar(255)
-  role      Role       @default(AGENT)
-  status    Status     @default(PENDING)
-  campaigns Campaign[] @relation("CreatedCampaigns")
-  assignedLeads Lead[] @relation("AssignedLeads")
+  id                String     @id @default(cuid())
+  email             String     @unique @db.VarChar(255)
+  username          String     @unique @db.VarChar(100) // To store the HRMS id_ field
+  name              String     @db.VarChar(255)
+  role              Role       @default(AGENT)
+  status            Status     @default(PENDING)
+  campaigns         Campaign[] @relation("CreatedCampaigns")
+  assignedLeads     Lead[]     @relation("AssignedLeads")
   assignedCampaigns Campaign[] @relation("AssignedCampaigns")
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  lastLogin DateTime?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  lastLogin         DateTime?
+  dispositionChanges DispositionHistory[]
 
   // Performance optimized indexes
   @@index([email])
@@ -95,6 +96,7 @@ model Lead {
   thirdLevelDispositionId   String?
   dispositionNotes          String?                  @db.Text
   lastCalledAt              DateTime?
+  dispositionHistory        DispositionHistory[]
   
   createdAt                 DateTime                 @default(now())
   updatedAt                 DateTime                 @updatedAt
@@ -253,6 +255,7 @@ model FirstLevelDisposition {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   leads       Lead[]
+  dispositionHistory DispositionHistory[]
 
   @@index([name])
   @@index([isActive])
@@ -268,6 +271,7 @@ model SecondLevelDisposition {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   leads       Lead[]
+  dispositionHistory DispositionHistory[]
 
   @@index([name])
   @@index([isActive])
@@ -284,12 +288,35 @@ model ThirdLevelDisposition {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   leads       Lead[]
+  dispositionHistory DispositionHistory[]
 
-  @@index([name])
   @@index([category])
   @@index([isActive])
   @@unique([name, category])
   @@map("third_level_dispositions")
 }
 
-
+// Disposition History - Track all disposition changes
+model DispositionHistory {
+  id                        String                   @id @default(cuid())
+  lead                      Lead                     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  leadId                    String
+  
+  firstLevelDisposition     FirstLevelDisposition?   @relation(fields: [firstLevelDispositionId], references: [id])
+  firstLevelDispositionId   String?
+  secondLevelDisposition    SecondLevelDisposition?  @relation(fields: [secondLevelDispositionId], references: [id])
+  secondLevelDispositionId  String?
+  thirdLevelDisposition     ThirdLevelDisposition?   @relation(fields: [thirdLevelDispositionId], references: [id])
+  thirdLevelDispositionId   String?
+  
+  dispositionNotes          String?                  @db.Text
+  changedBy                 User                     @relation(fields: [changedById], references: [id])
+  changedById               String
+  changedAt                 DateTime                 @default(now())
+  
+  @@index([leadId])
+  @@index([changedById])
+  @@index([changedAt])
+  @@index([leadId, changedAt])
+  @@map("disposition_history")
+}

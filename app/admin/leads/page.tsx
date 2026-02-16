@@ -109,6 +109,42 @@ export default function LeadsPage() {
       key: 'campaign',
       render: (campaign) => campaign ? <Tag color="blue">{sanitizeText(campaign.campaign_name)}</Tag> : <Tag>Direct Lead</Tag>
     },
+    {
+      title: 'Contact Status',
+      key: 'firstLevelDisposition',
+      render: (_, record: any) => {
+        const disposition = record.firstLevelDisposition;
+        if (!disposition) return <Tag>Not Set</Tag>;
+        return (
+          <Tag color={disposition.name === 'Contacted' ? 'green' : 'orange'}>
+            {sanitizeText(disposition.name)}
+          </Tag>
+        );
+      }
+    },
+    {
+      title: 'Sale Status',
+      key: 'secondLevelDisposition',
+      render: (_, record: any) => {
+        const disposition = record.secondLevelDisposition;
+        if (!disposition) return '-';
+        return (
+          <Tag color={disposition.name === 'Sale' ? 'green' : 'red'}>
+            {sanitizeText(disposition.name)}
+          </Tag>
+        );
+      }
+    },
+    {
+      title: 'Last Called',
+      dataIndex: 'lastCalledAt',
+      key: 'lastCalledAt',
+      render: (date: string) => {
+        if (!date) return <Tag color="default">Never</Tag>;
+        return <span>{new Date(date).toLocaleString()}</span>;
+      },
+      sorter: true
+    },
     { 
       title: 'Assigned Agent', 
       dataIndex: ['assignedTo', 'name'], 

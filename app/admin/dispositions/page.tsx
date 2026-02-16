@@ -17,6 +17,15 @@ interface FirstLevelDisposition {
   updatedAt: string
 }
 
+interface SecondLevelDisposition {
+  id: string
+  name: string
+  description?: string
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+}
+
 interface ThirdLevelDisposition {
   id: string
   name: string
@@ -29,10 +38,11 @@ interface ThirdLevelDisposition {
 
 export default function DispositionsPage() {
   const [firstLevelData, setFirstLevelData] = useState<FirstLevelDisposition[]>([])
+  const [secondLevelData, setSecondLevelData] = useState<SecondLevelDisposition[]>([])
   const [thirdLevelData, setThirdLevelData] = useState<ThirdLevelDisposition[]>([])
   const [loading, setLoading] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
-  const [modalType, setModalType] = useState<'first' | 'third'>('first')
+  const [modalType, setModalType] = useState<'first' | 'second' | 'third'>('first')
   const [editingItem, setEditingItem] = useState<any>(null)
   const [form] = Form.useForm()
   const { message } = App.useApp()
@@ -44,6 +54,18 @@ export default function DispositionsPage() {
       setFirstLevelData(data?.data || data || [])
     } catch (error) {
       message.error('Failed to fetch first level dispositions')
+    } finally {
+      setLoading(false)
+    }
+  }, [message])
+
+  const fetchSecondLevel = useCallback(async () => {
+    try {
+      setLoading(true)
+      const data: any = await api.get('/admin/dispositions/second-level')
+      setSecondLevelData(data?.data || data || [])
+    } catch (error) {
+      message.error('Failed to fetch second level dispositions')
     } finally {
       setLoading(false)
     }
@@ -63,30 +85,31 @@ export default function DispositionsPage() {
 
   useEffect(() => {
     fetchFirstLevel()
+    fetchSecondLevel()
     fetchThirdLevel()
-  }, [fetchFirstLevel, fetchThirdLevel])
+  }, [fetchFirstLevel, fetchSecondLevel, fetchThirdLevel])
 
-  const handleAdd = (type: 'first' | 'third') => {
+  const handleAdd = (type: 'first' | 'second' | 'third') => {
     setModalType(type)
     setEditingItem(null)
     form.resetFields()
-    if (type === 'third') {
-      form.setFieldValue('isActive', true)
-    }
+    form.setFieldValue('isActive', true)
     setModalVisible(true)
   }
 
-  const handleEdit = (record: any, type: 'first' | 'third') => {
+  const handleEdit = (record: any, type: 'first' | 'second' | 'third') => {
     setModalType(type)
     setEditingItem(record)
     form.setFieldsValue(record)
     setModalVisible(true)
   }
 
-  const handleDelete = async (id: string, type: 'first' | 'third') => {
+  const handleDelete = async (id: string, type: 'first' | 'second' | 'third') => {
     try {
       const endpoint = type === 'first' 
         ? `/admin/dispositions/first-level/${id}`
+        : type === 'second'
+        ? `/admin/dispositions/second-level/${id}`
         : `/admin/dispositions/third-level/${id}`
       
       await api.delete(endpoint)
@@ -94,6 +117,8 @@ export default function DispositionsPage() {
       
       if (type === 'first') {
         fetchFirstLevel()
+      } else if (type === 'second') {
+        fetchSecondLevel()
       } else {
         fetchThirdLevel()
       }
@@ -115,6 +140,8 @@ export default function DispositionsPage() {
         // Update
         const endpoint = modalType === 'first'
           ? `/admin/dispositions/first-level/${editingItem.id}`
+          : modalType === 'second'
+          ? `/admin/dispositions/second-level/${editingItem.id}`
           : `/admin/dispositions/third-level/${editingItem.id}`
         
         await api.put(endpoint, values)
@@ -123,6 +150,8 @@ export default function DispositionsPage() {
         // Create
         const endpoint = modalType === 'first'
           ? '/admin/dispositions/first-level'
+          : modalType === 'second'
+          ? '/admin/dispositions/second-level'
           : '/admin/dispositions/third-level'
         
         await api.post(endpoint, values)
@@ -134,6 +163,8 @@ export default function DispositionsPage() {
       
       if (modalType === 'first') {
         fetchFirstLevel()
+      } else if (modalType === 'second') {
+        fetchSecondLevel()
       } else {
         fetchThirdLevel()
       }
@@ -263,6 +294,55 @@ export default function DispositionsPage() {
     },
   ]
 
+  const secondLevelColumns: ColumnsType<SecondLevelDisposition> = [
+    {
+      title: 'Name',
+      dataIndex: 'name',
+      key: 'name',
+    },
+    {
+      title: 'Description',
+      dataIndex: 'description',
+      key: 'description',
+    },
+    {
+      title: 'Status',
+      dataIndex: 'isActive',
+      key: 'isActive',
+      render: (isActive: boolean) => (
+        <span style={{ color: isActive ? 'green' : 'red' }}>
+          {isActive ? 'Active' : 'Inactive'}
+        </span>
+      ),
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_, record) => (
+        <Space>
+          <Button
+            type="link"
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record, 'second')}
+          >
+            Edit
+          </Button>
+          <Popconfirm
+            title="Delete Disposition"
+            description="Are you sure you want to delete this disposition?"
+            onConfirm={() => handleDelete(record.id, 'second')}
+            okText="Yes"
+            cancelText="No"
+          >
+            <Button type="link" danger icon={<DeleteOutlined />}>
+              Delete
+            </Button>
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ]
+
   const tabItems = [
     {
       key: 'first',
@@ -281,6 +361,30 @@ export default function DispositionsPage() {
           <Table
             columns={firstLevelColumns}
             dataSource={firstLevelData}
+            rowKey="id"
+            loading={loading}
+            pagination={false}
+          />
+        </>
+      ),
+    },
+    {
+      key: 'second',
+      label: 'Sale Status (Level 2)',
+      children: (
+        <>
+          <div style={{ marginBottom: 16 }}>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => handleAdd('second')}
+            >
+              Add Sale Status
+            </Button>
+          </div>
+          <Table
+            columns={secondLevelColumns}
+            dataSource={secondLevelData}
             rowKey="id"
             loading={loading}
             pagination={false}
@@ -318,13 +422,13 @@ export default function DispositionsPage() {
     <div style={{ padding: '24px' }}>
       <h1>Disposition Management</h1>
       <p style={{ marginBottom: 24, color: '#666' }}>
-        Manage call disposition options. Level 1 determines contact status, Level 3 provides reasons for outcomes.
+        Manage call disposition options. Level 1 determines contact status, Level 2 determines sale outcome, Level 3 provides reasons.
       </p>
 
       <Tabs items={tabItems} />
 
       <Modal
-        title={`${editingItem ? 'Edit' : 'Add'} ${modalType === 'first' ? 'Contact Status' : 'Reason'}`}
+        title={`${editingItem ? 'Edit' : 'Add'} ${modalType === 'first' ? 'Contact Status' : modalType === 'second' ? 'Sale Status' : 'Reason'}`}
         open={modalVisible}
         onCancel={() => {
           setModalVisible(false)
