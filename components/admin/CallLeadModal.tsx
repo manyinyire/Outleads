@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Modal, Form, Select, Input, Button, App, Divider, Space, Typography } from 'antd'
-import { PhoneOutlined } from '@ant-design/icons'
+import { Modal, Form, Select, Input, Button, App, Divider, Space, Typography, Tabs, Timeline, Tag } from 'antd'
+import { PhoneOutlined, ClockCircleOutlined, HistoryOutlined } from '@ant-design/icons'
 import api from '@/lib/api/api'
 
 const { TextArea } = Input
@@ -38,6 +38,16 @@ interface Disposition {
   category?: string
 }
 
+interface DispositionHistory {
+  id: string
+  changedAt: string
+  firstLevelDisposition?: { name: string }
+  secondLevelDisposition?: { name: string }
+  thirdLevelDisposition?: { name: string }
+  dispositionNotes?: string
+  changedBy: { name: string; email: string }
+}
+
 export default function CallLeadModal({
   visible,
   lead,
@@ -51,12 +61,53 @@ export default function CallLeadModal({
   const [thirdLevelDispositions, setThirdLevelDispositions] = useState<Disposition[]>([])
   const [selectedFirstLevel, setSelectedFirstLevel] = useState<string | undefined>()
   const [selectedSecondLevel, setSelectedSecondLevel] = useState<string | undefined>()
+  const [callDuration, setCallDuration] = useState(0)
+  const [isCallActive, setIsCallActive] = useState(false)
+  const [dispositionHistory, setDispositionHistory] = useState<DispositionHistory[]>([])
+  const [activeTab, setActiveTab] = useState('1')
   const { message } = App.useApp()
+
+  // Call timer effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout
+    if (isCallActive) {
+      interval = setInterval(() => {
+        setCallDuration(prev => prev + 1)
+      }, 1000)
+    }
+    return () => clearInterval(interval)
+  }, [isCallActive])
+
+  // Format call duration
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  // Quick notes templates
+  const noteTemplates = [
+    "Customer interested, will call back",
+    "Not interested at this time",
+    "Wrong number",
+    "Requested more information",
+    "Ready to purchase",
+    "Voicemail left",
+    "Busy, call later"
+  ]
 
   useEffect(() => {
     if (visible) {
       fetchFirstLevelDispositions()
       fetchSecondLevelDispositions()
+      if (lead?.id) {
+        fetchDispositionHistory()
+      }
+      
+      // Reset call timer
+      setCallDuration(0)
+      setIsCallActive(false)
+      setActiveTab('1')
       
       // Pre-fill existing disposition data
       if (lead) {
@@ -73,6 +124,7 @@ export default function CallLeadModal({
       form.resetFields()
       setSelectedFirstLevel(undefined)
       setSelectedSecondLevel(undefined)
+      setDispositionHistory([])
     }
   }, [visible, lead, form])
 
@@ -89,6 +141,16 @@ export default function CallLeadModal({
       form.setFieldValue('thirdLevelDispositionId', undefined)
     }
   }, [selectedFirstLevel, selectedSecondLevel, firstLevelDispositions, secondLevelDispositions, form])
+
+  const fetchDispositionHistory = async () => {
+    if (!lead?.id) return
+    try {
+      const data: any = await api.get(`/admin/leads/${lead.id}/disposition/history`)
+      setDispositionHistory(data?.data || [])
+    } catch (error) {
+      console.error('Error fetching disposition history:', error)
+    }
+  }
 
   const fetchFirstLevelDispositions = async () => {
     try {
@@ -167,18 +229,34 @@ export default function CallLeadModal({
         <Space>
           <PhoneOutlined />
           <span>Call Lead - {lead?.fullName}</span>
+          {isCallActive && (
+            <Tag icon={<ClockCircleOutlined />} color="processing">
+              {formatDuration(callDuration)}
+            </Tag>
+          )}
         </Space>
       }
       open={visible}
       onCancel={onClose}
       footer={null}
-      width={600}
+      width={800}
     >
       {lead && (
         <>
           <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#f5f5f5', borderRadius: '8px' }}>
             <Space direction="vertical" style={{ width: '100%' }}>
-              <div><Text strong>Phone:</Text> {lead.phoneNumber}</div>
+              <Space>
+                <div><Text strong>Phone:</Text> {lead.phoneNumber}</div>
+                <Button
+                  type={isCallActive ? 'default' : 'primary'}
+                  icon={<PhoneOutlined />}
+                  onClick={() => setIsCallActive(!isCallActive)}
+                  danger={isCallActive}
+                  size="small"
+                >
+                  {isCallActive ? 'End Call' : 'Start Call'}
+                </Button>
+              </Space>
               <div><Text strong>Sector:</Text> {lead.businessSector.name}</div>
               <div><Text strong>Products:</Text> {lead.products.map(p => p.name).join(', ')}</div>
               {lead.campaign && <div><Text strong>Campaign:</Text> {lead.campaign.campaign_name}</div>}
@@ -188,9 +266,9 @@ export default function CallLeadModal({
             </Space>
           </div>
 
-          <Divider>Call Disposition</Divider>
-
-          <Form form={form} layout="vertical">
+          <Tabs activeKey={activeTab} onChange={setActiveTab}>
+            <Tabs.TabPane tab="Record Disposition" key="1">
+              <Form form={form} layout="vertical">
             <Form.Item
               name="firstLevelDispositionId"
               label="1. Contact Status"
@@ -248,32 +326,70 @@ export default function CallLeadModal({
               </Form.Item>
             )}
 
-            <Form.Item
-              name="dispositionNotes"
-              label="Notes"
-            >
-              <TextArea
-                rows={4}
-                placeholder="Add any additional notes about this call..."
-              />
+            <Form.Item name="dispositionNotes" label="Notes">
+              <TextArea rows={4} placeholder="Add any additional notes..." />
+              <Select
+                placeholder="Quick Notes Templates"
+                style={{ width: '100%', marginTop: 8 }}
+                onChange={(value) => form.setFieldValue('dispositionNotes', value)}
+                allowClear
+              >
+                {noteTemplates.map((template, index) => (
+                  <Select.Option key={index} value={template}>
+                    {template}
+                  </Select.Option>
+                ))}
+              </Select>
             </Form.Item>
 
-            <Form.Item style={{ marginBottom: 0 }}>
-              <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+            <Form.Item>
+              <Space>
+                <Button type="primary" htmlType="submit" loading={loading}>
+                  Save Disposition
+                </Button>
                 <Button onClick={onClose}>
                   Cancel
-                </Button>
-                <Button
-                  type="primary"
-                  onClick={handleSubmit}
-                  loading={loading}
-                  icon={<PhoneOutlined />}
-                >
-                  Save Call Disposition
                 </Button>
               </Space>
             </Form.Item>
           </Form>
+            </Tabs.TabPane>
+
+            <Tabs.TabPane tab={<span><HistoryOutlined /> Call History</span>} key="2">
+              {dispositionHistory.length === 0 ? (
+                <Text type="secondary">No previous calls recorded</Text>
+              ) : (
+                <Timeline>
+                  {dispositionHistory.map((history) => (
+                    <Timeline.Item key={history.id}>
+                      <Space direction="vertical" size="small">
+                        <Text strong>{new Date(history.changedAt).toLocaleString()}</Text>
+                        <Space wrap>
+                          {history.firstLevelDisposition && (
+                            <Tag color="blue">{history.firstLevelDisposition.name}</Tag>
+                          )}
+                          {history.secondLevelDisposition && (
+                            <Tag color={history.secondLevelDisposition.name === 'Sale' ? 'green' : 'red'}>
+                              {history.secondLevelDisposition.name}
+                            </Tag>
+                          )}
+                          {history.thirdLevelDisposition && (
+                            <Tag>{history.thirdLevelDisposition.name}</Tag>
+                          )}
+                        </Space>
+                        {history.dispositionNotes && (
+                          <Text type="secondary" italic>"{history.dispositionNotes}"</Text>
+                        )}
+                        <Text type="secondary" style={{ fontSize: '12px' }}>
+                          by {history.changedBy.name}
+                        </Text>
+                      </Space>
+                    </Timeline.Item>
+                  ))}
+                </Timeline>
+              )}
+            </Tabs.TabPane>
+          </Tabs>
         </>
       )}
     </Modal>

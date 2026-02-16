@@ -171,13 +171,19 @@ export default function ReportsPage() {
             <RangePicker style={{ width: '100%' }} onChange={(dates: any) => setDateRange(dates)} />
           </Col>
           <Col xs={24} md={8}>
-            <Button
+            <Button 
               type="primary"
               onClick={handleGenerateReport}
               loading={loading}
-              block
             >
               Generate Report
+            </Button>
+            <Button
+              icon={<DownloadOutlined />}
+              onClick={handleExport}
+              disabled={data.length === 0}
+            >
+              Export to CSV
             </Button>
           </Col>
         </Row>
