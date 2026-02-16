@@ -228,13 +228,12 @@ export default function CallLeadModal({
               <Space>
                 <div><Text strong>Phone:</Text> {lead.phoneNumber}</div>
                 <Button
-                  type={isCallActive ? 'default' : 'primary'}
-                  icon={<PhoneOutlined />}
-                  onClick={() => setIsCallActive(!isCallActive)}
-                  danger={isCallActive}
+                  type="default"
+                  icon={<CopyOutlined />}
+                  onClick={handleCopyNumber}
                   size="small"
                 >
-                  {isCallActive ? 'End Call' : 'Start Call'}
+                  Copy Number
                 </Button>
               </Space>
               <div><Text strong>Sector:</Text> {lead.businessSector.name}</div>
@@ -335,9 +334,9 @@ export default function CallLeadModal({
           </Form>
             </Tabs.TabPane>
 
-            <Tabs.TabPane tab={<span><HistoryOutlined /> Call History</span>} key="2">
+            <Tabs.TabPane tab={<span><HistoryOutlined /> Disposition History</span>} key="2">
               {dispositionHistory.length === 0 ? (
-                <Text type="secondary">No previous calls recorded</Text>
+                <Text type="secondary">No disposition history recorded</Text>
               ) : (
                 <Timeline>
                   {dispositionHistory.map((history) => (
