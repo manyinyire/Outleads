@@ -3,13 +3,14 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Tag, Button, Space, App, Tooltip, Switch, TablePaginationConfig } from 'antd'
 import { ColumnsType } from 'antd/es/table'
-import { CopyOutlined, ExportOutlined } from '@ant-design/icons'
+import { CopyOutlined, ExportOutlined, PlusOutlined } from '@ant-design/icons'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/lib/store'
 import Papa from 'papaparse'
 
 import CrudTable, { CrudField } from '@/components/admin/shared/CrudTable'
 import { sanitizeHtml, sanitizeFilename, sanitizeText } from '@/lib/utils/sanitization'
+import QuickLeadEntryModal from '@/components/agent/QuickLeadEntryModal'
 
 interface Campaign {
   id: string
@@ -38,6 +39,15 @@ export default function CampaignsPage() {
     current: 1,
     pageSize: 10,
     total: 0,
+  })
+  const [leadEntryModal, setLeadEntryModal] = useState<{
+    visible: boolean
+    campaignId: string
+    campaignName: string
+  }>({
+    visible: false,
+    campaignId: '',
+    campaignName: ''
   })
 
   const { message } = App.useApp()
@@ -293,9 +303,29 @@ export default function CampaignsPage() {
       key: 'actions',
       render: (_, record) => (
         <Space>
-          <Button icon={<ExportOutlined />} onClick={() => handleExportLeads(record.id, record.campaign_name)}>
-            Export Leads
-          </Button>
+          {(userRole === 'AGENT' || userRole === 'SUPERVISOR' || userRole === 'ADMIN') && (
+            <Tooltip title="Add Lead">
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => setLeadEntryModal({
+                  visible: true,
+                  campaignId: record.id,
+                  campaignName: record.campaign_name
+                })}
+              >
+                Add Lead
+              </Button>
+            </Tooltip>
+          )}
+          <Tooltip title="Export Leads">
+            <Button
+              icon={<ExportOutlined />}
+              onClick={() => handleExportLeads(record.id, record.campaign_name)}
+            >
+              Export
+            </Button>
+          </Tooltip>
         </Space>
       ),
     },
@@ -314,18 +344,27 @@ export default function CampaignsPage() {
   }
 
   return (
-    <CrudTable<Campaign>
-      title="Campaign Management"
-      columns={columns}
-      fields={fields}
-      dataSource={data}
-      loading={loading}
-      pagination={pagination}
-      onTableChange={handleTableChange}
-      onDelete={isAgent ? undefined : handleDelete}
-      onSubmit={isAgent ? undefined : handleSubmit}
-      hideDefaultActions={isAgent}
-      customActions={isAgent ? <div /> : undefined}
-    />
+    <>
+      <CrudTable<Campaign>
+        title="Campaign Management"
+        columns={columns}
+        fields={fields}
+        dataSource={data}
+        loading={loading}
+        pagination={pagination}
+        onTableChange={handleTableChange}
+        hideDefaultActions={isAgent}
+      />
+      
+      <QuickLeadEntryModal
+        visible={leadEntryModal.visible}
+        campaignId={leadEntryModal.campaignId}
+        campaignName={leadEntryModal.campaignName}
+        onClose={() => setLeadEntryModal({ visible: false, campaignId: '', campaignName: '' })}
+        onSuccess={() => {
+          fetchData()
+        }}
+      />
+    </>
   )
 }

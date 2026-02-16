@@ -42,6 +42,20 @@ export async function POST(req: Request) {
 
     const { name, phone, company, productIds, campaignId } = validation.data;
 
+    // Check for duplicate phone number in the same campaign
+    if (campaignId) {
+      const existingLead = await prisma.lead.findFirst({
+        where: {
+          phoneNumber: phone,
+          campaignId: campaignId
+        }
+      });
+
+      if (existingLead) {
+        return errorResponse('You have already submitted your information for this campaign. Thank you for your interest!', 409);
+      }
+    }
+
     const sector = await prisma.sector.findUnique({ where: { id: company } });
     if (!sector) {
       return errorResponse('Business sector not found.', 400);
