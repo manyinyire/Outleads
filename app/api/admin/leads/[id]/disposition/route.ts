@@ -122,39 +122,26 @@ export async function PUT(
         }
       }
 
-      // Update lead with disposition and create history entry in a transaction
-      const [updatedLead, _] = await prisma.$transaction([
-        prisma.lead.update({
-          where: { id: leadId },
-          data: {
-            firstLevelDispositionId,
-            secondLevelDispositionId: secondLevelDispositionId || null,
-            thirdLevelDispositionId: thirdLevelDispositionId || null,
-            dispositionNotes: dispositionNotes || null,
-            lastCalledAt: new Date(),
-          },
-          include: {
-            firstLevelDisposition: true,
-            secondLevelDisposition: true,
-            thirdLevelDisposition: true,
-            businessSector: true,
-            products: true,
-            campaign: true,
-            assignedTo: true
-          }
-        }),
-        // Create history entry
-        prisma.dispositionHistory.create({
-          data: {
-            leadId,
-            firstLevelDispositionId,
-            secondLevelDispositionId: secondLevelDispositionId || null,
-            thirdLevelDispositionId: thirdLevelDispositionId || null,
-            dispositionNotes: dispositionNotes || null,
-            changedById: authReq.user.id
-          }
-        })
-      ]);
+      // Update lead with disposition
+      const updatedLead = await prisma.lead.update({
+        where: { id: leadId },
+        data: {
+          firstLevelDispositionId,
+          secondLevelDispositionId: secondLevelDispositionId || null,
+          thirdLevelDispositionId: thirdLevelDispositionId || null,
+          dispositionNotes: dispositionNotes || null,
+          lastCalledAt: new Date(),
+        },
+        include: {
+          firstLevelDisposition: true,
+          secondLevelDisposition: true,
+          thirdLevelDisposition: true,
+          businessSector: true,
+          products: true,
+          campaign: true,
+          assignedTo: true
+        }
+      });
 
       return NextResponse.json({
         message: 'Lead disposition updated successfully',
