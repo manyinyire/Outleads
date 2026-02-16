@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Modal, Form, Select, Input, Button, App, Divider, Space, Typography, Tabs, Timeline, Tag } from 'antd'
-import { PhoneOutlined, CopyOutlined, HistoryOutlined } from '@ant-design/icons'
+import { Modal, Form, Select, Input, Button, App, Divider, Space, Typography } from 'antd'
+import { PhoneOutlined, CopyOutlined } from '@ant-design/icons'
 import api from '@/lib/api/api'
 
 const { TextArea } = Input
@@ -61,8 +61,6 @@ export default function CallLeadModal({
   const [thirdLevelDispositions, setThirdLevelDispositions] = useState<Disposition[]>([])
   const [selectedFirstLevel, setSelectedFirstLevel] = useState<string | undefined>()
   const [selectedSecondLevel, setSelectedSecondLevel] = useState<string | undefined>()
-  const [dispositionHistory, setDispositionHistory] = useState<DispositionHistory[]>([])
-  const [activeTab, setActiveTab] = useState('1')
   const { message } = App.useApp()
 
   // Copy phone number to clipboard
@@ -88,11 +86,6 @@ export default function CallLeadModal({
     if (visible) {
       fetchFirstLevelDispositions()
       fetchSecondLevelDispositions()
-      if (lead?.id) {
-        fetchDispositionHistory()
-      }
-      
-      setActiveTab('1')
       
       // Pre-fill existing disposition data
       if (lead) {
@@ -109,7 +102,6 @@ export default function CallLeadModal({
       form.resetFields()
       setSelectedFirstLevel(undefined)
       setSelectedSecondLevel(undefined)
-      setDispositionHistory([])
     }
   }, [visible, lead, form])
 
@@ -126,16 +118,6 @@ export default function CallLeadModal({
       form.setFieldValue('thirdLevelDispositionId', undefined)
     }
   }, [selectedFirstLevel, selectedSecondLevel, firstLevelDispositions, secondLevelDispositions, form])
-
-  const fetchDispositionHistory = async () => {
-    if (!lead?.id) return
-    try {
-      const data: any = await api.get(`/admin/leads/${lead.id}/disposition/history`)
-      setDispositionHistory(data?.data || [])
-    } catch (error) {
-      console.error('Error fetching disposition history:', error)
-    }
-  }
 
   const fetchFirstLevelDispositions = async () => {
     try {
@@ -245,9 +227,9 @@ export default function CallLeadModal({
             </Space>
           </div>
 
-          <Tabs activeKey={activeTab} onChange={setActiveTab}>
-            <Tabs.TabPane tab="Record Disposition" key="1">
-              <Form form={form} layout="vertical">
+          <Divider>Call Disposition</Divider>
+
+          <Form form={form} layout="vertical">
             <Form.Item
               name="firstLevelDispositionId"
               label="1. Contact Status"
@@ -332,43 +314,6 @@ export default function CallLeadModal({
               </Space>
             </Form.Item>
           </Form>
-            </Tabs.TabPane>
-
-            <Tabs.TabPane tab={<span><HistoryOutlined /> Disposition History</span>} key="2">
-              {dispositionHistory.length === 0 ? (
-                <Text type="secondary">No disposition history recorded</Text>
-              ) : (
-                <Timeline>
-                  {dispositionHistory.map((history) => (
-                    <Timeline.Item key={history.id}>
-                      <Space direction="vertical" size="small">
-                        <Text strong>{new Date(history.changedAt).toLocaleString()}</Text>
-                        <Space wrap>
-                          {history.firstLevelDisposition && (
-                            <Tag color="blue">{history.firstLevelDisposition.name}</Tag>
-                          )}
-                          {history.secondLevelDisposition && (
-                            <Tag color={history.secondLevelDisposition.name === 'Sale' ? 'green' : 'red'}>
-                              {history.secondLevelDisposition.name}
-                            </Tag>
-                          )}
-                          {history.thirdLevelDisposition && (
-                            <Tag>{history.thirdLevelDisposition.name}</Tag>
-                          )}
-                        </Space>
-                        {history.dispositionNotes && (
-                          <Text type="secondary" italic>"{history.dispositionNotes}"</Text>
-                        )}
-                        <Text type="secondary" style={{ fontSize: '12px' }}>
-                          by {history.changedBy.name}
-                        </Text>
-                      </Space>
-                    </Timeline.Item>
-                  ))}
-                </Timeline>
-              )}
-            </Tabs.TabPane>
-          </Tabs>
         </>
       )}
     </Modal>
