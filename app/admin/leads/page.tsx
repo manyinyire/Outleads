@@ -165,6 +165,18 @@ export default function LeadsPage() {
         </Select>
       </Col>
       <Col>
+        <Select
+          placeholder="Call Status"
+          style={{ width: 180 }}
+          onChange={(value) => handleFilterChange('callStatus', value)}
+          value={filters.callStatus}
+          allowClear
+        >
+          <Select.Option value="called">Called</Select.Option>
+          <Select.Option value="not_called">Not Called</Select.Option>
+        </Select>
+      </Col>
+      <Col>
         <RangePicker 
           onChange={(dates) => handleFilterChange('dateRange', dates)}
           value={filters.dateRange as any}

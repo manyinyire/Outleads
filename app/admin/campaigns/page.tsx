@@ -24,6 +24,10 @@ interface Campaign {
   assignedTo: {
     name: string
   }
+  answer_rate?: number
+  conversion_rate?: number
+  contacted_count?: number
+  sales_count?: number
 }
 
 interface Agent {
@@ -273,17 +277,44 @@ export default function CampaignsPage() {
     { title: 'Clicks', dataIndex: 'click_count', key: 'click_count', sorter: (a, b) => a.click_count - b.click_count },
     { title: 'Leads', dataIndex: 'lead_count', key: 'lead_count', sorter: (a, b) => a.lead_count - b.lead_count },
     {
-      title: 'Conversion',
-      key: 'conversion',
+      title: 'Contacted',
+      dataIndex: 'contacted_count',
+      key: 'contacted_count',
+      render: (count: number) => count || 0,
+      sorter: (a, b) => (a.contacted_count || 0) - (b.contacted_count || 0)
+    },
+    {
+      title: 'Sales',
+      dataIndex: 'sales_count',
+      key: 'sales_count',
+      render: (count: number) => count || 0,
+      sorter: (a, b) => (a.sales_count || 0) - (b.sales_count || 0)
+    },
+    {
+      title: 'Answer Rate',
+      key: 'answer_rate',
       render: (_, record) => {
-        const rate = record.click_count > 0 ? (record.lead_count / record.click_count) * 100 : 0;
-        return `${rate.toFixed(2)}%`;
+        const rate = record.answer_rate || 0;
+        return (
+          <Tag color={rate >= 50 ? 'green' : rate >= 30 ? 'orange' : 'red'}>
+            {rate.toFixed(2)}%
+          </Tag>
+        );
       },
-      sorter: (a, b) => {
-        const rateA = a.click_count > 0 ? (a.lead_count / a.click_count) : 0;
-        const rateB = b.click_count > 0 ? (b.lead_count / b.click_count) : 0;
-        return rateA - rateB;
-      }
+      sorter: (a, b) => (a.answer_rate || 0) - (b.answer_rate || 0)
+    },
+    {
+      title: 'Conversion Rate',
+      key: 'conversion_rate',
+      render: (_, record) => {
+        const rate = record.conversion_rate || 0;
+        return (
+          <Tag color={rate >= 20 ? 'green' : rate >= 10 ? 'orange' : 'red'}>
+            {rate.toFixed(2)}%
+          </Tag>
+        );
+      },
+      sorter: (a, b) => (a.conversion_rate || 0) - (b.conversion_rate || 0)
     },
     {
       title: 'Status',
@@ -353,6 +384,8 @@ export default function CampaignsPage() {
         loading={loading}
         pagination={pagination}
         onTableChange={handleTableChange}
+        onSubmit={handleSubmit}
+        onDelete={handleDelete}
         hideDefaultActions={isAgent}
       />
       

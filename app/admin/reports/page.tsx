@@ -15,6 +15,7 @@ const reportTypes = [
   { value: 'lead-details', label: 'Lead Details Report' },
   { value: 'campaign-performance', label: 'Campaign Performance Report' },
   { value: 'user-activity', label: 'User Activity Report' },
+  { value: 'agent-performance', label: 'Agent Performance Report' },
 ]
 
 export default function ReportsPage() {
@@ -84,6 +85,21 @@ export default function ReportsPage() {
               { title: 'Status', dataIndex: 'status', key: 'status', render: (text: string) => sanitizeText(text || '') },
               { title: 'Last Login', dataIndex: 'last_login', key: 'last_login', render: (date: string) => date !== 'N/A' ? new Date(date).toLocaleString() : 'N/A' },
               { title: 'Campaigns Created', dataIndex: 'campaigns_created', key: 'campaigns_created' },
+            ];
+            break;
+          case 'agent-performance':
+            generatedColumns = [
+              { title: 'Agent Name', dataIndex: 'agent_name', key: 'agent_name', render: (text: string) => sanitizeText(text || '') },
+              { title: 'Email', dataIndex: 'agent_email', key: 'agent_email', render: (text: string) => sanitizeText(text || '') },
+              { title: 'Campaigns', dataIndex: 'campaigns_count', key: 'campaigns_count' },
+              { title: 'Total Leads', dataIndex: 'total_leads', key: 'total_leads' },
+              { title: 'Called', dataIndex: 'called_leads', key: 'called_leads' },
+              { title: 'Not Called', dataIndex: 'not_called_leads', key: 'not_called_leads' },
+              { title: 'Contacted', dataIndex: 'contacted_leads', key: 'contacted_leads' },
+              { title: 'Sales', dataIndex: 'sales_leads', key: 'sales_leads' },
+              { title: 'Calling Rate', dataIndex: 'calling_rate', key: 'calling_rate', render: (rate: number) => `${rate}%` },
+              { title: 'Answer Rate', dataIndex: 'answer_rate', key: 'answer_rate', render: (rate: number) => `${rate}%` },
+              { title: 'Conversion Rate', dataIndex: 'conversion_rate', key: 'conversion_rate', render: (rate: number) => `${rate}%` },
             ];
             break;
           default:

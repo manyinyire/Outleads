@@ -35,11 +35,13 @@ export function useLeads() {
     campaignId: string | undefined;
     sectorId: string | undefined;
     dateRange: [moment.Moment, moment.Moment] | undefined;
+    callStatus: string | undefined;
   }>({
     productId: undefined,
     campaignId: undefined,
     sectorId: undefined,
     dateRange: undefined,
+    callStatus: undefined,
   });
   const [filterData, setFilterData] = useState<FilterData>({
     products: [],
@@ -93,6 +95,7 @@ export function useLeads() {
       if (filters.productId) url.searchParams.set('productId', filters.productId);
       if (filters.campaignId) url.searchParams.set('campaignId', filters.campaignId);
       if (filters.sectorId) url.searchParams.set('sectorId', filters.sectorId);
+      if (filters.callStatus) url.searchParams.set('callStatus', filters.callStatus);
       if (filters.dateRange?.[0]) url.searchParams.set('startDate', filters.dateRange[0].toISOString());
       if (filters.dateRange?.[1]) url.searchParams.set('endDate', filters.dateRange[1].toISOString());
       
@@ -135,6 +138,7 @@ export function useLeads() {
       campaignId: undefined,
       sectorId: undefined,
       dateRange: undefined,
+      callStatus: undefined,
     });
   };
 

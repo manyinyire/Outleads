@@ -64,14 +64,57 @@ const getCampaigns = withErrorHandler(async (req: AuthenticatedRequest) => {
             name: true,
           },
         },
+        leads: {
+          select: {
+            id: true,
+            firstLevelDisposition: {
+              select: {
+                name: true,
+              },
+            },
+            secondLevelDisposition: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
       },
     }),
     prisma.campaign.count({ where: whereClause })
   ]);
 
+  // Calculate disposition-based metrics for each campaign
+  const campaignsWithMetrics = campaigns.map(campaign => {
+    const totalLeads = campaign.leads.length;
+    const contactedLeads = campaign.leads.filter(lead => 
+      lead.firstLevelDisposition?.name === 'Contacted'
+    ).length;
+    const salesLeads = campaign.leads.filter(lead => 
+      lead.secondLevelDisposition?.name === 'Sale'
+    ).length;
+    
+    // Answer Rate = Contacted / Total Leads
+    const answerRate = totalLeads > 0 ? (contactedLeads / totalLeads) * 100 : 0;
+    
+    // Conversion Rate = Sales / Contacted Leads
+    const conversionRate = contactedLeads > 0 ? (salesLeads / contactedLeads) * 100 : 0;
+
+    // Remove leads array from response and add metrics
+    const { leads, ...campaignData } = campaign;
+    
+    return {
+      ...campaignData,
+      answer_rate: parseFloat(answerRate.toFixed(2)),
+      conversion_rate: parseFloat(conversionRate.toFixed(2)),
+      contacted_count: contactedLeads,
+      sales_count: salesLeads,
+    };
+  });
+
   const meta = calculatePaginationMeta(total, page || 1, limit || 10);
 
-  return successResponse({ data: campaigns, meta });
+  return successResponse({ data: campaignsWithMetrics, meta });
 })
 
 export const POST = withAuthAndRole(['ADMIN', 'SUPERVISOR'], postCampaigns);

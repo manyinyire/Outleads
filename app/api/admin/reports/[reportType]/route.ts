@@ -21,6 +21,9 @@ const handler = withErrorHandler(async (req: AuthenticatedRequest, { params }: {
       case 'user-activity':
         data = await getUserActivity(startDate, endDate)
         break;
+      case 'agent-performance':
+        data = await getAgentPerformance(startDate, endDate)
+        break;
       default:
         return errorResponse('Invalid report type', 400)
     }
@@ -142,4 +145,69 @@ async function getUserActivity(startDate: string | null, endDate: string | null)
     last_login: user.lastLogin?.toISOString() || 'N/A',
     campaigns_created: user._count.campaigns,
   }))
+}
+
+async function getAgentPerformance(startDate: string | null, endDate: string | null) {
+  const whereClause: any = {
+    role: 'AGENT',
+    status: 'ACTIVE'
+  };
+
+  const agents = await prisma.user.findMany({
+    where: whereClause,
+    include: {
+      assignedCampaigns: {
+        include: {
+          leads: {
+            where: startDate || endDate ? {
+              createdAt: {
+                ...(startDate && { gte: new Date(startDate) }),
+                ...(endDate && { lte: new Date(endDate) })
+              }
+            } : {},
+            include: {
+              firstLevelDisposition: true,
+              secondLevelDisposition: true
+            }
+          }
+        }
+      }
+    },
+    orderBy: { name: 'asc' }
+  });
+
+  return agents.map((agent: any) => {
+    // Flatten all leads from all campaigns
+    const allLeads = agent.assignedCampaigns.flatMap((campaign: any) => campaign.leads);
+    
+    const totalLeads = allLeads.length;
+    const calledLeads = allLeads.filter((lead: any) => lead.lastCalledAt !== null).length;
+    const notCalledLeads = totalLeads - calledLeads;
+    const contactedLeads = allLeads.filter((lead: any) => lead.firstLevelDisposition?.name === 'Contacted').length;
+    const salesLeads = allLeads.filter((lead: any) => lead.secondLevelDisposition?.name === 'Sale').length;
+    
+    // Calling Rate = Called Leads / Total Leads
+    const callingRate = totalLeads > 0 ? (calledLeads / totalLeads) * 100 : 0;
+    
+    // Answer Rate = Contacted / Total Leads
+    const answerRate = totalLeads > 0 ? (contactedLeads / totalLeads) * 100 : 0;
+    
+    // Conversion Rate = Sales / Contacted Leads
+    const conversionRate = contactedLeads > 0 ? (salesLeads / contactedLeads) * 100 : 0;
+
+    return {
+      agent_id: agent.id,
+      agent_name: agent.name,
+      agent_email: agent.email,
+      total_leads: totalLeads,
+      called_leads: calledLeads,
+      not_called_leads: notCalledLeads,
+      contacted_leads: contactedLeads,
+      sales_leads: salesLeads,
+      calling_rate: parseFloat(callingRate.toFixed(2)),
+      answer_rate: parseFloat(answerRate.toFixed(2)),
+      conversion_rate: parseFloat(conversionRate.toFixed(2)),
+      campaigns_count: agent.assignedCampaigns.length
+    };
+  });
 }

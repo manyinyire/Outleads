@@ -21,6 +21,7 @@ const customGetHandler = withErrorHandler(async (req: AuthenticatedRequest) => {
   const productId = reqUrl.searchParams.get('productId');
   const campaignId = reqUrl.searchParams.get('campaignId');
   const sectorId = reqUrl.searchParams.get('sectorId');
+  const callStatus = reqUrl.searchParams.get('callStatus');
   const startDate = reqUrl.searchParams.get('startDate');
   const endDate = reqUrl.searchParams.get('endDate');
 
@@ -48,6 +49,13 @@ const customGetHandler = withErrorHandler(async (req: AuthenticatedRequest) => {
   }
   if (sectorId) {
     queryConditions.AND.push({ sectorId: sectorId });
+  }
+  if (callStatus) {
+    if (callStatus === 'called') {
+      queryConditions.AND.push({ lastCalledAt: { not: null } });
+    } else if (callStatus === 'not_called') {
+      queryConditions.AND.push({ lastCalledAt: null });
+    }
   }
   if (startDate && endDate) {
     queryConditions.AND.push({
