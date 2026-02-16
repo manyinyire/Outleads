@@ -9,7 +9,7 @@ import {
   DollarOutlined,
   RiseOutlined,
   TeamOutlined,
-  CampaignOutlined
+  FundOutlined
 } from '@ant-design/icons'
 import { Line } from 'react-chartjs-2'
 import {
@@ -226,7 +226,7 @@ export default function DashboardPage() {
             <Statistic
               title="Active Campaigns"
               value={metrics.overview.activeCampaigns}
-              prefix={<CampaignOutlined />}
+              prefix={<FundOutlined />}
             />
           </Card>
         </Col>
