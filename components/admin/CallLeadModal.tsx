@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Modal, Form, Select, Input, Button, App, Divider, Space, Typography } from 'antd'
-import { PhoneOutlined, CopyOutlined } from '@ant-design/icons'
+import { Modal, Form, Select, Input, Button, App, Divider, Space, Typography, Tabs, Timeline, Tag } from 'antd'
+import { PhoneOutlined, CopyOutlined, HistoryOutlined } from '@ant-design/icons'
 import api from '@/lib/api/api'
 
 const { TextArea } = Input
@@ -38,16 +38,6 @@ interface Disposition {
   category?: string
 }
 
-interface DispositionHistory {
-  id: string
-  changedAt: string
-  firstLevelDisposition?: { name: string }
-  secondLevelDisposition?: { name: string }
-  thirdLevelDisposition?: { name: string }
-  dispositionNotes?: string
-  changedBy: { name: string; email: string }
-}
-
 export default function CallLeadModal({
   visible,
   lead,
@@ -70,17 +60,6 @@ export default function CallLeadModal({
       message.success('Phone number copied to clipboard!')
     }
   }
-
-  // Quick notes templates
-  const noteTemplates = [
-    "Customer interested, will call back",
-    "Not interested at this time",
-    "Wrong number",
-    "Requested more information",
-    "Ready to purchase",
-    "Voicemail left",
-    "Busy, call later"
-  ]
 
   useEffect(() => {
     if (visible) {
