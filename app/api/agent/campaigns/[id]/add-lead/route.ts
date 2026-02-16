@@ -67,18 +67,23 @@ async function handler(
         }, { status: 403 });
       }
 
-      // Check for duplicate phone number in this campaign
+      // Check for duplicate phone number globally
       const existingLead = await prisma.lead.findFirst({
         where: {
-          campaignId,
           phoneNumber
+        },
+        include: {
+          campaign: true
         }
       });
 
       if (existingLead) {
+        const campaignInfo = existingLead.campaign 
+          ? `in the "${existingLead.campaign.campaign_name}" campaign` 
+          : 'as a direct lead';
         return NextResponse.json({
           error: 'Duplicate',
-          message: 'A lead with this phone number already exists in this campaign'
+          message: `This phone number already exists ${campaignInfo}. Please check existing leads before adding.`
         }, { status: 409 });
       }
 

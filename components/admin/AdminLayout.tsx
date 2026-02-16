@@ -18,6 +18,7 @@ import {
   BankOutlined,
   ShoppingOutlined,
   AppstoreOutlined,
+  PhoneOutlined,
 } from '@ant-design/icons'
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState, AppDispatch } from '@/lib/store'
@@ -117,8 +118,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       label: 'Sectors',
       hidden: !hasAnyRole(user, ['ADMIN']),
     },
-    
-    
+    {
+      key: '/admin/dispositions',
+      icon: <PhoneOutlined />,
+      label: 'Dispositions',
+      hidden: !hasAnyRole(user, ['ADMIN']),
+    },
     {
       key: '/admin/audit-log',
       icon: <FileTextOutlined />,

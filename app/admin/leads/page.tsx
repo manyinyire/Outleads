@@ -1,14 +1,17 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { App, Tag, Row, Col, Select, DatePicker, Button, Modal } from 'antd'
+import { App, Tag, Row, Col, Select, DatePicker, Button, Modal, Tooltip } from 'antd'
 import { ColumnsType } from 'antd/es/table'
 import CrudTable from '@/components/admin/shared/CrudTable'
-import LeadDetailModal from '@/components/admin/leads/LeadDetailModal'
-import { EyeOutlined, UserSwitchOutlined } from '@ant-design/icons'
+import CallLeadModal from '@/components/admin/CallLeadModal'
+import AssignCampaignModal from '@/components/admin/AssignCampaignModal'
+import { PhoneOutlined, UserSwitchOutlined, LinkOutlined } from '@ant-design/icons'
 import api from '@/lib/api/api'
 import { useLeads } from '@/hooks/useLeads'
 import { sanitizeText } from '@/lib/utils/sanitization'
+import { useSelector } from 'react-redux'
+import { RootState } from '@/lib/store'
 
 const { RangePicker } = DatePicker
 
@@ -37,16 +40,18 @@ export default function LeadsPage() {
     handleSearch,
   } = useLeads()
 
-  const [isViewModalVisible, setViewModalVisible] = useState(false)
+  const [isCallModalVisible, setCallModalVisible] = useState(false)
   const [isAssignModalVisible, setAssignModalVisible] = useState(false)
+  const [isAssignCampaignModalVisible, setAssignCampaignModalVisible] = useState(false)
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
   const [selectedLeads, setSelectedLeads] = useState<React.Key[]>([])
   const [selectedAgent, setSelectedAgent] = useState<string | undefined>(undefined)
   const { message } = App.useApp()
+  const userRole = useSelector((state: RootState) => state.auth.user?.role)
 
-  const handleView = (record: Lead) => {
+  const handleCall = (record: Lead) => {
     setSelectedLead(record)
-    setViewModalVisible(true)
+    setCallModalVisible(true)
   }
 
   const handleAssign = async () => {
@@ -115,9 +120,11 @@ export default function LeadsPage() {
       title: 'Actions',
       key: 'actions',
       render: (_, record) => (
-        <Button type="link" icon={<EyeOutlined />} onClick={() => handleView(record)}>
-          View
-        </Button>
+        <>
+          <Button type="link" icon={<PhoneOutlined />} onClick={() => handleCall(record)}>
+            Call
+          </Button>
+        </>
       ),
     },
   ], [])
@@ -189,24 +196,54 @@ export default function LeadsPage() {
           <>
             {filterOptions}
             {selectedLeads.length > 0 && (
-              <Button
-                type="primary"
-                icon={<UserSwitchOutlined />}
-                onClick={() => setAssignModalVisible(true)}
-                style={{ marginBottom: 16 }}
-              >
-                Assign to Agent
-              </Button>
+              <>
+                {userRole && ['ADMIN', 'SUPERVISOR'].includes(userRole) && (
+                  <Button
+                    type="primary"
+                    icon={<UserSwitchOutlined />}
+                    onClick={() => setAssignModalVisible(true)}
+                    style={{ marginBottom: 16, marginRight: 8 }}
+                  >
+                    Assign to Agent
+                  </Button>
+                )}
+                <Button
+                  type="default"
+                  icon={<LinkOutlined />}
+                  onClick={() => setAssignCampaignModalVisible(true)}
+                  style={{ marginBottom: 16 }}
+                >
+                  Assign to Campaign
+                </Button>
+              </>
             )}
           </>
         }
         hideDefaultActions={true}
         rowSelection={rowSelection}
       />
-      <LeadDetailModal
+      <CallLeadModal
         lead={selectedLead}
-        visible={isViewModalVisible}
-        onClose={() => setViewModalVisible(false)}
+        visible={isCallModalVisible}
+        onClose={() => {
+          setCallModalVisible(false)
+          setSelectedLead(null)
+        }}
+        onSuccess={() => {
+          fetchData()
+        }}
+      />
+      <AssignCampaignModal
+        visible={isAssignCampaignModalVisible}
+        leadIds={selectedLeads as string[]}
+        leadCount={selectedLeads.length}
+        onClose={() => {
+          setAssignCampaignModalVisible(false)
+        }}
+        onSuccess={() => {
+          setSelectedLeads([])
+          fetchData()
+        }}
       />
       <Modal
         title="Assign Leads to Agent"

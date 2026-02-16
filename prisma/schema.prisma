@@ -75,18 +75,29 @@ model Campaign {
 
 // A captured lead from a client
 model Lead {
-  id             String         @id @default(cuid())
-  fullName       String         @db.VarChar(255)
-  phoneNumber    String         @db.VarChar(20)
-  businessSector Sector         @relation(fields: [sectorId], references: [id])
-  sectorId       String
-  products       Product[]
-  campaign       Campaign?      @relation(fields: [campaignId], references: [id])
-  campaignId     String?
-  assignedTo     User?          @relation("AssignedLeads", fields: [assignedToId], references: [id])
-  assignedToId   String?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  id                        String                   @id @default(cuid())
+  fullName                  String                   @db.VarChar(255)
+  phoneNumber               String                   @db.VarChar(20)
+  businessSector            Sector                   @relation(fields: [sectorId], references: [id])
+  sectorId                  String
+  products                  Product[]
+  campaign                  Campaign?                @relation(fields: [campaignId], references: [id])
+  campaignId                String?
+  assignedTo                User?                    @relation("AssignedLeads", fields: [assignedToId], references: [id])
+  assignedToId              String?
+  
+  // Disposition tracking
+  firstLevelDisposition     FirstLevelDisposition?   @relation(fields: [firstLevelDispositionId], references: [id])
+  firstLevelDispositionId   String?
+  secondLevelDisposition    SecondLevelDisposition?  @relation(fields: [secondLevelDispositionId], references: [id])
+  secondLevelDispositionId  String?
+  thirdLevelDisposition     ThirdLevelDisposition?   @relation(fields: [thirdLevelDispositionId], references: [id])
+  thirdLevelDispositionId   String?
+  dispositionNotes          String?                  @db.Text
+  lastCalledAt              DateTime?
+  
+  createdAt                 DateTime                 @default(now())
+  updatedAt                 DateTime                 @updatedAt
 
   // Performance optimized indexes
   @@index([fullName])
@@ -94,12 +105,18 @@ model Lead {
   @@index([sectorId])
   @@index([campaignId])
   @@index([assignedToId])
+  @@index([firstLevelDispositionId])
+  @@index([secondLevelDispositionId])
+  @@index([thirdLevelDispositionId])
   @@index([createdAt])
   @@index([updatedAt])
+  @@index([lastCalledAt])
   // Composite indexes for common query patterns
   @@index([campaignId, createdAt])
   @@index([sectorId, createdAt])
   @@index([assignedToId, createdAt])
+  @@index([firstLevelDispositionId, campaignId])
+  @@index([secondLevelDispositionId, campaignId])
   @@index([createdAt, campaignId, sectorId]) // Multi-filter queries
   @@map("leads")
 }
@@ -225,6 +242,54 @@ model AuditLog {
   @@index([severity])
   @@index([success])
   @@map("audit_logs")
+}
+
+// First Level Disposition (Contacted / Not Contacted)
+model FirstLevelDisposition {
+  id          String   @id @default(cuid())
+  name        String   @unique @db.VarChar(100)
+  description String?  @db.Text
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  leads       Lead[]
+
+  @@index([name])
+  @@index([isActive])
+  @@map("first_level_dispositions")
+}
+
+// Second Level Disposition (Sale / No Sale)
+model SecondLevelDisposition {
+  id          String   @id @default(cuid())
+  name        String   @unique @db.VarChar(100)
+  description String?  @db.Text
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  leads       Lead[]
+
+  @@index([name])
+  @@index([isActive])
+  @@map("second_level_dispositions")
+}
+
+// Third Level Disposition (Reasons for No Sale / Not Contacted)
+model ThirdLevelDisposition {
+  id          String   @id @default(cuid())
+  name        String   @db.VarChar(255)
+  description String?  @db.Text
+  category    String   @db.VarChar(50) // 'no_sale' or 'not_contacted'
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  leads       Lead[]
+
+  @@index([name])
+  @@index([category])
+  @@index([isActive])
+  @@unique([name, category])
+  @@map("third_level_dispositions")
 }
 
 

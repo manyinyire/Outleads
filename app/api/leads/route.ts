@@ -42,18 +42,24 @@ export async function POST(req: Request) {
 
     const { name, phone, company, productIds, campaignId } = validation.data;
 
-    // Check for duplicate phone number in the same campaign
-    if (campaignId) {
-      const existingLead = await prisma.lead.findFirst({
-        where: {
-          phoneNumber: phone,
-          campaignId: campaignId
-        }
-      });
-
-      if (existingLead) {
-        return errorResponse('You have already submitted your information for this campaign. Thank you for your interest!', 409);
+    // Check for duplicate phone number globally across all leads
+    const existingLead = await prisma.lead.findFirst({
+      where: {
+        phoneNumber: phone
+      },
+      include: {
+        campaign: true
       }
+    });
+
+    if (existingLead) {
+      const campaignInfo = existingLead.campaign 
+        ? `for the "${existingLead.campaign.campaign_name}" campaign` 
+        : 'as a direct inquiry';
+      return errorResponse(
+        `This phone number has already been registered ${campaignInfo}. If you need to update your information, please contact our support team.`, 
+        409
+      );
     }
 
     const sector = await prisma.sector.findUnique({ where: { id: company } });
