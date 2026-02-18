@@ -208,7 +208,7 @@ export default function CallLeadModal({
 
           <Divider>Call Disposition</Divider>
 
-          <Form form={form} layout="vertical">
+          <Form form={form} layout="vertical" onFinish={handleSubmit}>
             <Form.Item
               name="firstLevelDispositionId"
               label="1. Contact Status"
