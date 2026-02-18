@@ -24,7 +24,6 @@ export async function PUT(
       
       const validation = dispositionSchema.safeParse(body);
       if (!validation.success) {
-        console.error('Validation failed:', validation.error.errors);
         return NextResponse.json({
           error: 'Validation Error',
           message: validation.error.errors[0].message,

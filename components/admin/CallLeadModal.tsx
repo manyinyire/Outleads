@@ -145,22 +145,17 @@ export default function CallLeadModal({
       const values = await form.validateFields()
       setLoading(true)
 
-      // Log the values being sent for debugging
-      console.log('Submitting disposition:', values)
-
-      const response = await api.put(`/admin/leads/${lead?.id}/disposition`, values)
+      await api.put(`/admin/leads/${lead?.id}/disposition`, values)
 
       message.success('Call disposition saved successfully!')
       onSuccess()
       onClose()
     } catch (error: any) {
-      console.error('Disposition save error:', error)
       if (error.errorFields) {
         message.error('Please fill in all required fields')
       } else {
         const errorMessage = error.response?.data?.message || error.message || 'Failed to save disposition'
         message.error(errorMessage)
-        console.error('API Error Details:', error.response?.data)
       }
     } finally {
       setLoading(false)
