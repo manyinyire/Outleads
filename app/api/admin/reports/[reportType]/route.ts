@@ -79,7 +79,7 @@ async function getLeadDetails(startDate: string | null, endDate: string | null) 
 
 async function getCampaignPerformance(startDate: string | null, endDate: string | null) {
   const whereClause: any = {};
-  
+
   if (startDate || endDate) {
     whereClause.createdAt = {};
     if (startDate) whereClause.createdAt.gte = new Date(startDate);
@@ -88,27 +88,68 @@ async function getCampaignPerformance(startDate: string | null, endDate: string 
 
   const campaigns = await prisma.campaign.findMany({
     where: whereClause,
-    select: {
-      id: true,
-      campaign_name: true,
-      is_active: true,
-      click_count: true,
-      createdAt: true,
-      _count: {
-        select: { leads: true },
+    include: {
+      leads: {
+        include: {
+          firstLevelDisposition: true,
+          secondLevelDisposition: true,
+        },
+      },
+      assignedTo: {
+        select: { id: true, name: true },
       },
     },
     orderBy: { createdAt: 'desc' },
-  })
+  });
 
-  return campaigns.map(campaign => ({
-    id: campaign.id,
-    campaign_name: campaign.campaign_name,
-    is_active: campaign.is_active,
-    click_count: campaign.click_count,
-    lead_count: campaign._count.leads,
-    created_at: campaign.createdAt.toISOString(),
-  }))
+  return campaigns.map((campaign: any) => {
+    const leads = campaign.leads;
+    const totalLeads = leads.length;
+
+    // Called = leads with lastCalledAt set
+    const calledLeads = leads.filter((l: any) => l.lastCalledAt !== null).length;
+
+    // Not Called = leads never called
+    const notCalledLeads = totalLeads - calledLeads;
+
+    // Contacted = leads with firstLevelDisposition 'Contacted'
+    const contactedLeads = leads.filter((l: any) =>
+      l.firstLevelDisposition?.name === 'Contacted'
+    ).length;
+
+    // Sales = leads with secondLevelDisposition 'Sale'
+    const salesLeads = leads.filter((l: any) =>
+      l.secondLevelDisposition?.name === 'Sale'
+    ).length;
+
+    // Calling Rate = Called / Total Leads
+    const callingRate = totalLeads > 0 ? (calledLeads / totalLeads) * 100 : 0;
+
+    // Answer Rate = Contacted / Called
+    const answerRate = calledLeads > 0 ? (contactedLeads / calledLeads) * 100 : 0;
+
+    // Conversion Rate = Sales / Contacted
+    const conversionRate = contactedLeads > 0 ? (salesLeads / contactedLeads) * 100 : 0;
+
+    // Assigned agent name(s)
+    const assignedAgent = campaign.assignedTo?.name || 'Unassigned';
+
+    return {
+      id: campaign.id,
+      campaign_name: campaign.campaign_name,
+      is_active: campaign.is_active,
+      assigned_agent: assignedAgent,
+      total_leads: totalLeads,
+      called_leads: calledLeads,
+      not_called_leads: notCalledLeads,
+      contacted_leads: contactedLeads,
+      sales_leads: salesLeads,
+      calling_rate: parseFloat(callingRate.toFixed(2)),
+      answer_rate: parseFloat(answerRate.toFixed(2)),
+      conversion_rate: parseFloat(conversionRate.toFixed(2)),
+      created_at: campaign.createdAt.toISOString(),
+    };
+  });
 }
 
 async function getUserActivity(startDate: string | null, endDate: string | null) {

@@ -72,8 +72,15 @@ export default function ReportsPage() {
             generatedColumns = [
               { title: 'Campaign Name', dataIndex: 'campaign_name', key: 'campaign_name', render: (text: string) => sanitizeText(text || '') },
               { title: 'Active', dataIndex: 'is_active', key: 'is_active', render: (active: boolean) => (active ? 'Yes' : 'No') },
-              { title: 'Clicks', dataIndex: 'click_count', key: 'click_count' },
-              { title: 'Leads', dataIndex: 'lead_count', key: 'lead_count' },
+              { title: 'Assigned Agent', dataIndex: 'assigned_agent', key: 'assigned_agent', render: (text: string) => sanitizeText(text || 'Unassigned') },
+              { title: 'Total Leads', dataIndex: 'total_leads', key: 'total_leads' },
+              { title: 'Called', dataIndex: 'called_leads', key: 'called_leads' },
+              { title: 'Not Called', dataIndex: 'not_called_leads', key: 'not_called_leads' },
+              { title: 'Contacted', dataIndex: 'contacted_leads', key: 'contacted_leads' },
+              { title: 'Sales', dataIndex: 'sales_leads', key: 'sales_leads' },
+              { title: 'Calling Rate', dataIndex: 'calling_rate', key: 'calling_rate', render: (rate: number) => `${rate}%` },
+              { title: 'Answer Rate', dataIndex: 'answer_rate', key: 'answer_rate', render: (rate: number) => `${rate}%` },
+              { title: 'Conversion Rate', dataIndex: 'conversion_rate', key: 'conversion_rate', render: (rate: number) => `${rate}%` },
               { title: 'Date Created', dataIndex: 'created_at', key: 'created_at', render: (date: string) => new Date(date).toLocaleDateString() },
             ];
             break;
