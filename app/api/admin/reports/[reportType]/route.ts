@@ -153,32 +153,38 @@ async function getAgentPerformance(startDate: string | null, endDate: string | n
     status: 'ACTIVE'
   };
 
+  // Build lead filter for date range
+  const leadWhereClause: any = {};
+  if (startDate || endDate) {
+    leadWhereClause.createdAt = {
+      ...(startDate && { gte: new Date(startDate) }),
+      ...(endDate && { lte: new Date(endDate) })
+    };
+  }
+
   const agents = await prisma.user.findMany({
     where: whereClause,
     include: {
-      assignedCampaigns: {
+      assignedLeads: {
+        where: leadWhereClause,
         include: {
-          leads: {
-            where: startDate || endDate ? {
-              createdAt: {
-                ...(startDate && { gte: new Date(startDate) }),
-                ...(endDate && { lte: new Date(endDate) })
-              }
-            } : {},
-            include: {
-              firstLevelDisposition: true,
-              secondLevelDisposition: true
-            }
+          firstLevelDisposition: true,
+          secondLevelDisposition: true,
+          campaign: {
+            select: { campaign_name: true }
           }
         }
+      },
+      assignedCampaigns: {
+        select: { id: true }
       }
     },
     orderBy: { name: 'asc' }
   });
 
   return agents.map((agent: any) => {
-    // Flatten all leads from all campaigns
-    const allLeads = agent.assignedCampaigns.flatMap((campaign: any) => campaign.leads);
+    // Use directly assigned leads
+    const allLeads = agent.assignedLeads;
     
     const totalLeads = allLeads.length;
     const calledLeads = allLeads.filter((lead: any) => lead.lastCalledAt !== null).length;
