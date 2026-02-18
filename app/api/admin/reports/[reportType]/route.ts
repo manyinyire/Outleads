@@ -117,6 +117,11 @@ async function getCampaignPerformance(startDate: string | null, endDate: string 
       l.firstLevelDisposition?.name === 'Contacted'
     ).length;
 
+    // Not Contacted = leads with firstLevelDisposition 'Not Contacted'
+    const notContactedLeads = leads.filter((l: any) =>
+      l.firstLevelDisposition?.name === 'Not Contacted'
+    ).length;
+
     // Sales = leads with secondLevelDisposition 'Sale'
     const salesLeads = leads.filter((l: any) =>
       l.secondLevelDisposition?.name === 'Sale'
@@ -143,6 +148,7 @@ async function getCampaignPerformance(startDate: string | null, endDate: string 
       called_leads: calledLeads,
       not_called_leads: notCalledLeads,
       contacted_leads: contactedLeads,
+      not_contacted_leads: notContactedLeads,
       sales_leads: salesLeads,
       calling_rate: parseFloat(callingRate.toFixed(2)),
       answer_rate: parseFloat(answerRate.toFixed(2)),
