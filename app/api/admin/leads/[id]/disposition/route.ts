@@ -82,12 +82,17 @@ export async function PUT(
         }
       }
 
-      // Validation Rule 2: Third level requires second level
+      // Validation Rule 2: Third level logic
+      // - If "Contacted" -> Level 3 requires Level 2 (Sale/No Sale)
+      // - If "Not Contacted" -> Level 3 is allowed without Level 2
       if (thirdLevelDispositionId && !secondLevelDispositionId) {
-        return NextResponse.json({
-          error: 'Validation Error',
-          message: 'Reason (Level 3) requires a sale status (Level 2) to be selected first'
-        }, { status: 400 });
+        if (firstLevel.name === 'Contacted') {
+          return NextResponse.json({
+            error: 'Validation Error',
+            message: 'Reason (Level 3) requires a sale status (Level 2) to be selected first'
+          }, { status: 400 });
+        }
+        // For "Not Contacted", Level 3 is allowed without Level 2
       }
 
       // Validation Rule 3: Verify third level disposition exists and matches category
