@@ -32,6 +32,15 @@ export async function PUT(
 
       const { firstLevelDispositionId, secondLevelDispositionId, thirdLevelDispositionId, dispositionNotes } = validation.data;
 
+      // Debug logging
+      console.log('Disposition Update Request:', {
+        leadId,
+        firstLevelDispositionId,
+        secondLevelDispositionId,
+        thirdLevelDispositionId,
+        dispositionNotes
+      });
+
       // Check if lead exists
       const lead = await prisma.lead.findUnique({
         where: { id: leadId }
@@ -123,6 +132,14 @@ export async function PUT(
       }
 
       // Update lead with disposition
+      console.log('Updating lead with data:', {
+        firstLevelDispositionId,
+        secondLevelDispositionId: secondLevelDispositionId || null,
+        thirdLevelDispositionId: thirdLevelDispositionId || null,
+        dispositionNotes: dispositionNotes || null,
+        lastCalledAt: new Date()
+      });
+
       const updatedLead = await prisma.lead.update({
         where: { id: leadId },
         data: {
@@ -141,6 +158,14 @@ export async function PUT(
           campaign: true,
           assignedTo: true
         }
+      });
+
+      console.log('Lead updated successfully:', {
+        id: updatedLead.id,
+        firstLevelDispositionId: updatedLead.firstLevelDispositionId,
+        secondLevelDispositionId: updatedLead.secondLevelDispositionId,
+        thirdLevelDispositionId: updatedLead.thirdLevelDispositionId,
+        lastCalledAt: updatedLead.lastCalledAt
       });
 
       return NextResponse.json({
