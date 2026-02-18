@@ -153,38 +153,43 @@ async function getAgentPerformance(startDate: string | null, endDate: string | n
     status: 'ACTIVE'
   };
 
-  // Build lead filter for date range
-  const leadWhereClause: any = {};
-  if (startDate || endDate) {
-    leadWhereClause.createdAt = {
-      ...(startDate && { gte: new Date(startDate) }),
-      ...(endDate && { lte: new Date(endDate) })
-    };
-  }
-
   const agents = await prisma.user.findMany({
     where: whereClause,
     include: {
-      assignedLeads: {
-        where: leadWhereClause,
+      assignedCampaigns: {
         include: {
-          firstLevelDisposition: true,
-          secondLevelDisposition: true,
-          campaign: {
-            select: { campaign_name: true }
+          leads: {
+            include: {
+              firstLevelDisposition: true,
+              secondLevelDisposition: true
+            }
           }
         }
-      },
-      assignedCampaigns: {
-        select: { id: true }
       }
     },
     orderBy: { name: 'asc' }
   });
 
   return agents.map((agent: any) => {
-    // Use directly assigned leads
-    const allLeads = agent.assignedLeads;
+    // Get all leads from assigned campaigns
+    const allCampaignLeads = agent.assignedCampaigns.flatMap((campaign: any) => campaign.leads);
+    
+    // Filter leads that were called by this agent in the date range
+    const leadsInDateRange = allCampaignLeads.filter((lead: any) => {
+      // Must have been called (has lastCalledAt)
+      if (!lead.lastCalledAt) return false;
+      
+      const callDate = new Date(lead.lastCalledAt);
+      
+      // Check date range if specified
+      if (startDate && callDate < new Date(startDate)) return false;
+      if (endDate && callDate > new Date(endDate)) return false;
+      
+      return true;
+    });
+    
+    // Use the filtered leads for calculations
+    const allLeads = leadsInDateRange;
     
     const totalLeads = allLeads.length;
     const calledLeads = allLeads.filter((lead: any) => lead.lastCalledAt !== null).length;
