@@ -184,15 +184,17 @@ async function getAgentPerformance(startDate: string | null, endDate: string | n
     const calledLeads = allLeads.filter((lead: any) => lead.lastCalledAt !== null).length;
     const notCalledLeads = totalLeads - calledLeads;
     const contactedLeads = allLeads.filter((lead: any) => lead.firstLevelDisposition?.name === 'Contacted').length;
+    const notContactedLeads = allLeads.filter((lead: any) => lead.firstLevelDisposition?.name === 'Not Contacted').length;
     const salesLeads = allLeads.filter((lead: any) => lead.secondLevelDisposition?.name === 'Sale').length;
     
-    // Calling Rate = Called Leads / Total Leads
+    // Calling Rate = (Total Calls / Total Leads) * 100
     const callingRate = totalLeads > 0 ? (calledLeads / totalLeads) * 100 : 0;
     
-    // Answer Rate = Contacted / Total Leads
-    const answerRate = totalLeads > 0 ? (contactedLeads / totalLeads) * 100 : 0;
+    // Answer Rate = (Connected Calls / Total Calls) * 100
+    // This shows what percentage of calls were actually answered/connected
+    const answerRate = calledLeads > 0 ? (contactedLeads / calledLeads) * 100 : 0;
     
-    // Conversion Rate = Sales / Contacted Leads
+    // Conversion Rate = (Sales / Connected Calls) * 100
     const conversionRate = contactedLeads > 0 ? (salesLeads / contactedLeads) * 100 : 0;
 
     return {
@@ -203,6 +205,7 @@ async function getAgentPerformance(startDate: string | null, endDate: string | n
       called_leads: calledLeads,
       not_called_leads: notCalledLeads,
       contacted_leads: contactedLeads,
+      not_contacted_leads: notContactedLeads,
       sales_leads: salesLeads,
       calling_rate: parseFloat(callingRate.toFixed(2)),
       answer_rate: parseFloat(answerRate.toFixed(2)),
