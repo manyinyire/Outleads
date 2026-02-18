@@ -148,13 +148,8 @@ async function getUserActivity(startDate: string | null, endDate: string | null)
 }
 
 async function getAgentPerformance(startDate: string | null, endDate: string | null) {
-  const whereClause: any = {
-    role: 'AGENT',
-    status: 'ACTIVE'
-  };
-
   const agents = await prisma.user.findMany({
-    where: whereClause,
+    where: { role: 'AGENT', status: 'ACTIVE' },
     include: {
       assignedCampaigns: {
         include: {
@@ -171,57 +166,63 @@ async function getAgentPerformance(startDate: string | null, endDate: string | n
   });
 
   return agents.map((agent: any) => {
-    // Get all leads from assigned campaigns
-    const allCampaignLeads = agent.assignedCampaigns.flatMap((campaign: any) => campaign.leads);
-    
-    // Filter leads that were called by this agent in the date range
-    const leadsInDateRange = allCampaignLeads.filter((lead: any) => {
-      // Must have been called (has lastCalledAt)
+    // All leads across all campaigns assigned to this agent
+    const allLeads = agent.assignedCampaigns.flatMap((campaign: any) => campaign.leads);
+
+    // Total Leads = every lead in the agent's campaigns (no date filter)
+    const totalLeads = allLeads.length;
+
+    // Total Calls = leads that have been called, optionally filtered by call date range
+    const calledLeads = allLeads.filter((lead: any) => {
       if (!lead.lastCalledAt) return false;
-      
       const callDate = new Date(lead.lastCalledAt);
-      
-      // Check date range if specified
       if (startDate && callDate < new Date(startDate)) return false;
       if (endDate && callDate > new Date(endDate)) return false;
-      
       return true;
     });
-    
-    // Use the filtered leads for calculations
-    const allLeads = leadsInDateRange;
-    
-    const totalLeads = allLeads.length;
-    const calledLeads = allLeads.filter((lead: any) => lead.lastCalledAt !== null).length;
-    const notCalledLeads = totalLeads - calledLeads;
-    const contactedLeads = allLeads.filter((lead: any) => lead.firstLevelDisposition?.name === 'Contacted').length;
-    const notContactedLeads = allLeads.filter((lead: any) => lead.firstLevelDisposition?.name === 'Not Contacted').length;
-    const salesLeads = allLeads.filter((lead: any) => lead.secondLevelDisposition?.name === 'Sale').length;
-    
+    const totalCalls = calledLeads.length;
+
+    // Pending Calls = leads not yet called at all
+    const pendingCalls = allLeads.filter((lead: any) => !lead.lastCalledAt).length;
+
+    // Connected Calls = called leads disposed as 'Contacted'
+    const connectedCalls = calledLeads.filter((lead: any) =>
+      lead.firstLevelDisposition?.name === 'Contacted'
+    ).length;
+
+    // Not Contacted = called leads disposed as 'Not Contacted'
+    const notContactedCalls = calledLeads.filter((lead: any) =>
+      lead.firstLevelDisposition?.name === 'Not Contacted'
+    ).length;
+
+    // Sales = called leads with Sale disposition
+    const salesLeads = calledLeads.filter((lead: any) =>
+      lead.secondLevelDisposition?.name === 'Sale'
+    ).length;
+
     // Calling Rate = (Total Calls / Total Leads) * 100
-    const callingRate = totalLeads > 0 ? (calledLeads / totalLeads) * 100 : 0;
-    
+    const callingRate = totalLeads > 0 ? (totalCalls / totalLeads) * 100 : 0;
+
     // Answer Rate = (Connected Calls / Total Calls) * 100
-    // This shows what percentage of calls were actually answered/connected
-    const answerRate = calledLeads > 0 ? (contactedLeads / calledLeads) * 100 : 0;
-    
+    const answerRate = totalCalls > 0 ? (connectedCalls / totalCalls) * 100 : 0;
+
     // Conversion Rate = (Sales / Connected Calls) * 100
-    const conversionRate = contactedLeads > 0 ? (salesLeads / contactedLeads) * 100 : 0;
+    const conversionRate = connectedCalls > 0 ? (salesLeads / connectedCalls) * 100 : 0;
 
     return {
       agent_id: agent.id,
       agent_name: agent.name,
       agent_email: agent.email,
+      campaigns_count: agent.assignedCampaigns.length,
       total_leads: totalLeads,
-      called_leads: calledLeads,
-      not_called_leads: notCalledLeads,
-      contacted_leads: contactedLeads,
-      not_contacted_leads: notContactedLeads,
+      called_leads: totalCalls,
+      not_called_leads: pendingCalls,
+      contacted_leads: connectedCalls,
+      not_contacted_leads: notContactedCalls,
       sales_leads: salesLeads,
       calling_rate: parseFloat(callingRate.toFixed(2)),
       answer_rate: parseFloat(answerRate.toFixed(2)),
       conversion_rate: parseFloat(conversionRate.toFixed(2)),
-      campaigns_count: agent.assignedCampaigns.length
     };
   });
 }
