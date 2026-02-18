@@ -85,6 +85,9 @@ const customGetHandler = withErrorHandler(async (req: AuthenticatedRequest) => {
             name: true,
           },
         },
+        firstLevelDisposition: true,
+        secondLevelDisposition: true,
+        thirdLevelDisposition: true,
       },
     }),
     prisma.lead.count({ where: queryConditions })
