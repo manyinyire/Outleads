@@ -32,8 +32,8 @@ export async function authenticateToken(req: AuthenticatedRequest): Promise<Next
 
     if (!token) {
       logger.warn('Authentication failed: No token provided', { 
-        userAgent: req.headers.get('user-agent') || undefined || undefined,
-        ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined || undefined
+        userAgent: req.headers.get('user-agent') || undefined,
+        ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined
       });
       return NextResponse.json({
         error: 'Authentication Error',

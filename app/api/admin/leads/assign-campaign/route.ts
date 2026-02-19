@@ -67,7 +67,7 @@ async function handler(req: NextRequest) {
       }
 
       // Bulk assign leads to campaign using transaction
-      const result = await prisma.$transaction(async (tx) => {
+      await prisma.$transaction(async (tx) => {
         // Update all assignable leads
         const updated = await tx.lead.updateMany({
           where: { 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth/auth';
+import { logger } from '@/lib/utils/logging';
 import { z } from 'zod';
 import { sendEmail } from '@/lib/email/email';
 import { env } from '@/lib/utils/config/env-validation';
@@ -80,7 +81,7 @@ export async function PUT(
       });
 
     } catch (error) {
-      console.error('Error updating user:', error);
+      logger.error('Error updating user', error as Error);
       return NextResponse.json({
         error: 'Internal Server Error',
         message: 'Failed to update user'
@@ -108,7 +109,7 @@ export async function DELETE(
         user: updatedUser
       });
     } catch (error) {
-      console.error('Error deactivating user:', error);
+      logger.error('Error deactivating user', error as Error);
       return NextResponse.json({
         error: 'Internal Server Error',
         message: 'Failed to deactivate user'

@@ -33,7 +33,7 @@ export async function PUT(
 
       const { firstLevelDispositionId, secondLevelDispositionId, thirdLevelDispositionId, dispositionNotes } = validation.data;
 
-      // Check if lead exists
+      // Check if lead exists and enforce agent ownership
       const lead = await prisma.lead.findUnique({
         where: { id: leadId }
       });
@@ -43,6 +43,13 @@ export async function PUT(
           error: 'Not Found',
           message: 'Lead not found'
         }, { status: 404 });
+      }
+
+      if (authReq.user?.role === 'AGENT' && lead.assignedToId !== authReq.user.id) {
+        return NextResponse.json({
+          error: 'Forbidden',
+          message: 'You can only update disposition for leads assigned to you'
+        }, { status: 403 });
       }
 
       // Verify dispositions exist and validate business rules
