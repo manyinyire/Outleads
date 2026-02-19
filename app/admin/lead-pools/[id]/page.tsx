@@ -85,7 +85,7 @@ export default function LeadPoolDetailPage() {
 
   const fetchPool = useCallback(async () => {
     try {
-      const res = await api.get(`/admin/lead-pools/${poolId}`)
+      const res: any = await api.get(`/admin/lead-pools/${poolId}`)
       setPool(res.data.data)
     } catch {
       message.error('Failed to load pool details')
@@ -95,7 +95,7 @@ export default function LeadPoolDetailPage() {
   const fetchLeads = useCallback(async (page = 1) => {
     try {
       setLeadsLoading(true)
-      const res = await api.get(
+      const res: any = await api.get(
         `/admin/lead-pools/${poolId}/leads?page=${page}&limit=50&showAll=${showAll}`
       )
       setLeads(res.data.data || [])
@@ -109,7 +109,7 @@ export default function LeadPoolDetailPage() {
 
   const fetchAgents = useCallback(async () => {
     try {
-      const res = await api.get('/admin/users?role=AGENT&status=ACTIVE&limit=1000')
+      const res: any = await api.get('/admin/users?role=AGENT&status=ACTIVE&limit=1000')
       setAgents(res.data.data || [])
     } catch {
       message.error('Failed to load agents')
@@ -141,7 +141,7 @@ export default function LeadPoolDetailPage() {
     }
     try {
       setDistributing(true)
-      const res = await api.post(`/admin/lead-pools/${poolId}/distribute`, {
+      const res: any = await api.post(`/admin/lead-pools/${poolId}/distribute`, {
         leadIds: selectedLeads,
         agentId: selectedAgent,
       })
@@ -156,16 +156,17 @@ export default function LeadPoolDetailPage() {
     }
   }
 
-  const handleFileUpload = (file: File) => {
+  const handleFileUpload = (file: File | boolean) => {
+    if (typeof file === 'boolean') return false
     setCsvError(null)
     setUploadSummary(null)
     setCsvRows([])
     setCsvPreview([])
 
-    Papa.parse(file, {
+    Papa.parse(file as any, {
       header: true,
       skipEmptyLines: true,
-      complete: (results) => {
+      complete: (results: any) => {
         const rows = results.data as Record<string, string>[]
         if (rows.length === 0) {
           setCsvError('The CSV file is empty or has no valid rows.')
@@ -196,7 +197,7 @@ export default function LeadPoolDetailPage() {
     if (csvRows.length === 0) return
     try {
       setUploading(true)
-      const res = await api.post(`/admin/lead-pools/${poolId}/upload`, { rows: csvRows })
+      const res: any = await api.post(`/admin/lead-pools/${poolId}/upload`, { rows: csvRows })
       setUploadSummary(res.data.summary)
       setCsvRows([])
       setCsvPreview([])

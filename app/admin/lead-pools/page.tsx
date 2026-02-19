@@ -46,7 +46,7 @@ export default function LeadPoolsPage() {
   const fetchPools = useCallback(async () => {
     try {
       setLoading(true)
-      const res = await api.get('/admin/lead-pools')
+      const res: any = await api.get('/admin/lead-pools')
       setPools(res.data.data || [])
     } catch {
       message.error('Failed to load lead pools')
@@ -57,7 +57,7 @@ export default function LeadPoolsPage() {
 
   const fetchCampaigns = useCallback(async () => {
     try {
-      const res = await api.get('/admin/campaigns?limit=1000')
+      const res: any = await api.get('/admin/campaigns?limit=1000')
       setCampaigns(
         (res.data.data || []).filter((c: any) => c.is_active)
       )
