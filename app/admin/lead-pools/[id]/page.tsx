@@ -12,7 +12,6 @@ import {
   InboxOutlined, CheckCircleOutlined, CloseCircleOutlined
 } from '@ant-design/icons'
 import Papa from 'papaparse'
-import api from '@/lib/api/api'
 
 const { Title, Text } = Typography
 const { Dragger } = Upload
@@ -85,8 +84,13 @@ export default function LeadPoolDetailPage() {
 
   const fetchPool = useCallback(async () => {
     try {
-      const res: any = await api.get(`/admin/lead-pools/${poolId}`)
-      setPool(res.data.data)
+      const token = localStorage.getItem('auth-token')
+      const res = await fetch(`/api/admin/lead-pools/${poolId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (!res.ok) throw new Error('Failed to fetch')
+      const result = await res.json()
+      setPool(result.data)
     } catch {
       message.error('Failed to load pool details')
     }
@@ -95,11 +99,15 @@ export default function LeadPoolDetailPage() {
   const fetchLeads = useCallback(async (page = 1) => {
     try {
       setLeadsLoading(true)
-      const res: any = await api.get(
-        `/admin/lead-pools/${poolId}/leads?page=${page}&limit=50&showAll=${showAll}`
+      const token = localStorage.getItem('auth-token')
+      const res = await fetch(
+        `/api/admin/lead-pools/${poolId}/leads?page=${page}&limit=50&showAll=${showAll}`,
+        { headers: { 'Authorization': `Bearer ${token}` } }
       )
-      setLeads(res.data.data || [])
-      setPagination(prev => ({ ...prev, total: res.data.meta?.total || 0, current: page }))
+      if (!res.ok) throw new Error('Failed to fetch')
+      const result = await res.json()
+      setLeads(result.data || [])
+      setPagination(prev => ({ ...prev, total: result.meta?.total || 0, current: page }))
     } catch {
       message.error('Failed to load leads')
     } finally {
@@ -109,8 +117,13 @@ export default function LeadPoolDetailPage() {
 
   const fetchAgents = useCallback(async () => {
     try {
-      const res: any = await api.get('/admin/users?role=AGENT&status=ACTIVE&limit=1000')
-      setAgents(res.data.data || [])
+      const token = localStorage.getItem('auth-token')
+      const res = await fetch('/api/admin/users?role=AGENT&status=ACTIVE&limit=1000', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (!res.ok) throw new Error('Failed to fetch')
+      const result = await res.json()
+      setAgents(result.data || [])
     } catch {
       message.error('Failed to load agents')
     }
@@ -141,16 +154,20 @@ export default function LeadPoolDetailPage() {
     }
     try {
       setDistributing(true)
-      const res: any = await api.post(`/admin/lead-pools/${poolId}/distribute`, {
-        leadIds: selectedLeads,
-        agentId: selectedAgent,
+      const token = localStorage.getItem('auth-token')
+      const res = await fetch(`/api/admin/lead-pools/${poolId}/distribute`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadIds: selectedLeads, agentId: selectedAgent }),
       })
-      message.success(res.data.message)
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.message || 'Failed to distribute')
+      message.success(result.message)
       setSelectedLeads([])
       setSelectedAgent(undefined)
       await Promise.all([fetchPool(), fetchLeads(pagination.current)])
     } catch (err: any) {
-      message.error(err.response?.data?.message || 'Failed to distribute leads')
+      message.error(err.message || 'Failed to distribute leads')
     } finally {
       setDistributing(false)
     }
@@ -197,13 +214,20 @@ export default function LeadPoolDetailPage() {
     if (csvRows.length === 0) return
     try {
       setUploading(true)
-      const res: any = await api.post(`/admin/lead-pools/${poolId}/upload`, { rows: csvRows })
-      setUploadSummary(res.data.summary)
+      const token = localStorage.getItem('auth-token')
+      const res = await fetch(`/api/admin/lead-pools/${poolId}/upload`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rows: csvRows }),
+      })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || 'Upload failed')
+      setUploadSummary(result.summary)
       setCsvRows([])
       setCsvPreview([])
       await Promise.all([fetchPool(), fetchLeads(1)])
     } catch (err: any) {
-      message.error(err.response?.data?.error || 'Upload failed')
+      message.error(err.message || 'Upload failed')
     } finally {
       setUploading(false)
     }

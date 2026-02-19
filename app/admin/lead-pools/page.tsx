@@ -7,7 +7,6 @@ import {
   Typography, Card, Row, Col, Statistic, App, Progress
 } from 'antd'
 import { PlusOutlined, InboxOutlined, EyeOutlined } from '@ant-design/icons'
-import api from '@/lib/api/api'
 
 const { Title, Text } = Typography
 
@@ -46,8 +45,13 @@ export default function LeadPoolsPage() {
   const fetchPools = useCallback(async () => {
     try {
       setLoading(true)
-      const res: any = await api.get('/admin/lead-pools')
-      setPools(res.data.data || [])
+      const token = localStorage.getItem('auth-token')
+      const res = await fetch('/api/admin/lead-pools', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (!res.ok) throw new Error('Failed to fetch')
+      const result = await res.json()
+      setPools(result.data || [])
     } catch {
       message.error('Failed to load lead pools')
     } finally {
@@ -57,10 +61,13 @@ export default function LeadPoolsPage() {
 
   const fetchCampaigns = useCallback(async () => {
     try {
-      const res: any = await api.get('/admin/campaigns?limit=1000')
-      setCampaigns(
-        (res.data.data || []).filter((c: any) => c.is_active)
-      )
+      const token = localStorage.getItem('auth-token')
+      const res = await fetch('/api/admin/campaigns?limit=1000', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (!res.ok) throw new Error('Failed to fetch')
+      const result = await res.json()
+      setCampaigns((result.data || []).filter((c: any) => c.is_active))
     } catch {
       message.error('Failed to load campaigns')
     }
@@ -74,13 +81,20 @@ export default function LeadPoolsPage() {
   const handleCreate = async (values: { name: string; campaignId: string }) => {
     try {
       setCreating(true)
-      await api.post('/admin/lead-pools', values)
+      const token = localStorage.getItem('auth-token')
+      const res = await fetch('/api/admin/lead-pools', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
+      })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.message || 'Failed to create')
       message.success('Lead pool created successfully')
       setCreateModalOpen(false)
       form.resetFields()
       fetchPools()
     } catch (err: any) {
-      message.error(err.response?.data?.message || 'Failed to create lead pool')
+      message.error(err.message || 'Failed to create lead pool')
     } finally {
       setCreating(false)
     }
