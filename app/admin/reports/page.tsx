@@ -99,8 +99,9 @@ export default function ReportsPage() {
             generatedColumns = [
               { title: 'Agent Name', dataIndex: 'agent_name', key: 'agent_name', render: (text: string) => sanitizeText(text || '') },
               { title: 'Email', dataIndex: 'agent_email', key: 'agent_email', render: (text: string) => sanitizeText(text || '') },
-              { title: 'Campaigns', dataIndex: 'campaigns_count', key: 'campaigns_count' },
               { title: 'Total Leads', dataIndex: 'total_leads', key: 'total_leads' },
+              { title: 'Campaign Leads', dataIndex: 'campaign_leads', key: 'campaign_leads' },
+              { title: 'Pool Leads', dataIndex: 'pool_leads', key: 'pool_leads' },
               { title: 'Total Calls', dataIndex: 'called_leads', key: 'called_leads' },
               { title: 'Pending Calls', dataIndex: 'not_called_leads', key: 'not_called_leads' },
               { title: 'Connected Calls', dataIndex: 'contacted_leads', key: 'contacted_leads' },

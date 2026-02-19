@@ -198,14 +198,10 @@ async function getAgentPerformance(startDate: string | null, endDate: string | n
   const agents = await prisma.user.findMany({
     where: { role: 'AGENT', status: 'ACTIVE' },
     include: {
-      assignedCampaigns: {
+      assignedLeads: {
         include: {
-          leads: {
-            include: {
-              firstLevelDisposition: true,
-              secondLevelDisposition: true
-            }
-          }
+          firstLevelDisposition: true,
+          secondLevelDisposition: true,
         }
       }
     },
@@ -213,13 +209,18 @@ async function getAgentPerformance(startDate: string | null, endDate: string | n
   });
 
   return agents.map((agent: any) => {
-    // All leads across all campaigns assigned to this agent
-    const allLeads = agent.assignedCampaigns.flatMap((campaign: any) => campaign.leads);
+    // All leads directly assigned to this agent (campaign leads + pool leads)
+    const allLeads = agent.assignedLeads;
 
-    // Total Leads = every lead in the agent's campaigns (no date filter)
     const totalLeads = allLeads.length;
 
-    // Total Calls = leads that have been called, optionally filtered by call date range
+    // Pool leads = leads that came via a lead pool
+    const poolLeads = allLeads.filter((l: any) => l.leadPoolId !== null).length;
+
+    // Campaign leads = leads directly from a campaign (no pool)
+    const campaignLeads = allLeads.filter((l: any) => l.leadPoolId === null).length;
+
+    // Called leads = leads with lastCalledAt set, optionally filtered by date range
     const calledLeads = allLeads.filter((lead: any) => {
       if (!lead.lastCalledAt) return false;
       const callDate = new Date(lead.lastCalledAt);
@@ -229,39 +230,35 @@ async function getAgentPerformance(startDate: string | null, endDate: string | n
     });
     const totalCalls = calledLeads.length;
 
-    // Pending Calls = leads not yet called at all
+    // Pending = not yet called
     const pendingCalls = allLeads.filter((lead: any) => !lead.lastCalledAt).length;
 
-    // Connected Calls = called leads disposed as 'Contacted'
+    // Connected = disposed as 'Contacted'
     const connectedCalls = calledLeads.filter((lead: any) =>
       lead.firstLevelDisposition?.name === 'Contacted'
     ).length;
 
-    // Not Contacted = called leads disposed as 'Not Contacted'
+    // Not Contacted = disposed as 'Not Contacted'
     const notContactedCalls = calledLeads.filter((lead: any) =>
       lead.firstLevelDisposition?.name === 'Not Contacted'
     ).length;
 
-    // Sales = called leads with Sale disposition
+    // Sales = second level disposition 'Sale'
     const salesLeads = calledLeads.filter((lead: any) =>
       lead.secondLevelDisposition?.name === 'Sale'
     ).length;
 
-    // Calling Rate = (Total Calls / Total Leads) * 100
     const callingRate = totalLeads > 0 ? (totalCalls / totalLeads) * 100 : 0;
-
-    // Answer Rate = (Connected Calls / Total Calls) * 100
     const answerRate = totalCalls > 0 ? (connectedCalls / totalCalls) * 100 : 0;
-
-    // Conversion Rate = (Sales / Connected Calls) * 100
     const conversionRate = connectedCalls > 0 ? (salesLeads / connectedCalls) * 100 : 0;
 
     return {
       agent_id: agent.id,
       agent_name: agent.name,
       agent_email: agent.email,
-      campaigns_count: agent.assignedCampaigns.length,
       total_leads: totalLeads,
+      campaign_leads: campaignLeads,
+      pool_leads: poolLeads,
       called_leads: totalCalls,
       not_called_leads: pendingCalls,
       contacted_leads: connectedCalls,
