@@ -21,6 +21,7 @@ model User {
   campaigns         Campaign[] @relation("CreatedCampaigns")
   assignedLeads     Lead[]     @relation("AssignedLeads")
   assignedCampaigns Campaign[] @relation("AssignedCampaigns")
+  createdLeadPools  LeadPool[] @relation("CreatedLeadPools")
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
   lastLogin         DateTime?
@@ -49,6 +50,7 @@ model Campaign {
   organization_name String   @db.VarChar(255)
   uniqueLink        String   @unique @db.VarChar(100)
   leads             Lead[]
+  leadPools         LeadPool[]
   is_active         Boolean  @default(true)
   lead_count        Int      @default(0) @db.Integer
   click_count       Int      @default(0) @db.Integer
@@ -87,6 +89,10 @@ model Lead {
   assignedTo                User?                    @relation("AssignedLeads", fields: [assignedToId], references: [id])
   assignedToId              String?
   
+  // Lead Pool tracking
+  leadPool                  LeadPool?                @relation(fields: [leadPoolId], references: [id])
+  leadPoolId                String?
+
   // Disposition tracking
   firstLevelDisposition     FirstLevelDisposition?   @relation(fields: [firstLevelDispositionId], references: [id])
   firstLevelDispositionId   String?
@@ -113,6 +119,7 @@ model Lead {
   @@index([createdAt])
   @@index([updatedAt])
   @@index([lastCalledAt])
+  @@index([leadPoolId])
   // Composite indexes for common query patterns
   @@index([campaignId, createdAt])
   @@index([sectorId, createdAt])
@@ -294,6 +301,24 @@ model ThirdLevelDisposition {
   @@index([isActive])
   @@unique([name, category])
   @@map("third_level_dispositions")
+}
+
+// Lead Pool - A batch of leads uploaded by a supervisor for distribution
+model LeadPool {
+  id          String   @id @default(cuid())
+  name        String   @db.VarChar(255)
+  campaign    Campaign @relation(fields: [campaignId], references: [id])
+  campaignId  String
+  createdBy   User     @relation("CreatedLeadPools", fields: [createdById], references: [id])
+  createdById String
+  leads       Lead[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([campaignId])
+  @@index([createdById])
+  @@index([createdAt])
+  @@map("lead_pools")
 }
 
 // Disposition History - Track all disposition changes

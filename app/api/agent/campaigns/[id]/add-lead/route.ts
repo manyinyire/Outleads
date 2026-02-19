@@ -59,12 +59,18 @@ async function handler(
         finalSectorId = defaultSector.id;
       }
 
-      // Check if agent is assigned to this campaign
-      if (authReq.user?.role === 'AGENT' && campaign.assignedToId !== authReq.user?.id) {
-        return NextResponse.json({
-          error: 'Forbidden',
-          message: 'You can only add leads to your assigned campaigns'
-        }, { status: 403 });
+      // Check if agent is assigned to this campaign (directly or via a lead pool)
+      if (authReq.user?.role === 'AGENT') {
+        const hasDirectAssignment = campaign.assignedToId === authReq.user?.id;
+        const hasPoolAssignment = await prisma.lead.findFirst({
+          where: { campaignId: campaign.id, assignedToId: authReq.user?.id }
+        });
+        if (!hasDirectAssignment && !hasPoolAssignment) {
+          return NextResponse.json({
+            error: 'Forbidden',
+            message: 'You can only add leads to your assigned campaigns'
+          }, { status: 403 });
+        }
       }
 
       // Check for duplicate phone number globally

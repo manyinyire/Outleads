@@ -19,6 +19,7 @@ import {
   ShoppingOutlined,
   AppstoreOutlined,
   PhoneOutlined,
+  InboxOutlined,
 } from '@ant-design/icons'
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState, AppDispatch } from '@/lib/store'
@@ -87,6 +88,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       icon: <BulbOutlined />,
       label: 'Campaigns',
       hidden: !hasAnyRole(user, ['ADMIN', 'SUPERVISOR', 'AGENT']),
+    },
+    {
+      key: '/admin/lead-pools',
+      icon: <InboxOutlined />,
+      label: 'Lead Pools',
+      hidden: !hasAnyRole(user, ['ADMIN', 'SUPERVISOR']),
     },
     {
       key: '/admin/reports',
