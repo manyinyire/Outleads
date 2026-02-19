@@ -184,32 +184,32 @@ export default function CallLeadModal({
       width={800}
     >
       {lead && (
-        <>
-          <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#f5f5f5', borderRadius: '8px' }}>
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <Space>
-                <div><Text strong>Phone:</Text> {lead.phoneNumber}</div>
-                <Button
-                  type="default"
-                  icon={<CopyOutlined />}
-                  onClick={handleCopyNumber}
-                  size="small"
-                >
-                  Copy Number
-                </Button>
-              </Space>
-              <div><Text strong>Sector:</Text> {lead.businessSector.name}</div>
-              <div><Text strong>Products:</Text> {lead.products.map(p => p.name).join(', ')}</div>
-              {lead.campaign && <div><Text strong>Campaign:</Text> {lead.campaign.campaign_name}</div>}
-              {lead.lastCalledAt && (
-                <div><Text strong>Last Called:</Text> {new Date(lead.lastCalledAt).toLocaleString()}</div>
-              )}
+        <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#f5f5f5', borderRadius: '8px' }}>
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Space>
+              <div><Text strong>Phone:</Text> {lead.phoneNumber}</div>
+              <Button
+                type="default"
+                icon={<CopyOutlined />}
+                onClick={handleCopyNumber}
+                size="small"
+              >
+                Copy Number
+              </Button>
             </Space>
-          </div>
+            <div><Text strong>Sector:</Text> {lead.businessSector.name}</div>
+            <div><Text strong>Products:</Text> {lead.products.map(p => p.name).join(', ')}</div>
+            {lead.campaign && <div><Text strong>Campaign:</Text> {lead.campaign.campaign_name}</div>}
+            {lead.lastCalledAt && (
+              <div><Text strong>Last Called:</Text> {new Date(lead.lastCalledAt).toLocaleString()}</div>
+            )}
+          </Space>
+        </div>
+      )}
 
-          <Divider>Call Disposition</Divider>
+      <Divider>Call Disposition</Divider>
 
-          <Form form={form} layout="vertical" onFinish={handleSubmit}>
+      <Form form={form} layout="vertical" onFinish={handleSubmit}>
             <Form.Item
               name="firstLevelDispositionId"
               label="1. Contact Status"
@@ -282,8 +282,6 @@ export default function CallLeadModal({
               </Space>
             </Form.Item>
           </Form>
-        </>
-      )}
     </Modal>
   )
 }
