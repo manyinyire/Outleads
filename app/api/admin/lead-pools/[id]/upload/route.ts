@@ -1,14 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth/auth';
 import { prisma } from '@/lib/db/prisma';
 
 export const runtime = 'nodejs';
 
-// POST - Parse CSV body and bulk insert leads into pool
-export const POST = withAuthAndRole(['ADMIN', 'SUPERVISOR'], async (req: AuthenticatedRequest, { params }: { params: { id: string } }) => {
+async function postHandler(req: AuthenticatedRequest, context?: any) {
   try {
+    const poolId = context?.params?.id;
     const pool = await prisma.leadPool.findUnique({
-      where: { id: params.id },
+      where: { id: poolId },
       include: { campaign: true },
     });
 
@@ -140,10 +140,11 @@ export const POST = withAuthAndRole(['ADMIN', 'SUPERVISOR'], async (req: Authent
       },
     }, { status: 200 });
   } catch (error) {
-    console.error('Error uploading leads:', error);
     return NextResponse.json({ error: 'Failed to upload leads' }, { status: 500 });
   }
-});
+}
+
+export const POST = withAuthAndRole(['ADMIN', 'SUPERVISOR'], postHandler);
 
 function normalizePhone(phone: string): string {
   return phone.replace(/\s+/g, '').trim();

@@ -1,13 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth/auth';
 import { prisma } from '@/lib/db/prisma';
 
 export const runtime = 'nodejs';
 
 // GET - Unassigned leads in this pool (paginated)
-export const GET = withAuthAndRole(['ADMIN', 'SUPERVISOR'], async (req: AuthenticatedRequest, { params }: { params: { id: string } }) => {
+async function getHandler(req: AuthenticatedRequest, context?: any) {
   try {
-    const pool = await prisma.leadPool.findUnique({ where: { id: params.id } });
+    const poolId = context?.params?.id;
+    const pool = await prisma.leadPool.findUnique({ where: { id: poolId } });
     if (!pool) {
       return NextResponse.json({ error: 'Lead pool not found' }, { status: 404 });
     }
@@ -19,7 +20,7 @@ export const GET = withAuthAndRole(['ADMIN', 'SUPERVISOR'], async (req: Authenti
     const skip = (page - 1) * limit;
 
     const where: any = {
-      leadPoolId: params.id,
+      leadPoolId: poolId,
       ...(showAll ? {} : { assignedToId: null }),
     };
 
@@ -50,7 +51,8 @@ export const GET = withAuthAndRole(['ADMIN', 'SUPERVISOR'], async (req: Authenti
       },
     }, { status: 200 });
   } catch (error) {
-    console.error('Error fetching pool leads:', error);
     return NextResponse.json({ error: 'Failed to fetch pool leads' }, { status: 500 });
   }
-});
+}
+
+export const GET = withAuthAndRole(['ADMIN', 'SUPERVISOR'], getHandler);

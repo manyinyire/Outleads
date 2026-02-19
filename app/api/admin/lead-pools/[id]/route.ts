@@ -1,14 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth/auth';
 import { prisma } from '@/lib/db/prisma';
 
 export const runtime = 'nodejs';
 
-// GET - Pool detail with full stats
-export const GET = withAuthAndRole(['ADMIN', 'SUPERVISOR'], async (req: AuthenticatedRequest, { params }: { params: { id: string } }) => {
+async function getHandler(req: AuthenticatedRequest, context?: any) {
   try {
+    const poolId = context?.params?.id;
     const pool = await prisma.leadPool.findUnique({
-      where: { id: params.id },
+      where: { id: poolId },
       include: {
         campaign: { select: { id: true, campaign_name: true } },
         createdBy: { select: { id: true, name: true } },
@@ -30,11 +30,11 @@ export const GET = withAuthAndRole(['ADMIN', 'SUPERVISOR'], async (req: Authenti
     }
 
     const total = pool.leads.length;
-    const assigned = pool.leads.filter((l) => l.assignedToId !== null).length;
+    const assigned = pool.leads.filter((l: any) => l.assignedToId !== null).length;
     const unassigned = total - assigned;
-    const called = pool.leads.filter((l) => l.lastCalledAt !== null).length;
-    const connected = pool.leads.filter((l) => l.firstLevelDisposition?.name === 'Contacted').length;
-    const sales = pool.leads.filter((l) => l.secondLevelDisposition?.name === 'Sale').length;
+    const called = pool.leads.filter((l: any) => l.lastCalledAt !== null).length;
+    const connected = pool.leads.filter((l: any) => l.firstLevelDisposition?.name === 'Contacted').length;
+    const sales = pool.leads.filter((l: any) => l.secondLevelDisposition?.name === 'Sale').length;
 
     return NextResponse.json({
       data: {
@@ -48,7 +48,8 @@ export const GET = withAuthAndRole(['ADMIN', 'SUPERVISOR'], async (req: Authenti
       },
     }, { status: 200 });
   } catch (error) {
-    console.error('Error fetching lead pool:', error);
     return NextResponse.json({ error: 'Failed to fetch lead pool' }, { status: 500 });
   }
-});
+}
+
+export const GET = withAuthAndRole(['ADMIN', 'SUPERVISOR'], getHandler);

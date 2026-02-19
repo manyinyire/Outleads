@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth/auth';
 import { prisma } from '@/lib/db/prisma';
 import { z } from 'zod';
@@ -10,8 +10,7 @@ const createPoolSchema = z.object({
   campaignId: z.string().cuid('Invalid campaign ID'),
 });
 
-// GET - List all lead pools with stats
-export const GET = withAuthAndRole(['ADMIN', 'SUPERVISOR'], async (req: AuthenticatedRequest) => {
+async function getHandler(req: AuthenticatedRequest) {
   try {
     const pools = await prisma.leadPool.findMany({
       include: {
@@ -32,11 +31,11 @@ export const GET = withAuthAndRole(['ADMIN', 'SUPERVISOR'], async (req: Authenti
 
     const data = pools.map((pool) => {
       const total = pool.leads.length;
-      const assigned = pool.leads.filter((l) => l.assignedToId !== null).length;
+      const assigned = pool.leads.filter((l: any) => l.assignedToId !== null).length;
       const unassigned = total - assigned;
-      const called = pool.leads.filter((l) => l.lastCalledAt !== null).length;
-      const connected = pool.leads.filter((l) => l.firstLevelDisposition?.name === 'Contacted').length;
-      const sales = pool.leads.filter((l) => l.secondLevelDisposition?.name === 'Sale').length;
+      const called = pool.leads.filter((l: any) => l.lastCalledAt !== null).length;
+      const connected = pool.leads.filter((l: any) => l.firstLevelDisposition?.name === 'Contacted').length;
+      const sales = pool.leads.filter((l: any) => l.secondLevelDisposition?.name === 'Sale').length;
 
       return {
         id: pool.id,
@@ -51,13 +50,11 @@ export const GET = withAuthAndRole(['ADMIN', 'SUPERVISOR'], async (req: Authenti
 
     return NextResponse.json({ data }, { status: 200 });
   } catch (error) {
-    console.error('Error fetching lead pools:', error);
     return NextResponse.json({ error: 'Failed to fetch lead pools' }, { status: 500 });
   }
-});
+}
 
-// POST - Create a new lead pool
-export const POST = withAuthAndRole(['ADMIN', 'SUPERVISOR'], async (req: AuthenticatedRequest) => {
+async function postHandler(req: AuthenticatedRequest) {
   try {
     const body = await req.json();
     const validation = createPoolSchema.safeParse(body);
@@ -90,7 +87,9 @@ export const POST = withAuthAndRole(['ADMIN', 'SUPERVISOR'], async (req: Authent
 
     return NextResponse.json({ data: pool }, { status: 201 });
   } catch (error) {
-    console.error('Error creating lead pool:', error);
     return NextResponse.json({ error: 'Failed to create lead pool' }, { status: 500 });
   }
-});
+}
+
+export const GET = withAuthAndRole(['ADMIN', 'SUPERVISOR'], getHandler);
+export const POST = withAuthAndRole(['ADMIN', 'SUPERVISOR'], postHandler);

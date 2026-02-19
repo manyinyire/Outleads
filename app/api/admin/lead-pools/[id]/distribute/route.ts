@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { withAuthAndRole, AuthenticatedRequest } from '@/lib/auth/auth';
 import { prisma } from '@/lib/db/prisma';
 import { z } from 'zod';
@@ -11,9 +11,10 @@ const distributeSchema = z.object({
 });
 
 // POST - Assign selected leads to an agent
-export const POST = withAuthAndRole(['ADMIN', 'SUPERVISOR'], async (req: AuthenticatedRequest, { params }: { params: { id: string } }) => {
+async function postHandler(req: AuthenticatedRequest, context?: any) {
   try {
-    const pool = await prisma.leadPool.findUnique({ where: { id: params.id } });
+    const poolId = context?.params?.id;
+    const pool = await prisma.leadPool.findUnique({ where: { id: poolId } });
     if (!pool) {
       return NextResponse.json({ error: 'Lead pool not found' }, { status: 404 });
     }
@@ -43,7 +44,7 @@ export const POST = withAuthAndRole(['ADMIN', 'SUPERVISOR'], async (req: Authent
     const leads = await prisma.lead.findMany({
       where: {
         id: { in: leadIds },
-        leadPoolId: params.id,
+        leadPoolId: poolId,
       },
       select: { id: true, assignedToId: true },
     });
@@ -70,7 +71,7 @@ export const POST = withAuthAndRole(['ADMIN', 'SUPERVISOR'], async (req: Authent
     const updated = await prisma.lead.updateMany({
       where: {
         id: { in: leadIds },
-        leadPoolId: params.id,
+        leadPoolId: poolId,
       },
       data: { assignedToId: agentId },
     });
@@ -80,7 +81,8 @@ export const POST = withAuthAndRole(['ADMIN', 'SUPERVISOR'], async (req: Authent
       count: updated.count,
     }, { status: 200 });
   } catch (error) {
-    console.error('Error distributing leads:', error);
     return NextResponse.json({ error: 'Failed to distribute leads' }, { status: 500 });
   }
-});
+}
+
+export const POST = withAuthAndRole(['ADMIN', 'SUPERVISOR'], postHandler);
