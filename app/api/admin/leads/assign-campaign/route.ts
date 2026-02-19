@@ -11,7 +11,7 @@ const bulkAssignCampaignSchema = z.object({
 });
 
 async function handler(req: NextRequest) {
-  return withAuthAndRole(['ADMIN', 'SUPERVISOR', 'AGENT'], async (authReq: AuthenticatedRequest) => {
+  return withAuthAndRole(['ADMIN', 'SUPERVISOR'], async (authReq: AuthenticatedRequest) => {
     try {
       const body = await req.json();
       

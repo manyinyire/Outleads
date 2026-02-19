@@ -30,6 +30,7 @@ const customGetHandler = withErrorHandler(async (req: AuthenticatedRequest) => {
   
   if (user?.role === 'AGENT') {
     queryConditions.AND.push({ assignedToId: user.id });
+    queryConditions.AND.push({ firstLevelDispositionId: null });
   }
 
   if (searchQuery) {
