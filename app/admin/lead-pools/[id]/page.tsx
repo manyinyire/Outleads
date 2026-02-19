@@ -421,7 +421,7 @@ export default function LeadPoolDetailPage() {
         onCancel={() => setUploadModalOpen(false)}
         footer={null}
         width={700}
-        destroyOnClose
+        destroyOnHidden
       >
         {uploadSummary ? (
           <div>

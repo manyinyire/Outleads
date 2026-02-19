@@ -33,7 +33,7 @@ export default function EditModal<T>({ title, visible, fields, editingRecord, on
       open={visible}
       onCancel={onClose}
       footer={modalFooter}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form form={form} layout="vertical" onFinish={(values) => onSubmit(values, editingRecord)}>
         {fields.map(field => {

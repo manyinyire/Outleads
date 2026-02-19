@@ -235,7 +235,7 @@ export default function LeadPoolsPage() {
         open={createModalOpen}
         onCancel={() => { setCreateModalOpen(false); form.resetFields() }}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" onFinish={handleCreate}>
           <Form.Item
