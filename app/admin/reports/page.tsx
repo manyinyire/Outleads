@@ -14,8 +14,11 @@ const { RangePicker } = DatePicker
 const reportTypes = [
   { value: 'lead-details', label: 'Lead Details Report' },
   { value: 'campaign-performance', label: 'Campaign Performance Report' },
+  { value: 'campaign-agent-breakdown', label: 'Campaign Agent Breakdown Report' },
   { value: 'user-activity', label: 'User Activity Report' },
   { value: 'agent-performance', label: 'Agent Performance Report' },
+  { value: 'pool-performance', label: 'Pool Performance Report' },
+  { value: 'pool-agent-breakdown', label: 'Pool Agent Breakdown Report' },
 ]
 
 export default function ReportsPage() {
@@ -106,6 +109,61 @@ export default function ReportsPage() {
               { title: 'Pending Calls', dataIndex: 'not_called_leads', key: 'not_called_leads' },
               { title: 'Connected Calls', dataIndex: 'contacted_leads', key: 'contacted_leads' },
               { title: 'Failed to Connect', dataIndex: 'not_contacted_leads', key: 'not_contacted_leads' },
+              { title: 'Sales', dataIndex: 'sales_leads', key: 'sales_leads' },
+              { title: 'Calling Rate', dataIndex: 'calling_rate', key: 'calling_rate', render: (rate: number) => `${rate}%` },
+              { title: 'Answer Rate', dataIndex: 'answer_rate', key: 'answer_rate', render: (rate: number) => `${rate}%` },
+              { title: 'Conversion Rate', dataIndex: 'conversion_rate', key: 'conversion_rate', render: (rate: number) => `${rate}%` },
+            ];
+            break;
+          case 'pool-performance':
+            generatedColumns = [
+              { title: 'Pool Name', dataIndex: 'pool_name', key: 'pool_name', render: (text: string) => sanitizeText(text || '') },
+              { title: 'Campaign', dataIndex: 'campaign_name', key: 'campaign_name', render: (text: string) => sanitizeText(text || '') },
+              { title: 'Created By', dataIndex: 'created_by', key: 'created_by', render: (text: string) => sanitizeText(text || '') },
+              { title: 'Agents', dataIndex: 'agents_count', key: 'agents_count' },
+              { title: 'Total Leads', dataIndex: 'total_leads', key: 'total_leads' },
+              { title: 'Assigned', dataIndex: 'assigned_leads', key: 'assigned_leads' },
+              { title: 'Unassigned', dataIndex: 'unassigned_leads', key: 'unassigned_leads' },
+              { title: 'Called', dataIndex: 'called_leads', key: 'called_leads' },
+              { title: 'Contacted', dataIndex: 'contacted_leads', key: 'contacted_leads' },
+              { title: 'Not Contacted', dataIndex: 'not_contacted_leads', key: 'not_contacted_leads' },
+              { title: 'Pending Disposition', dataIndex: 'pending_disposition', key: 'pending_disposition' },
+              { title: 'Sales', dataIndex: 'sales_leads', key: 'sales_leads' },
+              { title: 'Calling Rate', dataIndex: 'calling_rate', key: 'calling_rate', render: (rate: number) => `${rate}%` },
+              { title: 'Answer Rate', dataIndex: 'answer_rate', key: 'answer_rate', render: (rate: number) => `${rate}%` },
+              { title: 'Conversion Rate', dataIndex: 'conversion_rate', key: 'conversion_rate', render: (rate: number) => `${rate}%` },
+              { title: 'Date Created', dataIndex: 'created_at', key: 'created_at', render: (date: string) => new Date(date).toLocaleDateString() },
+            ];
+            break;
+          case 'pool-agent-breakdown':
+            generatedColumns = [
+              { title: 'Pool Name', dataIndex: 'pool_name', key: 'pool_name', render: (text: string) => sanitizeText(text || '') },
+              { title: 'Campaign', dataIndex: 'campaign_name', key: 'campaign_name', render: (text: string) => sanitizeText(text || '') },
+              { title: 'Agent', dataIndex: 'agent_name', key: 'agent_name', render: (text: string) => sanitizeText(text || '') },
+              { title: 'Total Leads', dataIndex: 'total_leads', key: 'total_leads' },
+              { title: 'Called', dataIndex: 'called_leads', key: 'called_leads' },
+              { title: 'Not Called', dataIndex: 'not_called_leads', key: 'not_called_leads' },
+              { title: 'Contacted', dataIndex: 'contacted_leads', key: 'contacted_leads' },
+              { title: 'Not Contacted', dataIndex: 'not_contacted_leads', key: 'not_contacted_leads' },
+              { title: 'Pending Disposition', dataIndex: 'pending_disposition', key: 'pending_disposition' },
+              { title: 'Sales', dataIndex: 'sales_leads', key: 'sales_leads' },
+              { title: 'Calling Rate', dataIndex: 'calling_rate', key: 'calling_rate', render: (rate: number) => `${rate}%` },
+              { title: 'Answer Rate', dataIndex: 'answer_rate', key: 'answer_rate', render: (rate: number) => `${rate}%` },
+              { title: 'Conversion Rate', dataIndex: 'conversion_rate', key: 'conversion_rate', render: (rate: number) => `${rate}%` },
+            ];
+            break;
+          case 'campaign-agent-breakdown':
+            generatedColumns = [
+              { title: 'Campaign', dataIndex: 'campaign_name', key: 'campaign_name', render: (text: string) => sanitizeText(text || '') },
+              { title: 'Agent', dataIndex: 'agent_name', key: 'agent_name', render: (text: string) => sanitizeText(text || '') },
+              { title: 'Total Leads', dataIndex: 'total_leads', key: 'total_leads' },
+              { title: 'Direct Leads', dataIndex: 'direct_leads', key: 'direct_leads' },
+              { title: 'Pool Leads', dataIndex: 'pool_leads', key: 'pool_leads' },
+              { title: 'Called', dataIndex: 'called_leads', key: 'called_leads' },
+              { title: 'Not Called', dataIndex: 'not_called_leads', key: 'not_called_leads' },
+              { title: 'Contacted', dataIndex: 'contacted_leads', key: 'contacted_leads' },
+              { title: 'Not Contacted', dataIndex: 'not_contacted_leads', key: 'not_contacted_leads' },
+              { title: 'Pending Disposition', dataIndex: 'pending_disposition', key: 'pending_disposition' },
               { title: 'Sales', dataIndex: 'sales_leads', key: 'sales_leads' },
               { title: 'Calling Rate', dataIndex: 'calling_rate', key: 'calling_rate', render: (rate: number) => `${rate}%` },
               { title: 'Answer Rate', dataIndex: 'answer_rate', key: 'answer_rate', render: (rate: number) => `${rate}%` },

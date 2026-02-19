@@ -24,6 +24,15 @@ const handler = withErrorHandler(async (req: AuthenticatedRequest, { params }: {
       case 'agent-performance':
         data = await getAgentPerformance(startDate, endDate)
         break;
+      case 'pool-performance':
+        data = await getPoolPerformance(startDate, endDate)
+        break;
+      case 'pool-agent-breakdown':
+        data = await getPoolAgentBreakdown(startDate, endDate)
+        break;
+      case 'campaign-agent-breakdown':
+        data = await getCampaignAgentBreakdown(startDate, endDate)
+        break;
       default:
         return errorResponse('Invalid report type', 400)
     }
@@ -269,4 +278,215 @@ async function getAgentPerformance(startDate: string | null, endDate: string | n
       conversion_rate: parseFloat(conversionRate.toFixed(2)),
     };
   });
+}
+
+// ── Pool Performance Report ──────────────────────────────────────────────────
+async function getPoolPerformance(startDate: string | null, endDate: string | null) {
+  const whereClause: any = {};
+  if (startDate || endDate) {
+    whereClause.createdAt = {};
+    if (startDate) whereClause.createdAt.gte = new Date(startDate);
+    if (endDate) whereClause.createdAt.lte = new Date(endDate);
+  }
+
+  const pools = await prisma.leadPool.findMany({
+    where: whereClause,
+    include: {
+      campaign: { select: { id: true, campaign_name: true } },
+      createdBy: { select: { id: true, name: true } },
+      leads: {
+        include: {
+          firstLevelDisposition: true,
+          secondLevelDisposition: true,
+          assignedTo: { select: { id: true, name: true } },
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  return pools.map((pool: any) => {
+    const leads = pool.leads;
+    const total = leads.length;
+    const assigned = leads.filter((l: any) => l.assignedToId !== null).length;
+    const unassigned = total - assigned;
+    const called = leads.filter((l: any) => l.lastCalledAt !== null).length;
+    const contacted = leads.filter((l: any) => l.firstLevelDisposition?.name === 'Contacted').length;
+    const notContacted = leads.filter((l: any) => l.firstLevelDisposition?.name === 'Not Contacted').length;
+    const sales = leads.filter((l: any) => l.secondLevelDisposition?.name === 'Sale').length;
+    const disposed = leads.filter((l: any) => l.firstLevelDispositionId !== null).length;
+    const pending = total - disposed;
+
+    const uniqueAgents = new Set(leads.filter((l: any) => l.assignedToId).map((l: any) => l.assignedToId));
+
+    const callingRate = assigned > 0 ? (called / assigned) * 100 : 0;
+    const answerRate = called > 0 ? (contacted / called) * 100 : 0;
+    const conversionRate = contacted > 0 ? (sales / contacted) * 100 : 0;
+
+    return {
+      id: pool.id,
+      pool_name: pool.name,
+      campaign_name: pool.campaign?.campaign_name || 'N/A',
+      created_by: pool.createdBy?.name || 'N/A',
+      agents_count: uniqueAgents.size,
+      total_leads: total,
+      assigned_leads: assigned,
+      unassigned_leads: unassigned,
+      called_leads: called,
+      contacted_leads: contacted,
+      not_contacted_leads: notContacted,
+      pending_disposition: pending,
+      sales_leads: sales,
+      calling_rate: parseFloat(callingRate.toFixed(2)),
+      answer_rate: parseFloat(answerRate.toFixed(2)),
+      conversion_rate: parseFloat(conversionRate.toFixed(2)),
+      created_at: pool.createdAt.toISOString(),
+    };
+  });
+}
+
+// ── Pool Agent Breakdown Report ──────────────────────────────────────────────
+async function getPoolAgentBreakdown(startDate: string | null, endDate: string | null) {
+  const whereClause: any = {};
+  if (startDate || endDate) {
+    whereClause.createdAt = {};
+    if (startDate) whereClause.createdAt.gte = new Date(startDate);
+    if (endDate) whereClause.createdAt.lte = new Date(endDate);
+  }
+
+  const pools = await prisma.leadPool.findMany({
+    where: whereClause,
+    include: {
+      campaign: { select: { campaign_name: true } },
+      leads: {
+        include: {
+          firstLevelDisposition: true,
+          secondLevelDisposition: true,
+          assignedTo: { select: { id: true, name: true } },
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  const rows: any[] = [];
+
+  for (const pool of pools as any[]) {
+    // Group leads by agent
+    const agentMap = new Map<string, { name: string; leads: any[] }>();
+
+    for (const lead of pool.leads) {
+      if (!lead.assignedToId) continue;
+      if (!agentMap.has(lead.assignedToId)) {
+        agentMap.set(lead.assignedToId, { name: lead.assignedTo?.name || 'Unknown', leads: [] });
+      }
+      agentMap.get(lead.assignedToId)!.leads.push(lead);
+    }
+
+    for (const [agentId, { name, leads }] of agentMap.entries()) {
+      const total = leads.length;
+      const called = leads.filter((l: any) => l.lastCalledAt !== null).length;
+      const contacted = leads.filter((l: any) => l.firstLevelDisposition?.name === 'Contacted').length;
+      const notContacted = leads.filter((l: any) => l.firstLevelDisposition?.name === 'Not Contacted').length;
+      const sales = leads.filter((l: any) => l.secondLevelDisposition?.name === 'Sale').length;
+      const pending = leads.filter((l: any) => l.firstLevelDispositionId === null).length;
+
+      const callingRate = total > 0 ? (called / total) * 100 : 0;
+      const answerRate = called > 0 ? (contacted / called) * 100 : 0;
+      const conversionRate = contacted > 0 ? (sales / contacted) * 100 : 0;
+
+      rows.push({
+        id: `${pool.id}-${agentId}`,
+        pool_name: pool.name,
+        campaign_name: pool.campaign?.campaign_name || 'N/A',
+        agent_name: name,
+        total_leads: total,
+        called_leads: called,
+        not_called_leads: total - called,
+        contacted_leads: contacted,
+        not_contacted_leads: notContacted,
+        pending_disposition: pending,
+        sales_leads: sales,
+        calling_rate: parseFloat(callingRate.toFixed(2)),
+        answer_rate: parseFloat(answerRate.toFixed(2)),
+        conversion_rate: parseFloat(conversionRate.toFixed(2)),
+      });
+    }
+  }
+
+  return rows;
+}
+
+// ── Campaign Agent Breakdown Report ─────────────────────────────────────────
+async function getCampaignAgentBreakdown(startDate: string | null, endDate: string | null) {
+  const whereClause: any = {};
+  if (startDate || endDate) {
+    whereClause.createdAt = {};
+    if (startDate) whereClause.createdAt.gte = new Date(startDate);
+    if (endDate) whereClause.createdAt.lte = new Date(endDate);
+  }
+
+  const campaigns = await prisma.campaign.findMany({
+    where: whereClause,
+    include: {
+      leads: {
+        include: {
+          firstLevelDisposition: true,
+          secondLevelDisposition: true,
+          assignedTo: { select: { id: true, name: true } },
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  const rows: any[] = [];
+
+  for (const campaign of campaigns as any[]) {
+    // Group leads by agent
+    const agentMap = new Map<string, { name: string; leads: any[] }>();
+
+    for (const lead of campaign.leads) {
+      if (!lead.assignedToId) continue;
+      if (!agentMap.has(lead.assignedToId)) {
+        agentMap.set(lead.assignedToId, { name: lead.assignedTo?.name || 'Unknown', leads: [] });
+      }
+      agentMap.get(lead.assignedToId)!.leads.push(lead);
+    }
+
+    for (const [agentId, { name, leads }] of agentMap.entries()) {
+      const total = leads.length;
+      const called = leads.filter((l: any) => l.lastCalledAt !== null).length;
+      const contacted = leads.filter((l: any) => l.firstLevelDisposition?.name === 'Contacted').length;
+      const notContacted = leads.filter((l: any) => l.firstLevelDisposition?.name === 'Not Contacted').length;
+      const sales = leads.filter((l: any) => l.secondLevelDisposition?.name === 'Sale').length;
+      const pending = leads.filter((l: any) => l.firstLevelDispositionId === null).length;
+      const poolLeads = leads.filter((l: any) => l.leadPoolId !== null).length;
+      const directLeads = total - poolLeads;
+
+      const callingRate = total > 0 ? (called / total) * 100 : 0;
+      const answerRate = called > 0 ? (contacted / called) * 100 : 0;
+      const conversionRate = contacted > 0 ? (sales / contacted) * 100 : 0;
+
+      rows.push({
+        id: `${campaign.id}-${agentId}`,
+        campaign_name: campaign.campaign_name,
+        agent_name: name,
+        total_leads: total,
+        direct_leads: directLeads,
+        pool_leads: poolLeads,
+        called_leads: called,
+        not_called_leads: total - called,
+        contacted_leads: contacted,
+        not_contacted_leads: notContacted,
+        pending_disposition: pending,
+        sales_leads: sales,
+        calling_rate: parseFloat(callingRate.toFixed(2)),
+        answer_rate: parseFloat(answerRate.toFixed(2)),
+        conversion_rate: parseFloat(conversionRate.toFixed(2)),
+      });
+    }
+  }
+
+  return rows;
 }
