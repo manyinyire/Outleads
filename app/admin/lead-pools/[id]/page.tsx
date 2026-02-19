@@ -465,7 +465,10 @@ export default function LeadPoolDetailPage() {
               description={
                 <span>
                   Required columns: <strong>Full Name</strong>, <strong>Phone Number</strong><br />
-                  Optional columns: <strong>Sector</strong>, <strong>Product</strong>
+                  Optional columns: <strong>Sector</strong>, <strong>Product</strong><br />
+                  <a href="/sample-lead-pool.csv" download style={{ marginTop: 6, display: 'inline-block' }}>
+                    Download sample CSV template
+                  </a>
                 </span>
               }
             />
