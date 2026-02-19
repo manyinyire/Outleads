@@ -186,6 +186,7 @@ export default function LeadsPage() {
           value={filters.campaignId}
           allowClear
         >
+          <Select.Option value="direct">Direct Lead</Select.Option>
           {filterData.campaigns.map(c => <Select.Option key={c.id} value={c.id}>{sanitizeText(c.campaign_name)}</Select.Option>)}
         </Select>
       </Col>

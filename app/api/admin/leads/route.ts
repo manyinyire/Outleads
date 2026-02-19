@@ -45,7 +45,11 @@ const customGetHandler = withErrorHandler(async (req: AuthenticatedRequest) => {
     queryConditions.AND.push({ products: { some: { id: productId } } });
   }
   if (campaignId) {
-    queryConditions.AND.push({ campaignId: campaignId });
+    if (campaignId === 'direct') {
+      queryConditions.AND.push({ campaignId: null });
+    } else {
+      queryConditions.AND.push({ campaignId: campaignId });
+    }
   }
   if (sectorId) {
     queryConditions.AND.push({ sectorId: sectorId });
