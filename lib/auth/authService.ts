@@ -16,15 +16,17 @@ export async function authenticateDomainUser(username: string, password: string)
     logger.debug('Attempting domain authentication', { username, apiBaseUrl });
     const response = await axios.post(apiBaseUrl!, { username, password });
     logger.info('Domain authentication successful', { username });
+    logger.debug('AD response data', { responseData: response.data });
     return {
       access: response.data.access,
       refresh: response.data.refresh,
       user: {
-        first_name: response.data.first_name,
-        last_name: response.data.last_name,
-        username: response.data.username,
-        user_id: response.data.user_id,
-        groups: response.data.groups,
+        first_name: response.data.firstname,
+        last_name: response.data.lastname,
+        username: response.data.user,
+        user_id: response.data.id,
+        email: response.data.email,
+        groups: response.data.groups || [],
         department: response.data.department,
         title: response.data.title
       }
@@ -42,18 +44,31 @@ export async function authenticateDomainUser(username: string, password: string)
 }
 
 export async function getUserInfo(userInfo: any) {
-  // Since the new API returns all user info in the login response,
-  // we just need to format it for our system
+  logger.debug('Processing user info', { userInfo });
+  
+  const firstName = userInfo.first_name || userInfo.firstName || '';
+  const lastName = userInfo.last_name || userInfo.lastName || '';
+  const username = userInfo.username || userInfo.user || '';
+  
+  let email = userInfo.email;
+  if (!email && firstName && lastName) {
+    email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@fbc.co.zw`;
+  }
+  
+  if (email) {
+    email = email.toLowerCase();
+  }
+  
   return {
     userDetails: {
-      first_: userInfo.first_name,
-      last_: userInfo.last_name,
-      email_: `${userInfo.first_name.toLowerCase()}.${userInfo.last_name.toLowerCase()}@fbc.co.zw`, // Construct email from first and last name
-      username: userInfo.username,
-      user_id: userInfo.user_id,
-      groups: userInfo.groups,
-      department: userInfo.department,
-      title: userInfo.title
+      first_: firstName,
+      last_: lastName,
+      email_: email,
+      username: username,
+      user_id: userInfo.user_id || userInfo.userId,
+      groups: userInfo.groups || [],
+      department: userInfo.department || '',
+      title: userInfo.title || ''
     }
   };
 }
