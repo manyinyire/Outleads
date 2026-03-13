@@ -6,7 +6,7 @@ import { ColumnsType } from 'antd/es/table'
 import CrudTable from '@/components/admin/shared/CrudTable'
 import CallLeadModal from '@/components/admin/CallLeadModal'
 import AssignCampaignModal from '@/components/admin/AssignCampaignModal'
-import { PhoneOutlined, UserSwitchOutlined, LinkOutlined } from '@ant-design/icons'
+import { PhoneOutlined, UserSwitchOutlined, LinkOutlined, ReloadOutlined } from '@ant-design/icons'
 import api from '@/lib/api/api'
 import { useLeads } from '@/hooks/useLeads'
 import { sanitizeText } from '@/lib/utils/sanitization'
@@ -72,6 +72,29 @@ export default function LeadsPage() {
       console.error("Assign error:", error)
       message.error('Failed to assign leads.')
     }
+  }
+
+  const handleRecycle = async () => {
+    Modal.confirm({
+      title: 'Recycle Leads',
+      content: `Are you sure you want to recycle ${selectedLeads.length} lead(s)? This will clear their disposition and unassign them, making them available for reassignment.`,
+      okText: 'Yes, Recycle',
+      okType: 'primary',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        try {
+          await api.post('/admin/leads/recycle', {
+            leadIds: selectedLeads,
+          })
+          message.success(`${selectedLeads.length} lead(s) recycled successfully.`)
+          setSelectedLeads([])
+          fetchData()
+        } catch (error) {
+          console.error("Recycle error:", error)
+          message.error('Failed to recycle leads.')
+        }
+      }
+    })
   }
 
   const columns: ColumnsType<Lead> = useMemo(() => [
@@ -271,14 +294,24 @@ export default function LeadsPage() {
             {selectedLeads.length > 0 && (
               <>
                 {userRole && ['ADMIN', 'SUPERVISOR'].includes(userRole) && (
-                  <Button
-                    type="primary"
-                    icon={<UserSwitchOutlined />}
-                    onClick={() => setAssignModalVisible(true)}
-                    style={{ marginBottom: 16, marginRight: 8 }}
-                  >
-                    Assign to Agent
-                  </Button>
+                  <>
+                    <Button
+                      type="primary"
+                      icon={<UserSwitchOutlined />}
+                      onClick={() => setAssignModalVisible(true)}
+                      style={{ marginBottom: 16, marginRight: 8 }}
+                    >
+                      Assign to Agent
+                    </Button>
+                    <Button
+                      type="default"
+                      icon={<ReloadOutlined />}
+                      onClick={handleRecycle}
+                      style={{ marginBottom: 16, marginRight: 8 }}
+                    >
+                      Recycle Leads
+                    </Button>
+                  </>
                 )}
                 <Button
                   type="default"
