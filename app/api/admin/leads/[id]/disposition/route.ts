@@ -135,25 +135,41 @@ export async function PUT(
         }
       }
 
-      // Update lead with disposition
-      const updatedLead = await prisma.lead.update({
-        where: { id: leadId },
-        data: {
-          firstLevelDispositionId,
-          secondLevelDispositionId: secondLevelDispositionId || null,
-          thirdLevelDispositionId: thirdLevelDispositionId || null,
-          dispositionNotes: dispositionNotes || null,
-          lastCalledAt: new Date(),
-        },
-        include: {
-          firstLevelDisposition: true,
-          secondLevelDisposition: true,
-          thirdLevelDisposition: true,
-          businessSector: true,
-          products: true,
-          campaign: true,
-          assignedTo: true
-        }
+      // Update lead with disposition and create history record
+      const updatedLead = await prisma.$transaction(async (tx) => {
+        // Create disposition history record
+        await tx.dispositionHistory.create({
+          data: {
+            leadId,
+            firstLevelDispositionId,
+            secondLevelDispositionId: secondLevelDispositionId || null,
+            thirdLevelDispositionId: thirdLevelDispositionId || null,
+            dispositionNotes: dispositionNotes || null,
+            changedById: authReq.user!.id,
+            changedAt: new Date(),
+          }
+        });
+
+        // Update lead with current disposition
+        return await tx.lead.update({
+          where: { id: leadId },
+          data: {
+            firstLevelDispositionId,
+            secondLevelDispositionId: secondLevelDispositionId || null,
+            thirdLevelDispositionId: thirdLevelDispositionId || null,
+            dispositionNotes: dispositionNotes || null,
+            lastCalledAt: new Date(),
+          },
+          include: {
+            firstLevelDisposition: true,
+            secondLevelDisposition: true,
+            thirdLevelDisposition: true,
+            businessSector: true,
+            products: true,
+            campaign: true,
+            assignedTo: true
+          }
+        });
       });
 
       return NextResponse.json({
