@@ -32,7 +32,10 @@ const customGetHandler = withErrorHandler(async (req: AuthenticatedRequest) => {
   
   if (user?.role === 'AGENT') {
     queryConditions.AND.push({ assignedToId: user.id });
-    queryConditions.AND.push({ firstLevelDispositionId: null });
+    // Only show undisposed leads if no sale status filter is applied
+    if (!saleStatus) {
+      queryConditions.AND.push({ firstLevelDispositionId: null });
+    }
   }
 
   if (searchQuery) {
