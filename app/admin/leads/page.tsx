@@ -114,11 +114,23 @@ export default function LeadsPage() {
       key: 'firstLevelDisposition',
       render: (_, record: any) => {
         const disposition = record.firstLevelDisposition;
-        if (!disposition) return <Tag>Not Set</Tag>;
+        const historyCount = record._count?.dispositionHistory || 0;
+        
         return (
-          <Tag color={disposition.name === 'Contacted' ? 'green' : 'orange'}>
-            {sanitizeText(disposition.name)}
-          </Tag>
+          <div>
+            {!disposition ? (
+              <Tag>Not Set</Tag>
+            ) : (
+              <Tag color={disposition.name === 'Contacted' ? 'green' : 'orange'}>
+                {sanitizeText(disposition.name)}
+              </Tag>
+            )}
+            {historyCount > 0 && (
+              <Tooltip title={`Previously contacted ${historyCount} time(s)`}>
+                <Tag color="blue" style={{ marginLeft: 4 }}>🔄 {historyCount}</Tag>
+              </Tooltip>
+            )}
+          </div>
         );
       }
     },
@@ -211,6 +223,18 @@ export default function LeadsPage() {
         >
           <Select.Option value="called">Called</Select.Option>
           <Select.Option value="not_called">Not Called</Select.Option>
+        </Select>
+      </Col>
+      <Col>
+        <Select
+          placeholder="Contact History"
+          style={{ width: 200 }}
+          onChange={(value) => handleFilterChange('contactHistory', value)}
+          value={filters.contactHistory}
+          allowClear
+        >
+          <Select.Option value="new">New Leads</Select.Option>
+          <Select.Option value="previously_contacted">Previously Contacted</Select.Option>
         </Select>
       </Col>
       <Col>

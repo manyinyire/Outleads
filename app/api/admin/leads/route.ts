@@ -22,6 +22,7 @@ const customGetHandler = withErrorHandler(async (req: AuthenticatedRequest) => {
   const campaignId = reqUrl.searchParams.get('campaignId');
   const sectorId = reqUrl.searchParams.get('sectorId');
   const callStatus = reqUrl.searchParams.get('callStatus');
+  const contactHistory = reqUrl.searchParams.get('contactHistory');
   const startDate = reqUrl.searchParams.get('startDate');
   const endDate = reqUrl.searchParams.get('endDate');
 
@@ -62,6 +63,21 @@ const customGetHandler = withErrorHandler(async (req: AuthenticatedRequest) => {
       queryConditions.AND.push({ lastCalledAt: null });
     }
   }
+  if (contactHistory) {
+    if (contactHistory === 'previously_contacted') {
+      queryConditions.AND.push({ 
+        dispositionHistory: { 
+          some: {} 
+        } 
+      });
+    } else if (contactHistory === 'new') {
+      queryConditions.AND.push({ 
+        dispositionHistory: { 
+          none: {} 
+        } 
+      });
+    }
+  }
   if (startDate && endDate) {
     queryConditions.AND.push({
       createdAt: {
@@ -93,6 +109,24 @@ const customGetHandler = withErrorHandler(async (req: AuthenticatedRequest) => {
         firstLevelDisposition: true,
         secondLevelDisposition: true,
         thirdLevelDisposition: true,
+        dispositionHistory: {
+          orderBy: { changedAt: 'desc' },
+          include: {
+            firstLevelDisposition: true,
+            secondLevelDisposition: true,
+            thirdLevelDisposition: true,
+            changedBy: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            dispositionHistory: true,
+          },
+        },
       },
     }),
     prisma.lead.count({ where: queryConditions })

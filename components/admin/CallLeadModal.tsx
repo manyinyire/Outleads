@@ -22,6 +22,18 @@ interface Lead {
   thirdLevelDisposition?: { id: string; name: string }
   dispositionNotes?: string
   lastCalledAt?: string
+  dispositionHistory?: Array<{
+    id: string
+    changedAt: string
+    changedBy: { name: string }
+    firstLevelDisposition?: { name: string }
+    secondLevelDisposition?: { name: string }
+    thirdLevelDisposition?: { name: string }
+    dispositionNotes?: string
+  }>
+  _count?: {
+    dispositionHistory: number
+  }
 }
 
 interface CallLeadModalProps {
@@ -207,9 +219,12 @@ export default function CallLeadModal({
         </div>
       )}
 
-      <Divider>Call Disposition</Divider>
-
-      <Form form={form} layout="vertical" onFinish={handleSubmit}>
+      <Tabs defaultActiveKey="disposition" items={[
+        {
+          key: 'disposition',
+          label: 'Call Disposition',
+          children: (
+            <Form form={form} layout="vertical" onFinish={handleSubmit}>
             <Form.Item
               name="firstLevelDispositionId"
               label="1. Contact Status"
@@ -282,6 +297,61 @@ export default function CallLeadModal({
               </Space>
             </Form.Item>
           </Form>
+          )
+        },
+        {
+          key: 'history',
+          label: (
+            <Space>
+              <HistoryOutlined />
+              <span>Contact History {lead?._count?.dispositionHistory ? `(${lead._count.dispositionHistory})` : ''}</span>
+            </Space>
+          ),
+          children: (
+            <div>
+              {lead?.dispositionHistory && lead.dispositionHistory.length > 0 ? (
+                <Timeline
+                  items={lead.dispositionHistory.map((history) => ({
+                    color: history.firstLevelDisposition?.name === 'Contacted' ? 'green' : 'orange',
+                    children: (
+                      <div key={history.id}>
+                        <div><Text strong>{new Date(history.changedAt).toLocaleString()}</Text></div>
+                        <div><Text type="secondary">By: {history.changedBy.name}</Text></div>
+                        <div style={{ marginTop: 8 }}>
+                          {history.firstLevelDisposition && (
+                            <Tag color={history.firstLevelDisposition.name === 'Contacted' ? 'green' : 'orange'}>
+                              {history.firstLevelDisposition.name}
+                            </Tag>
+                          )}
+                          {history.secondLevelDisposition && (
+                            <Tag color={history.secondLevelDisposition.name === 'Sale' ? 'green' : 'red'}>
+                              {history.secondLevelDisposition.name}
+                            </Tag>
+                          )}
+                          {history.thirdLevelDisposition && (
+                            <Tag>{history.thirdLevelDisposition.name}</Tag>
+                          )}
+                        </div>
+                        {history.dispositionNotes && (
+                          <div style={{ marginTop: 8, padding: 8, background: '#f5f5f5', borderRadius: 4 }}>
+                            <Text>{history.dispositionNotes}</Text>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  }))}
+                />
+              ) : (
+                <div style={{ textAlign: 'center', padding: '2rem', color: '#999' }}>
+                  <HistoryOutlined style={{ fontSize: 48, marginBottom: 16 }} />
+                  <div>No previous contact attempts</div>
+                  <div><Text type="secondary">This is a new lead</Text></div>
+                </div>
+              )}
+            </div>
+          )
+        }
+      ]} />
     </Modal>
   )
 }
