@@ -22,6 +22,7 @@ const customGetHandler = withErrorHandler(async (req: AuthenticatedRequest) => {
   const campaignId = reqUrl.searchParams.get('campaignId');
   const sectorId = reqUrl.searchParams.get('sectorId');
   const callStatus = reqUrl.searchParams.get('callStatus');
+  const saleStatus = reqUrl.searchParams.get('saleStatus');
   const contactHistory = reqUrl.searchParams.get('contactHistory');
   const startDate = reqUrl.searchParams.get('startDate');
   const endDate = reqUrl.searchParams.get('endDate');
@@ -61,6 +62,21 @@ const customGetHandler = withErrorHandler(async (req: AuthenticatedRequest) => {
       queryConditions.AND.push({ lastCalledAt: { not: null } });
     } else if (callStatus === 'not_called') {
       queryConditions.AND.push({ lastCalledAt: null });
+    }
+  }
+  if (saleStatus) {
+    if (saleStatus === 'sale') {
+      queryConditions.AND.push({ 
+        secondLevelDisposition: { 
+          name: 'Sale' 
+        } 
+      });
+    } else if (saleStatus === 'no_sale') {
+      queryConditions.AND.push({ 
+        secondLevelDisposition: { 
+          name: 'No Sale' 
+        } 
+      });
     }
   }
   if (contactHistory) {

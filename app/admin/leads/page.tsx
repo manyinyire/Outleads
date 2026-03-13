@@ -250,6 +250,18 @@ export default function LeadsPage() {
       </Col>
       <Col>
         <Select
+          placeholder="Sale Status"
+          style={{ width: 180 }}
+          onChange={(value) => handleFilterChange('saleStatus', value)}
+          value={filters.saleStatus}
+          allowClear
+        >
+          <Select.Option value="sale">Sale</Select.Option>
+          <Select.Option value="no_sale">No Sale</Select.Option>
+        </Select>
+      </Col>
+      <Col>
+        <Select
           placeholder="Contact History"
           style={{ width: 200 }}
           onChange={(value) => handleFilterChange('contactHistory', value)}
